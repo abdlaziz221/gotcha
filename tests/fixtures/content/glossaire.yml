@@ -1,0 +1,7 @@
+termes:
+  - slug: webhook
+    term: Webhook
+    definition: Adresse appelée par l'opérateur quand un événement se produit.
+  - slug: jeton-acces
+    term: Jeton d'accès
+    definition: Mot de passe temporaire qui expire.

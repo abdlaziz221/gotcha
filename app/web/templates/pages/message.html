@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="message">
+  <h1>{{ page.heading }}</h1>
+  <p>{{ page.message }}</p>
+  <p><a class="button" href="{{ page.back_url }}">{{ page.back_label }}</a></p>
+</section>
+{% endblock %}

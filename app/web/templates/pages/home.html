@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% from "components/forms.html" import search_form %}
+{% from "components/cards.html" import fiche_card %}
+{% from "components/status.html" import incident_item %}
+
+{% block title %}{{ site.name }} · {{ site.tagline }}{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1>{{ site.tagline }}</h1>
+  <p class="hero__lead">Wave, Orange Money, MTN MoMo, M-Pesa et Datacloud : ce que la documentation ne dit pas, confirmé par les devs qui l'ont vécu, lisible par vos agents IA.</p>
+  {{ search_form(autofocus=False) }}
+  <p class="hero__stats">{{ page.cards | length }} fiche{% if page.cards | length > 1 %}s{% endif %} · {{ page.gotcha_total }} piège{% if page.gotcha_total > 1 %}s{% endif %} documenté{% if page.gotcha_total > 1 %}s{% endif %}</p>
+</section>
+
+{% if page.active_incidents %}
+<section aria-labelledby="pannes-en-cours">
+  <h2 id="pannes-en-cours">Pannes en cours</h2>
+  <ul class="incidents">
+    {% for incident in page.active_incidents %}{{ incident_item(incident) }}{% endfor %}
+  </ul>
+  <p><a href="/pannes">Tout le journal des pannes</a></p>
+</section>
+{% endif %}
+
+{% set payment = page.cards | selectattr("kind.value", "equalto", "payment") | list %}
+{% set hosting = page.cards | selectattr("kind.value", "equalto", "hosting") | list %}
+
+{% if payment %}
+<section aria-labelledby="paiement">
+  <h2 id="paiement">Paiement mobile</h2>
+  <div class="cards">
+    {% for card in payment %}{{ fiche_card(card) }}{% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if hosting %}
+<section aria-labelledby="hebergement">
+  <h2 id="hebergement">Hébergement</h2>
+  <div class="cards">
+    {% for card in hosting %}{{ fiche_card(card) }}{% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if not page.cards %}
+<p class="empty">Aucune fiche publiée pour l'instant.</p>
+{% endif %}
+
+<section class="cta">
+  <h2>Vous avez payé le prix d'un piège ?</h2>
+  <p>Évitez-le au suivant : ajoutez-le en deux minutes, ou confirmez qu'une solution marche encore.</p>
+  <p><a class="button" href="/contribuer">Contribuer</a></p>
+</section>
+{% endblock %}

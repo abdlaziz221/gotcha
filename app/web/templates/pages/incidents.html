@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "components/status.html" import incident_item %}
+
+{% block content %}
+<h1>{{ page.meta.title }}</h1>
+<p>Pannes signalées par les devs et importées du flux public d'incidents de Flutterwave. <a class="button button--small" href="/pannes/signaler">Signaler une panne</a></p>
+
+<section aria-labelledby="en-cours">
+  <h2 id="en-cours">En cours</h2>
+  {% if page.active %}
+  <ul class="incidents">{% for i in page.active %}{{ incident_item(i) }}{% endfor %}</ul>
+  {% else %}
+  <p class="empty">Aucune panne en cours sur les services suivis.</p>
+  {% endif %}
+</section>
+
+<section aria-labelledby="recentes">
+  <h2 id="recentes">Récentes</h2>
+  {% if page.recent %}
+  <ul class="incidents">{% for i in page.recent %}{{ incident_item(i) }}{% endfor %}</ul>
+  {% else %}
+  <p class="empty">Aucune panne récente.</p>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,23 @@
+# Responsables par dossier (voir le README de chaque dossier).
+# Remplacer LOUM_GITHUB et KHALIFA_GITHUB par leurs identifiants GitHub, puis décommenter.
+# Sur un dépôt privé avec un compte GitHub gratuit, ce fichier sert de documentation :
+# la règle de relecture est appliquée par convention (voir CONTRIBUTING.md).
+
+*                          @abdlaziz221
+
+# Contrats : les trois membres relisent.
+# /app/domain/             @abdlaziz221 @LOUM_GITHUB @KHALIFA_GITHUB
+# /app/web/viewmodels.py   @abdlaziz221 @LOUM_GITHUB
+# /app/mcp/schemas.py      @abdlaziz221 @KHALIFA_GITHUB
+# /docs/CONTRACTS.md       @abdlaziz221 @LOUM_GITHUB @KHALIFA_GITHUB
+
+# Interface : Loum.
+# /app/web/templates/      @LOUM_GITHUB
+# /app/web/static/         @LOUM_GITHUB
+
+# MCP, pannes, détection des secrets : Khalifa.
+# /app/mcp/                @KHALIFA_GITHUB
+# /app/ingest/             @KHALIFA_GITHUB
+# /app/services/status.py  @KHALIFA_GITHUB
+# /app/services/incidents.py @KHALIFA_GITHUB
+# /app/security/secrets.py @KHALIFA_GITHUB

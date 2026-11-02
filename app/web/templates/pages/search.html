@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ page.meta.title }}</h1>
+
+<form class="search search--filters" method="get" action="/recherche" role="search">
+  <div class="field">
+    <label for="q">Service, en-tête, symptôme ou code d'erreur</label>
+    <input id="q" name="q" type="search" value="{{ page.query }}" maxlength="200" placeholder="X-Target-Environment, jeton expiré, 400…">
+  </div>
+  <div class="field">
+    <label for="service">Service</label>
+    <select id="service" name="service">
+      <option value="">Tous</option>
+      {% for o in page.service_options %}<option value="{{ o.value }}"{% if o.selected %} selected{% endif %}>{{ o.label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label for="pays">Pays</label>
+    <select id="pays" name="pays">
+      <option value="">Tous</option>
+      {% for o in page.country_options %}<option value="{{ o.value }}"{% if o.selected %} selected{% endif %}>{{ o.label }}</option>{% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="button">Rechercher</button>
+</form>
+
+{% if page.hits %}
+<ol class="results">
+  {% for hit in page.hits %}
+  <li class="result result--{{ hit.kind.value }}">
+    <span class="tag">{{ hit.kind_label }}</span>
+    <a href="{{ hit.url }}">{{ hit.title }}</a>
+    <p>{{ hit.snippet }}</p>
+  </li>
+  {% endfor %}
+</ol>
+{% elif page.query %}
+<p class="empty">Aucun résultat pour « {{ page.query }} ». Vous connaissez ce piège ? <a href="/contribuer">Ajoutez-le</a>.</p>
+{% endif %}
+{% endblock %}

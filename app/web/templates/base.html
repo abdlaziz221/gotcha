@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ page.meta.title }}{% if not page.meta.title.startswith(site.name) %} · {{ site.name }}{% endif %}{% endblock %}</title>
+  <meta name="description" content="{{ page.meta.description }}">
+  {% if page.meta.noindex %}
+  <meta name="robots" content="noindex">
+  {% endif %}
+  <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/css/app.css">
+  <script src="/static/js/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#contenu">Aller au contenu</a>
+
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a class="brand" href="/">
+        <img src="/static/img/logo.svg" alt="" width="28" height="28">
+        <span>{{ site.name }}</span>
+      </a>
+      <nav aria-label="Navigation principale">
+        <ul class="nav">
+          <li><a href="/recherche"{% if request.url.path == "/recherche" %} aria-current="page"{% endif %}>Rechercher</a></li>
+          <li><a href="/pannes"{% if request.url.path.startswith("/pannes") %} aria-current="page"{% endif %}>Pannes</a></li>
+          <li><a href="/contribuer"{% if request.url.path.startswith("/contribuer") %} aria-current="page"{% endif %}>Contribuer</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="contenu" class="container">
+    {% include "components/flash.html" %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p class="site-footer__hosting"><strong>{{ site.hosting }}</strong> · <a href="/ou-sont-vos-donnees">Où sont vos données</a></p>
+      <p><a href="/glossaire">Glossaire</a> · {{ site.license }}</p>
+    </div>
+  </footer>
+</body>
+</html>

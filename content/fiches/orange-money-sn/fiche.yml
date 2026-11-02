@@ -1,0 +1,21 @@
+service:
+  slug: orange-money
+  name: Orange Money
+  kind: payment
+  operator: Orange
+  docs_url: https://developer.orange.com
+country: SN
+title: Orange Money Sénégal
+summary: Encaisser un paiement Orange Money au Sénégal via le portail développeur d'Orange.
+api_version: null
+publication: draft
+last_confirmed_on: 2026-10-28
+prerequisites:
+  - Un compte sur developer.orange.com.
+  - Pour la production, les documents de l'entreprise (NINEA, RCCM), selon des retours non officiels à recouper.
+differences: []
+error_codes: []
+sources:
+  - title: "Kolonell : bac à sable Wave et Orange Money (blog, non officiel)"
+    url: https://kolonell.com/fr/blog/sandbox-paiement-wave-orange-money-dev-2026
+    accessed_on: 2026-10-28

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% from "components/status.html" import status_badge %}
+{% from "components/cards.html" import fiche_card, gotcha_card with context %}
+{% from "components/forms.html" import text_field, select_field, search_form %}
+
+{% block content %}
+<h1>{{ page.meta.title }}</h1>
+<p>Chaque composant avec des données d'exemple. Cette page n'existe pas en production.</p>
+
+<section>
+  <h2>Couleurs et typographie</h2>
+  <div class="swatches">
+    <span class="swatch swatch--brand">Marque</span>
+    <span class="swatch swatch--normal">Normal</span>
+    <span class="swatch swatch--degraded">Dégradé</span>
+    <span class="swatch swatch--down">En panne</span>
+  </div>
+  <h3>Titre de niveau 3</h3>
+  <p>Paragraphe avec <a href="/glossaire">un lien</a>, du <strong>gras</strong> et du <code>code</code>.</p>
+</section>
+
+<section>
+  <h2>États des services</h2>
+  <p>{% for s in page.statuses %}{{ status_badge(s) }} {% endfor %}</p>
+</section>
+
+<section>
+  <h2>Messages</h2>
+  {% for f in page.flashes %}<div class="flash flash--{{ f.kind }}">{{ f.message }}</div>{% endfor %}
+  <p class="notice notice--draft">Brouillon : cette fiche n'est pas encore vérifiée.</p>
+  <p class="notice notice--review">À revérifier : non confirmée depuis 90 jours.</p>
+</section>
+
+<section>
+  <h2>Boutons</h2>
+  <p>
+    <a class="button" href="/styleguide">Principal</a>
+    <a class="button button--secondary" href="/styleguide">Secondaire</a>
+    <a class="button button--small" href="/styleguide">Petit</a>
+  </p>
+</section>
+
+<section>
+  <h2>Formulaire</h2>
+  {{ search_form() }}
+  <form class="form" action="/styleguide" method="get">
+    {{ text_field(page.form, "title", "Champ en erreur", required=True) }}
+    {{ select_field(page.form, "exemple", "Liste", page.options) }}
+  </form>
+</section>
+
+<section>
+  <h2>Cartes de fiches</h2>
+  <div class="cards">{% for card in page.cards %}{{ fiche_card(card) }}{% endfor %}</div>
+</section>
+
+{% if page.gotcha %}
+<section>
+  <h2>Piège</h2>
+  {{ gotcha_card(page.gotcha, page.gotcha.id.split(".")[0]) }}
+</section>
+{% endif %}
+{% endblock %}

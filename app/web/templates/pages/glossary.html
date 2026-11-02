@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ page.meta.title }}</h1>
+<p>Les mots techniques des fiches, expliqués simplement.</p>
+<dl class="glossary">
+  {% for t in page.terms %}
+  <dt id="{{ t.slug }}">{{ t.term }}</dt>
+  <dd>{{ t.definition }}</dd>
+  {% endfor %}
+</dl>
+{% endblock %}

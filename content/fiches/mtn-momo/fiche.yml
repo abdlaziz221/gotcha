@@ -1,0 +1,30 @@
+service:
+  slug: mtn-momo
+  name: MTN MoMo
+  kind: payment
+  operator: MTN
+  docs_url: https://momodeveloper.mtn.com
+country: null
+title: MTN MoMo
+summary: Encaisser un paiement MTN Mobile Money avec l'API MoMo (produit Collections), du bac à sable à la production.
+api_version: v1_0
+publication: draft
+last_confirmed_on: 2026-10-28
+prerequisites:
+  - Un compte sur le portail développeur MTN MoMo.
+  - Un abonnement au produit Collections, qui donne une clé d'abonnement.
+differences:
+  - topic: Devise
+    sandbox: EUR uniquement
+    production: La devise locale du pays (XOF, GHS, UGX…)
+  - topic: Valeur de l'en-tête X-Target-Environment
+    sandbox: sandbox
+    production: Valeur propre au pays, fournie par MTN (à confirmer)
+error_codes: []
+sources:
+  - title: "Forum MTN MoMo : clés, bac à sable et production"
+    url: https://momodevelopercommunity.mtn.com/how-to-59/understanding-momo-open-api-keys-sandbox-and-production-455
+    accessed_on: 2026-10-28
+  - title: "Forum MTN MoMo : configuration de production"
+    url: https://momodevelopercommunity.mtn.com/how-to-59/momo-api-production-configuration-101
+    accessed_on: 2026-10-28

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "components/forms.html" import text_field, textarea_field, select_field %}
+
+{% block content %}
+<h1>{{ page.meta.title }}</h1>
+<p>Des paiements échouent ou n'aboutissent pas ? Signalez-le : la fiche passe en « dégradé » pendant quelques heures et les autres devs, ainsi que leurs agents IA, sont prévenus.</p>
+
+{% if page.form.errors.get("form") %}<p class="flash flash--error" role="alert">{{ page.form.errors["form"] }}</p>{% endif %}
+
+<form class="form" method="post" action="/pannes/signaler" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  {{ select_field(page.form, "fiche_slug", "Service concerné", page.fiche_options, required=True, placeholder="Choisir une fiche") }}
+  {{ select_field(page.form, "country", "Pays", page.country_options, placeholder="Celui de la fiche") }}
+  {{ textarea_field(page.form, "description", "Ce que vous constatez", required=True, rows=4, maxlength=1000) }}
+  {{ text_field(page.form, "pseudo", "Pseudo", maxlength=40, autocomplete="nickname") }}
+  <button type="submit" class="button">Signaler la panne</button>
+</form>
+{% endblock %}

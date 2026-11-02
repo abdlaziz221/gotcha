@@ -1,0 +1,48 @@
+# Glossaire : les mots techniques des fiches, expliqués aux débutants.
+# Dans une fiche, écrire [[slug]] ou [[slug|texte affiché]] pour lier un terme.
+termes:
+  - slug: agent-ia
+    term: Agent IA
+    definition: Un assistant de programmation qui écrit et exécute du code à votre place. Il peut consulter Gotcha par MCP avant d'écrire une intégration.
+  - slug: bac-a-sable
+    term: Bac à sable
+    definition: Un environnement de test fourni par l'opérateur. Aucun argent réel ne circule, mais il se comporte souvent un peu différemment de la production.
+  - slug: callback
+    term: Callback
+    definition: Une requête que l'opérateur envoie à votre serveur pour annoncer le résultat d'un paiement, quelques secondes ou minutes après la demande.
+  - slug: cle-api
+    term: Clé d'API
+    definition: Un identifiant secret qui prouve que la requête vient de vous. Elle ne doit jamais apparaître dans le code publié ni dans une contribution.
+  - slug: en-tete-http
+    term: En-tête HTTP
+    definition: Une information envoyée avec une requête, sous la forme Nom-De-L-En-Tete valeur, par exemple le jeton d'accès ou l'environnement visé.
+  - slug: idempotence
+    term: Idempotence
+    definition: Traiter deux fois le même message produit le même résultat qu'une seule fois. Indispensable quand un callback peut arriver en double.
+  - slug: jeton-acces
+    term: Jeton d'accès
+    definition: Un mot de passe temporaire obtenu avec votre clé d'API. Il expire au bout d'un certain temps et doit alors être renouvelé.
+  - slug: mcp
+    term: MCP
+    definition: Model Context Protocol, un protocole standard qui permet à un agent IA d'interroger un service comme Gotcha.
+  - slug: mobile-money
+    term: Mobile Money
+    definition: Un porte-monnaie électronique lié à un numéro de téléphone, comme Wave, Orange Money, MTN MoMo ou M-Pesa.
+  - slug: production
+    term: Production
+    definition: L'environnement réel, avec de vrais clients et de vrais paiements.
+  - slug: reconciliation
+    term: Réconciliation
+    definition: Vérifier que les paiements enregistrés chez vous correspondent à ceux de l'opérateur, et corriger les écarts.
+  - slug: serverless
+    term: Serverless
+    definition: Un hébergement où vous déployez votre code sans gérer de serveur ; la plateforme le démarre et l'arrête selon les besoins.
+  - slug: variable-environnement
+    term: Variable d'environnement
+    definition: Un réglage transmis à l'application au démarrage, hors du code, par exemple l'adresse de la base de données ou une clé secrète.
+  - slug: vps
+    term: VPS
+    definition: Un serveur virtuel que vous louez et administrez vous-même.
+  - slug: webhook
+    term: Webhook
+    definition: Une adresse de votre serveur que l'opérateur appelle automatiquement quand un événement se produit, par exemple un paiement réussi.

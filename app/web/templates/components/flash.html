@@ -1,0 +1,4 @@
+{# Message après une action (?ok=…). Inclus par base.html quand page.flash existe. #}
+{% if page.flash is defined and page.flash %}
+<div class="flash flash--{{ page.flash.kind }}" role="status">{{ page.flash.message }}</div>
+{% endif %}

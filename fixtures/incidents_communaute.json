@@ -1,0 +1,16 @@
+{
+  "description": "DONNÉES FICTIVES pour le développement. Chargées uniquement par le stockage mémoire quand GOTCHA_LOAD_FIXTURES est vrai. « minutes_ago » remplace started_at pour que la panne reste récente.",
+  "incidents": [
+    {
+      "id": "community:fictif-wave-sn-1",
+      "source": "community",
+      "service_slug": "wave",
+      "country": "SN",
+      "status": "degraded",
+      "title": "[FICTIF] Panne signalée : Wave",
+      "description": "Données de démonstration : les paiements Wave restent en attente plus de 5 minutes.",
+      "minutes_ago": 45,
+      "reported_by": "dev_demo"
+    }
+  ]
+}

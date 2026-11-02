@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Gotcha">
+  <rect width="32" height="32" rx="8" fill="#0f6b4f"/>
+  <path d="M16 6 L27 25 H5 Z" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round"/>
+  <rect x="14.75" y="12" width="2.5" height="7" rx="1.25" fill="#ffffff"/>
+  <circle cx="16" cy="22" r="1.5" fill="#ffffff"/>
+</svg>

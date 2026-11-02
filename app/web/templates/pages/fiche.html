@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% from "components/status.html" import status_badge, incident_item %}
+{% from "components/cards.html" import gotcha_card, source_list with context %}
+
+{% block content %}
+<article class="fiche">
+  <header class="fiche__header">
+    <p class="fiche__meta">{{ page.service_name }} · {{ page.country_name }}{% if page.api_version %} · API {{ page.api_version }}{% endif %}</p>
+    <h1>{{ page.title }}</h1>
+    <p>{{ status_badge(page.status) }}</p>
+    {% if page.status.incidents %}
+    <ul class="incidents incidents--compact">
+      {% for incident in page.status.incidents %}{{ incident_item(incident) }}{% endfor %}
+    </ul>
+    {% endif %}
+    {% if page.is_draft %}
+    <p class="notice notice--draft">Brouillon : cette fiche n'est pas encore vérifiée par un relecteur.</p>
+    {% endif %}
+    {% if page.needs_review %}
+    <p class="notice notice--review">À revérifier : personne n'a confirmé cette fiche depuis plus de 90 jours.</p>
+    {% endif %}
+  </header>
+
+  {% if page.step_mode %}
+  {% set sm = page.step_mode %}
+  <section class="step-mode" aria-labelledby="etape-titre">
+    <p class="step-mode__progress">Étape {{ sm.index }} sur {{ sm.total }}</p>
+    <h2 id="etape-titre">{{ sm.current.title }}</h2>
+    {{ sm.current.body_html }}
+    <nav class="step-mode__nav" aria-label="Étapes">
+      {% if sm.prev_url %}<a class="button button--secondary" href="{{ sm.prev_url }}">Étape précédente</a>{% endif %}
+      {% if sm.next_url %}<a class="button" href="{{ sm.next_url }}">Étape suivante</a>{% else %}<a class="button" href="{{ sm.exit_url }}#pieges">Voir les pièges</a>{% endif %}
+    </nav>
+    <p><a href="{{ sm.exit_url }}">Quitter le mode pas à pas</a></p>
+  </section>
+  {% else %}
+
+  <p class="fiche__summary">{{ page.summary }}</p>
+  {% if page.service_docs_url %}<p><a href="{{ page.service_docs_url }}" rel="noopener noreferrer nofollow">Documentation officielle</a></p>{% endif %}
+
+  {% if page.prerequisites %}
+  <section aria-labelledby="prerequis">
+    <h2 id="prerequis">Avant de commencer</h2>
+    <ul>{% for p in page.prerequisites %}<li>{{ p }}</li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+
+  {% if page.steps %}
+  <section aria-labelledby="etapes">
+    <h2 id="etapes">Étapes</h2>
+    <p><a class="button button--secondary" href="{{ page.steps[0].url }}">Suivre pas à pas</a></p>
+    <ol class="steps">
+      {% for step in page.steps %}
+      <li class="step"><h3>{{ step.title }}</h3>{{ step.body_html }}</li>
+      {% endfor %}
+    </ol>
+  </section>
+  {% endif %}
+  {% endif %}
+
+  <section aria-labelledby="pieges" id="pieges-section">
+    <h2 id="pieges">Pièges ({{ page.gotchas | length }})</h2>
+    {% for g in page.gotchas %}
+      {{ gotcha_card(g, page.slug) }}
+    {% else %}
+      <p class="empty">Aucun piège publié pour l'instant. <a href="{{ page.contribute_url }}">Ajoutez le premier</a>.</p>
+    {% endfor %}
+  </section>
+
+  {% if page.differences %}
+  <section aria-labelledby="ecarts">
+    <h2 id="ecarts">Bac à sable et production</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Sujet</th><th scope="col">Bac à sable</th><th scope="col">Production</th></tr></thead>
+        <tbody>
+          {% for d in page.differences %}<tr><th scope="row">{{ d.topic }}</th><td>{{ d.sandbox }}</td><td>{{ d.production }}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if page.error_codes %}
+  <section aria-labelledby="codes-erreur">
+    <h2 id="codes-erreur">Codes d'erreur</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Code</th><th scope="col">Signification</th><th scope="col">Que faire</th></tr></thead>
+        <tbody>
+          {% for e in page.error_codes %}<tr><th scope="row"><code>{{ e.code }}</code></th><td>{{ e.meaning }}</td><td>{{ e.action }}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if page.sources %}
+  <section aria-labelledby="sources">
+    <h2 id="sources">Sources</h2>
+    {{ source_list(page.sources) }}
+  </section>
+  {% endif %}
+
+  <section class="fiche__actions" aria-labelledby="confirmer">
+    <h2 id="confirmer">Cette fiche vous a servi ?</h2>
+    <form class="confirm" method="post" action="/fiches/{{ page.slug }}/confirmer">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="target_kind" value="fiche">
+      <input type="hidden" name="target_id" value="{{ page.slug }}">
+      <button type="submit" class="button">Ça marche encore</button>
+      <span class="confirm__count">{{ page.confirmations }} confirmation{% if page.confirmations > 1 %}s{% endif %} · dernière le {{ page.last_confirmed_on | date_fr }}</span>
+    </form>
+    <p><a href="{{ page.contribute_url }}">Ajouter un piège ou corriger cette fiche</a> · <a href="{{ page.report_url }}">Signaler une panne</a></p>
+  </section>
+</article>
+{% endblock %}

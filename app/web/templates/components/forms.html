@@ -1,0 +1,53 @@
+{# Champs de formulaire. `form` : FormState (values et errors par nom de champ). #}
+
+{% macro field_error(form, name) -%}
+{% if form.errors.get(name) %}<p class="field__error" id="{{ name }}-erreur">{{ form.errors[name] }}</p>{% endif %}
+{%- endmacro %}
+
+{% macro text_field(form, name, label, type="text", required=False, help=None, maxlength=None, autocomplete="off") -%}
+<div class="field{% if form.errors.get(name) %} field--invalid{% endif %}">
+  <label for="{{ name }}">{{ label }}{% if not required %} <span class="field__optional">(facultatif)</span>{% endif %}</label>
+  {% if help %}<p class="field__help" id="{{ name }}-aide">{{ help }}</p>{% endif %}
+  <input id="{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ form.values.get(name, '') }}"
+         autocomplete="{{ autocomplete }}"
+         {% if required %}required{% endif %}
+         {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
+         {% if form.errors.get(name) %}aria-invalid="true" aria-describedby="{{ name }}-erreur"{% endif %}>
+  {{ field_error(form, name) }}
+</div>
+{%- endmacro %}
+
+{% macro textarea_field(form, name, label, required=False, help=None, rows=8, maxlength=None) -%}
+<div class="field{% if form.errors.get(name) %} field--invalid{% endif %}">
+  <label for="{{ name }}">{{ label }}{% if not required %} <span class="field__optional">(facultatif)</span>{% endif %}</label>
+  {% if help %}<p class="field__help">{{ help }}</p>{% endif %}
+  <textarea id="{{ name }}" name="{{ name }}" rows="{{ rows }}"
+            {% if required %}required{% endif %}
+            {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
+            {% if form.errors.get(name) %}aria-invalid="true" aria-describedby="{{ name }}-erreur"{% endif %}>{{ form.values.get(name, '') }}</textarea>
+  {{ field_error(form, name) }}
+</div>
+{%- endmacro %}
+
+{% macro select_field(form, name, label, options, required=False, placeholder="Choisir…") -%}
+<div class="field{% if form.errors.get(name) %} field--invalid{% endif %}">
+  <label for="{{ name }}">{{ label }}{% if not required %} <span class="field__optional">(facultatif)</span>{% endif %}</label>
+  <select id="{{ name }}" name="{{ name }}" {% if required %}required{% endif %}
+          {% if form.errors.get(name) %}aria-invalid="true" aria-describedby="{{ name }}-erreur"{% endif %}>
+    <option value="">{{ placeholder }}</option>
+    {% for o in options %}
+    <option value="{{ o.value }}"{% if o.selected %} selected{% endif %}>{{ o.label }}</option>
+    {% endfor %}
+  </select>
+  {{ field_error(form, name) }}
+</div>
+{%- endmacro %}
+
+{% macro search_form(query="", autofocus=False) -%}
+<form class="search" method="get" action="/recherche" role="search">
+  <label class="visually-hidden" for="q">Rechercher un service, un pays ou un code d'erreur</label>
+  <input id="q" name="q" type="search" value="{{ query }}" maxlength="200"
+         placeholder="Wave, X-Target-Environment, erreur 400…"{% if autofocus %} autofocus{% endif %}>
+  <button type="submit" class="button">Rechercher</button>
+</form>
+{%- endmacro %}

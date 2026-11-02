@@ -1,0 +1,27 @@
+service:
+  slug: mpesa
+  name: M-Pesa
+  kind: payment
+  operator: Safaricom
+  docs_url: https://developer.safaricom.co.ke
+country: KE
+title: M-Pesa Kenya (Daraja)
+summary: Encaisser un paiement M-Pesa avec l'API Daraja de Safaricom (STK Push), du bac à sable à la production.
+api_version: null
+publication: draft
+last_confirmed_on: 2026-10-28
+prerequisites:
+  - Un compte sur le portail Daraja de Safaricom (ouvert à tous, sans entreprise enregistrée).
+  - Une application Daraja, qui donne une consumer key et un consumer secret.
+differences:
+  - topic: Identifiants
+    sandbox: Identifiants de test publics, communs à tous
+    production: Shortcode et passkey propres à l'entreprise, après validation
+error_codes: []
+sources:
+  - title: "McTaba : configurer le bac à sable Daraja"
+    url: https://mctaba.com/learn/mpesa/daraja-sandbox-setup
+    accessed_on: 2026-10-28
+  - title: "Les pièges de l'API Daraja (M-Pesa)"
+    url: https://ml.co.ke/posts/mpesa-daraja-api-pitfalls/
+    accessed_on: 2026-10-28

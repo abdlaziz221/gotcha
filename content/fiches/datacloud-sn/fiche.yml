@@ -1,0 +1,24 @@
+service:
+  slug: datacloud
+  name: Datacloud
+  kind: hosting
+  operator: Systalink
+  docs_url: https://systalink.com/en/serverless
+country: SN
+title: Datacloud (Systalink)
+summary: Déployer une application sur Datacloud, la plateforme cloud de Systalink à Dakar, en Serverless ou sur un VPS, avec une base PostgreSQL managée.
+api_version: null
+publication: draft
+last_confirmed_on: 2026-10-28
+prerequisites:
+  - Un compte sur platform.systalink.com.
+  - Un dépôt Git (Serverless) ou une image Docker.
+differences: []
+error_codes: []
+sources:
+  - title: Systalink Serverless
+    url: https://systalink.com/en/serverless
+    accessed_on: 2026-10-28
+  - title: Systalink Database
+    url: https://systalink.com/en/database
+    accessed_on: 2026-10-28

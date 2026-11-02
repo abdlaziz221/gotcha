@@ -1,0 +1,18 @@
+{# État d'un service. `status` : StatusView. La classe CSS suit status.status (normal, degraded, down, unknown). #}
+{% macro status_badge(status) -%}
+<span class="badge badge--{{ status.status.value }}">{{ status.label }}</span>
+{%- endmacro %}
+
+{% macro incident_item(incident) -%}
+<li class="incident incident--{{ incident.status.value }}{% if not incident.is_active %} incident--resolved{% endif %}">
+  <p class="incident__title">
+    {% if incident.url %}<a href="{{ incident.url }}" rel="noopener noreferrer nofollow">{{ incident.title }}</a>{% else %}{{ incident.title }}{% endif %}
+  </p>
+  <p class="incident__meta">
+    {{ incident.service_name }} · {{ incident.country_name }} · {{ incident.status_label }}
+    · depuis le {{ incident.started_at | datetime_fr }}
+    {% if incident.resolved_at %} · résolue le {{ incident.resolved_at | datetime_fr }}{% endif %}
+  </p>
+  <p class="incident__source">{{ incident.source_label }}</p>
+</li>
+{%- endmacro %}

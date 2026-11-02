@@ -1,0 +1,573 @@
+{
+  "page": {
+    "id": "gyr0j156lg0v",
+    "name": "Flutterwave",
+    "url": "https://status.flutterwave.com",
+    "time_zone": "Etc/UTC",
+    "updated_at": "2026-11-02T00:39:13.716Z"
+  },
+  "incidents": [
+    {
+      "id": "zt52rsf4m8n8",
+      "name": "[XAF] Service Alert: Orange Cameroon Collections and Payouts Disruption",
+      "status": "identified",
+      "created_at": "2026-10-30T06:27:23.699Z",
+      "updated_at": "2026-10-30T06:27:23.810Z",
+      "monitoring_at": null,
+      "resolved_at": null,
+      "impact": "major",
+      "shortlink": "https://stspg.io/37g58fjw45m2",
+      "started_at": "2026-10-30T06:27:23.688Z",
+      "page_id": "gyr0j156lg0v",
+      "incident_updates": [
+        {
+          "id": "8w13fklyfj49",
+          "status": "identified",
+          "body": "Dear Valued Merchant,\n\nWe are currently experiencing a disruption affecting Orange Cameroon, which may prevent some customers from successfully completing transactions. This may impact your ability to receive payments and process customer transactions through this channel.\n\nOur team is engaging the service provider to restore normal operations as soon as possible. We will keep you informed as more information becomes available.\n\nWe apologize for the disruption this may cause you and appreciate your patience as we work towards a resolution.",
+          "created_at": "2026-10-30T06:27:23.808Z",
+          "display_at": "2026-10-30T06:27:23.808Z",
+          "affected_components": [
+            {
+              "code": "37lg0scdppv6",
+              "name": "Flutterwave Collections - Collections APIs",
+              "old_status": "operational",
+              "new_status": "partial_outage"
+            },
+            {
+              "code": "pdg297tr6t9l",
+              "name": "Flutterwave Payouts - Payouts APIs",
+              "old_status": "operational",
+              "new_status": "partial_outage"
+            }
+          ]
+        }
+      ],
+      "components": [
+        {
+          "id": "pdg297tr6t9l",
+          "name": "Payouts APIs",
+          "status": "partial_outage"
+        },
+        {
+          "id": "37lg0scdppv6",
+          "name": "Collections APIs",
+          "status": "operational"
+        }
+      ],
+      "reminder_intervals": null
+    },
+    {
+      "id": "vhmsn1nj70ns",
+      "name": "[XAF] Service Restored: Mobile Money Transactions Affected",
+      "status": "resolved",
+      "created_at": "2026-10-28T11:23:16.580Z",
+      "updated_at": "2026-10-28T22:12:02.371Z",
+      "monitoring_at": null,
+      "resolved_at": "2026-10-28T22:12:02.347Z",
+      "impact": "major",
+      "shortlink": "https://stspg.io/nb96d5td86ft",
+      "started_at": "2026-10-28T11:23:16.564Z",
+      "page_id": "gyr0j156lg0v",
+      "incident_updates": [
+        {
+          "id": "b6nh2j05s7rb",
+          "status": "resolved",
+          "body": "Mobile money transactions involving Orange Money have returned to normal following the earlier disruption. Transfers are working as expected, and we continue to monitor the service.\n\nWe apologize for the disruption and appreciate your patience.",
+          "created_at": "2026-10-28T22:12:02.347Z",
+          "display_at": "2026-10-28T22:12:02.347Z",
+          "affected_components": [
+            {
+              "code": "37lg0scdppv6",
+              "name": "Flutterwave Collections - Collections APIs",
+              "old_status": "partial_outage",
+              "new_status": "operational"
+            },
+            {
+              "code": "pdg297tr6t9l",
+              "name": "Flutterwave Payouts - Payouts APIs",
+              "old_status": "partial_outage",
+              "new_status": "operational"
+            }
+          ]
+        },
+        {
+          "id": "4t45x68htdlr",
+          "status": "identified",
+          "body": "Dear Valued Merchant,\n\nYou may experience problems receiving or sending mobile money payments due to a service disruption affecting Orange Money in Cameroon. Our team is actively working with them on the issue and will share further updates as they become available.\n\nWe apologize for the disruption and appreciate your patience and understanding.",
+          "created_at": "2026-10-28T11:23:16.651Z",
+          "display_at": "2026-10-28T11:23:16.651Z",
+          "affected_components": [
+            {
+              "code": "37lg0scdppv6",
+              "name": "Flutterwave Collections - Collections APIs",
+              "old_status": "partial_outage",
+              "new_status": "partial_outage"
+            },
+            {
+              "code": "pdg297tr6t9l",
+              "name": "Flutterwave Payouts - Payouts APIs",
+              "old_status": "partial_outage",
+              "new_status": "partial_outage"
+            }
+          ]
+        }
+      ],
+      "components": [
+        {
+          "id": "pdg297tr6t9l",
+          "name": "Payouts APIs",
+          "status": "partial_outage"
+        },
+        {
+          "id": "37lg0scdppv6",
+          "name": "Collections APIs",
+          "status": "operational"
+        }
+      ],
+      "reminder_intervals": null
+    },
+    {
+      "id": "nq9gqhx3w78r",
+      "name": "[GHS] Service Restored: Mobile Money Payouts Affected",
+      "status": "resolved",
+      "created_at": "2026-10-28T10:22:04.644Z",
+      "updated_at": "2026-10-29T17:39:41.393Z",
+      "monitoring_at": null,
+      "resolved_at": "2026-10-29T17:39:41.367Z",
+      "impact": "major",
+      "shortlink": "https://stspg.io/ry98npykcrjn",
+      "started_at": "2026-10-28T10:22:04.633Z",
+      "page_id": "gyr0j156lg0v",
+      "incident_updates": [
+        {
+          "id": "ntkm7y39mnxy",
+          "status": "resolved",
+          "body": "GHS mobile money payouts to MTN wallets have returned to normal following the earlier disruption. Payouts are processing as expected, and we continue to monitor the service.\n\nWe apologize for the disruption and appreciate your patience and understanding.",
+          "created_at": "2026-10-29T17:39:41.367Z",
+          "display_at": "2026-10-29T17:39:41.367Z",
+          "affected_components": [
+            {
+              "code": "pdg297tr6t9l",
+              "name": "Flutterwave Payouts - Payouts APIs",
+              "old_status": "operational",
+              "new_status": "operational"
+            }
+          ]
+        },
+        {
+          "id": "v2f2gz9r6v16",
+          "status": "identified",
+          "body": "Dear Valued Merchant,\n\nSome GHS mobile money payouts to MTN wallets may fail or be delayed due to a disruption with one of our service providers. The matter is being reviewed, and we will share further updates as they become available.\n\nWe apologize for the disruption and appreciate your understanding.",
+          "created_at": "2026-10-28T10:22:04.748Z",
+          "display_at": "2026-10-28T10:22:04.748Z",
+          "affected_components": [
+            {
+              "code": "pdg297tr6t9l",
+              "name": "Flutterwave Payouts - Payouts APIs",
+              "old_status": "operational",
+              "new_status": "partial_outage"
+            }
+          ]
+        }
+      ],
+      "components": [
+        {
+          "id": "pdg297tr6t9l",
+          "name": "Payouts APIs",
+          "status": "partial_outage"
+        }
+      ],
+      "reminder_intervals": null
+    },
+    {
+      "id": "hbrqtrccjgk4",
+      "name": "[UGX] Service Restored: Mobile Money Payments",
+      "status": "resolved",
+      "created_at": "2026-10-27T21:51:31.085Z",
+      "updated_at": "2026-10-27T23:19:49.056Z",
+      "monitoring_at": null,
+      "resolved_at": "2026-10-27T23:19:49.029Z",
+      "impact": "major",
+      "shortlink": "https://stspg.io/z2jt0m857033",
+      "started_at": "2026-10-27T21:51:31.074Z",
+      "page_id": "gyr0j156lg0v",
+      "incident_updates": [
+        {
+          "id": "fpqyzpbwqcr8",
+          "status": "resolved",
+          "body": "UGX Airtel Mobile Money payments have returned to normal following the earlier disruption. Payments are processing as expected, and we continue to monitor the service closely.\n\nWe apologize for the disruption and appreciate your patience and understanding.",
+          "created_at": "2026-10-27T23:19:49.029Z",
+          "display_at": "2026-10-27T23:19:49.029Z",
+          "affected_components": [
+            {
+              "code": "37lg0scdppv6",
+              "name": "Flutterwave Collections - Collections APIs",
+              "old_status": "partial_outage",
+              "new_status": "operational"
+            }
+          ]
+        },
+        {
+          "id": "x27p6glx20tf",
+          "status": "identified",
+          "body": "Dear Valued Merchant,\n\nUGX Airtel Mobile Money payments are currently failing due to a service disruption affecting Airtel. We are working with the provider to restore normal payment processing and will share further updates as they become available.\n\nWe apologize for the disruption and appreciate your patience and understanding.",
+          "created_at": "2026-10-27T21:51:31.283Z",
+          "display_at": "2026-10-27T21:51:31.283Z",
+          "affected_components": [
+            {
+              "code": "37lg0scdppv6",
+              "name": "Flutterwave Collections - Collections APIs",
+              "old_status": "operational",
+              "new_status": "partial_outage"
+            }
+          ]
+        }
+      ],
+      "components": [
+        {
+          "id": "37lg0scdppv6",
+          "name": "Collections APIs",
+          "status": "operational"
+        }
+      ],
+      "reminder_intervals": null
+    },
+    {
+      "id": "rpcyndryh9hs",
+      "name": "[XOF] Service Restored: InTouch Payments Affected",
+      "status": "resolved",
+      "created_at": "2026-10-22T09:59:16.115Z",
+      "updated_at": "2026-10-26T06:40:05.560Z",
+      "monitoring_at": null,
+      "resolved_at": "2026-10-26T06:40:05.537Z",
+      "impact": "major",
+      "shortlink": "https://stspg.io/hlyvcns69tkx",
+      "started_at": "2026-10-22T09:59:16.104Z",
+      "page_id": "gyr0j156lg0v",
+      "incident_updates": [
+        {
+          "id": "pt3ptn5x0j5t",
+          "status": "resolved",
+          "body": "Normal service has resumed for XOF payments made through InTouch. We will continue to monitor the service to ensure payments keep processing as expected.\n\nWe apologize for the disruption and appreciate your patience and understanding.",
+          "created_at": "2026-10-26T06:40:05.537Z",
+          "display_at": "2026-10-26T06:40:05.537Z",
+          "affected_components": [
+            {
+              "code": "37lg0scdppv6",
+              "name": "Flutterwave Collections - Collections APIs",
+              "old_status": "operational",
+              "new_status": "operational"
+            },
+            {
+              "code": "pdg297tr6t9l",
+              "name": "Flutterwave Payouts - Payouts APIs",
+              "old_status": "partial_outage",
+              "new_status": "operational"
+            }
+          ]
+        },
+        {
+          "id": "3jv0mbptgfct",
+          "status": "investigating",
+          "body": "The issue is related to inTouch, and our team is actively coordinating with them to investigate and resolve the situation as quickly as possible.\n\nWe understand the inconvenience this may cause and sincerely apologize for the disruption. We will continue to monitor the situation closely and keep you informed as soon as further updates become available.\n\nThank you for your patience, understanding, and continued trust in our services.",
+          "created_at": "2026-10-22T12:42:04.007Z",
+          "display_at": "2026-10-22T12:42:04.007Z",
+          "affected_components": [
+            {
+              "code": "37lg0scdppv6",
+              "name": "Flutterwave Collections - Collections APIs",
+              "old_status": "partial_outage",
+              "new_status": "partial_outage"
+            },
+            {
+              "code": "pdg297tr6t9l",
+              "name": "Flutterwave Payouts - Payouts APIs",
+              "old_status": "partial_outage",
+              "new_status": "operational"
+            }
+          ]
+        },
+        {
+          "id": "6gd7p1dm1vzc",
+          "status": "identified",
+          "body": "Dear Valued Merchant,\n\nSome XOF payments made through InTouch may currently fail due to a service disruption. Our team is investigating the issue and we will share further updates as more information becomes available.\n\nWe apologize for the disruption and appreciate your patience and understanding.",
+          "created_at": "2026-10-22T09:59:16.356Z",
+          "display_at": "2026-10-22T09:59:16.356Z",
+          "affected_components": [
+            {
+              "code": "37lg0scdppv6",
+              "name": "Flutterwave Collections - Collections APIs",
+              "old_status": "partial_outage",
+              "new_status": "partial_outage"
+            },
+            {
+              "code": "pdg297tr6t9l",
+              "name": "Flutterwave Payouts - Payouts APIs",
+              "old_status": "operational",
+              "new_status": "partial_outage"
+            }
+          ]
+        }
+      ],
+      "components": [
+        {
+          "id": "pdg297tr6t9l",
+          "name": "Payouts APIs",
+          "status": "partial_outage"
+        },
+        {
+          "id": "37lg0scdppv6",
+          "name": "Collections APIs",
+          "status": "operational"
+        }
+      ],
+      "reminder_intervals": null
+    },
+    {
+      "id": "56z7nwvdqwsg",
+      "name": "Service Restored: Mobile Money Payments",
+      "status": "resolved",
+      "created_at": "2026-10-13T10:36:10.093Z",
+      "updated_at": "2026-10-13T14:28:15.197Z",
+      "monitoring_at": null,
+      "resolved_at": "2026-10-13T14:28:15.163Z",
+      "impact": "major",
+      "shortlink": "https://stspg.io/68lnl64lqgqv",
+      "started_at": "2026-10-13T10:36:10.076Z",
+      "page_id": "gyr0j156lg0v",
+      "incident_updates": [
+        {
+          "id": "j7clpcl4zccg",
+          "status": "resolved",
+          "body": "Mobile money and USSD payments have returned to normal following the earlier disruption. Payments are processing as expected, and we continue to monitor the service closely.\n\nWe apologize for the disruption and appreciate your patience and understanding.\n\nAffected Services: \nAffected Markets: Global",
+          "created_at": "2026-10-13T14:28:15.163Z",
+          "display_at": "2026-10-13T14:28:15.163Z",
+          "affected_components": [
+            {
+              "code": "37lg0scdppv6",
+              "name": "Flutterwave Collections - Collections APIs",
+              "old_status": "operational",
+              "new_status": "operational"
+            },
+            {
+              "code": "pdg297tr6t9l",
+              "name": "Flutterwave Payouts - Payouts APIs",
+              "old_status": "operational",
+              "new_status": "operational"
+            }
+          ]
+        },
+        {
+          "id": "vt1cmb734gql",
+          "status": "identified",
+          "body": "Dear Valued Merchant,\n\nYou may be unable to complete some payments made through mobile money and USSD across multiple markets, including Senegal, Cote d&#39;Ivoire, Burkina Faso and Cameroon. We are working to restore normal service while we establish the full scope of the issue.\n\nWe will share further updates as more information becomes available. We apologize for the disruption and appreciate your understanding.\n\nAffected Services: \nAffected Markets: Global",
+          "created_at": "2026-10-13T10:36:10.181Z",
+          "display_at": "2026-10-13T10:36:10.181Z",
+          "affected_components": [
+            {
+              "code": "37lg0scdppv6",
+              "name": "Flutterwave Collections - Collections APIs",
+              "old_status": "partial_outage",
+              "new_status": "partial_outage"
+            },
+            {
+              "code": "pdg297tr6t9l",
+              "name": "Flutterwave Payouts - Payouts APIs",
+              "old_status": "partial_outage",
+              "new_status": "partial_outage"
+            }
+          ]
+        }
+      ],
+      "components": [
+        {
+          "id": "pdg297tr6t9l",
+          "name": "Payouts APIs",
+          "status": "partial_outage"
+        },
+        {
+          "id": "37lg0scdppv6",
+          "name": "Collections APIs",
+          "status": "operational"
+        }
+      ],
+      "reminder_intervals": null
+    },
+    {
+      "id": "y3q30r48cl8h",
+      "name": "Service Restored: Mobile Money Payments Affected",
+      "status": "resolved",
+      "created_at": "2026-10-18T18:35:13.016Z",
+      "updated_at": "2026-10-19T07:28:29.432Z",
+      "monitoring_at": null,
+      "resolved_at": "2026-10-19T07:28:29.412Z",
+      "impact": "major",
+      "shortlink": "https://stspg.io/975vf563pmls",
+      "started_at": "2026-10-18T18:35:13.006Z",
+      "page_id": "gyr0j156lg0v",
+      "incident_updates": [
+        {
+          "id": "4d8lmyls5kdq",
+          "status": "resolved",
+          "body": "Mobile money payments have returned to normal following the earlier disruption. Payments are processing as expected, and we continue to monitor the service closely.\n\nWe apologize for the disruption and appreciate your patience and understanding.",
+          "created_at": "2026-10-19T07:28:29.412Z",
+          "display_at": "2026-10-19T07:28:29.412Z",
+          "affected_components": [
+            {
+              "code": "37lg0scdppv6",
+              "name": "Flutterwave Collections - Collections APIs",
+              "old_status": "partial_outage",
+              "new_status": "operational"
+            }
+          ]
+        },
+        {
+          "id": "4m82n91jjbnm",
+          "status": "identified",
+          "body": "Dear Valued Merchant,\n\nSome mobile money payments may currently fail or not complete successfully. The affected services include mobile money payments in UGX, GHS and KES, along with certain other mobile money options. The issue is related to one of our service providers, and we are still confirming the full scope of impact.\n\nOur team is actively working to restore normal payment processing and will share further updates as more information becomes available.\n\nWe apologize for the disruption and appreciate your patience and understanding.",
+          "created_at": "2026-10-18T18:35:13.121Z",
+          "display_at": "2026-10-18T18:35:13.121Z",
+          "affected_components": [
+            {
+              "code": "37lg0scdppv6",
+              "name": "Flutterwave Collections - Collections APIs",
+              "old_status": "operational",
+              "new_status": "partial_outage"
+            }
+          ]
+        }
+      ],
+      "components": [
+        {
+          "id": "37lg0scdppv6",
+          "name": "Collections APIs",
+          "status": "operational"
+        }
+      ],
+      "reminder_intervals": null
+    },
+    {
+      "id": "lzb9sz2ckvd4",
+      "name": "[KES] Service Restored: Payments Unavailable",
+      "status": "resolved",
+      "created_at": "2026-10-19T09:10:01.893Z",
+      "updated_at": "2026-10-19T16:59:38.227Z",
+      "monitoring_at": null,
+      "resolved_at": "2026-10-19T16:59:38.204Z",
+      "impact": "major",
+      "shortlink": "https://stspg.io/0r8x4x7wjn5x",
+      "started_at": "2026-10-19T09:10:01.881Z",
+      "page_id": "gyr0j156lg0v",
+      "incident_updates": [
+        {
+          "id": "40fm9hd5m17l",
+          "status": "resolved",
+          "body": "Normal service has resumed for KES payments after the earlier disruption. Payments are processing as expected, and we will keep monitoring to ensure continued stability.\n\nWe apologize for the disruption and appreciate your patience and understanding.",
+          "created_at": "2026-10-19T16:59:38.204Z",
+          "display_at": "2026-10-19T16:59:38.204Z",
+          "affected_components": [
+            {
+              "code": "37lg0scdppv6",
+              "name": "Flutterwave Collections - Collections APIs",
+              "old_status": "operational",
+              "new_status": "operational"
+            },
+            {
+              "code": "pdg297tr6t9l",
+              "name": "Flutterwave Payouts - Payouts APIs",
+              "old_status": "operational",
+              "new_status": "operational"
+            }
+          ]
+        },
+        {
+          "id": "gbq5jb6txbrz",
+          "status": "identified",
+          "body": "Dear Valued Merchant,\n\nYou may be unable to receive some KES payments at the moment due to a service downtime affecting one of our providers. Our team is working to resolve the issue, and we will share further updates as more information becomes available.\n\nWe apologize for the disruption and appreciate your understanding.\n\nAffected Services: \nAffected Markets: Kenya",
+          "created_at": "2026-10-19T09:10:02.039Z",
+          "display_at": "2026-10-19T09:10:02.039Z",
+          "affected_components": [
+            {
+              "code": "37lg0scdppv6",
+              "name": "Flutterwave Collections - Collections APIs",
+              "old_status": "operational",
+              "new_status": "partial_outage"
+            },
+            {
+              "code": "pdg297tr6t9l",
+              "name": "Flutterwave Payouts - Payouts APIs",
+              "old_status": "major_outage",
+              "new_status": "partial_outage"
+            }
+          ]
+        }
+      ],
+      "components": [
+        {
+          "id": "pdg297tr6t9l",
+          "name": "Payouts APIs",
+          "status": "partial_outage"
+        },
+        {
+          "id": "37lg0scdppv6",
+          "name": "Collections APIs",
+          "status": "operational"
+        }
+      ],
+      "reminder_intervals": null
+    },
+    {
+      "id": "ksmxk17qfcwy",
+      "name": "[NGN] Service Restored: Temporary Interruption in Card Payment Processing",
+      "status": "resolved",
+      "created_at": "2026-10-31T12:05:54.295Z",
+      "updated_at": "2026-10-31T12:44:31.205Z",
+      "monitoring_at": null,
+      "resolved_at": "2026-10-31T12:44:31.183Z",
+      "impact": "major",
+      "shortlink": "https://stspg.io/jlntyvvsjy9b",
+      "started_at": "2026-10-31T12:05:54.286Z",
+      "page_id": "gyr0j156lg0v",
+      "incident_updates": [
+        {
+          "id": "28shl0thgnrx",
+          "status": "resolved",
+          "body": "We are pleased to confirm that the earlier disruption to card payments has been resolved. Card transactions are now being processed normally.\n\nWe are continuing to monitor closely to make sure services remain stable.\n\nThank you for bearing with us, and we apologize for any inconvenience caused to you and your customers.",
+          "created_at": "2026-10-31T12:44:31.183Z",
+          "display_at": "2026-10-31T12:44:31.183Z",
+          "affected_components": [
+            {
+              "code": "37lg0scdppv6",
+              "name": "Flutterwave Collections - Collections APIs",
+              "old_status": "partial_outage",
+              "new_status": "operational"
+            }
+          ]
+        },
+        {
+          "id": "bmwqg5v7t1z1",
+          "status": "identified",
+          "body": "Dear Valued Merchant,\n\nWe are currently experiencing a service disruption affecting card payments. Some of your customers may be unable to complete card payments at checkout, or may see payments fail or take longer than expected.\n\nOur team is working with the relevant provider to restore normal card processing as quickly as possible. We will share further updates as more information becomes available.\n\nWe sincerely apologize for the inconvenience and thank you for your patience and understanding.",
+          "created_at": "2026-10-31T12:05:54.348Z",
+          "display_at": "2026-10-31T12:05:54.348Z",
+          "affected_components": [
+            {
+              "code": "37lg0scdppv6",
+              "name": "Flutterwave Collections - Collections APIs",
+              "old_status": "partial_outage",
+              "new_status": "partial_outage"
+            }
+          ]
+        }
+      ],
+      "components": [
+        {
+          "id": "37lg0scdppv6",
+          "name": "Collections APIs",
+          "status": "operational"
+        }
+      ],
+      "reminder_intervals": null
+    }
+  ]
+}

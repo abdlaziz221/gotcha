@@ -1,0 +1,26 @@
+# Fiche de test PUBLIÉE, utilisée par les tests de contrat. Ne pas modifier sans adapter les tests.
+service:
+  slug: demo-pay
+  name: Demo Pay
+  kind: payment
+  operator: Demo
+country: SN
+title: Demo Pay Sénégal
+summary: Fiche de test publiée pour vérifier le comportement des stockages.
+api_version: v1
+publication: published
+last_confirmed_on: 2026-10-01
+prerequisites:
+  - Un compte de test.
+differences:
+  - topic: Devise
+    sandbox: EUR
+    production: XOF
+error_codes:
+  - code: E42
+    meaning: Jeton expiré
+    action: Renouveler le jeton
+sources:
+  - title: Source de test
+    url: https://example.com/demo
+    accessed_on: 2026-10-01

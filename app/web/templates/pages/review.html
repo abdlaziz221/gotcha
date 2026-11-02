@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ page.meta.title }}</h1>
+<p>Connecté en tant que <strong>{{ page.reviewer }}</strong>. Vérifiez la source, le format et l'absence de données personnelles avant d'approuver.</p>
+
+{% for c in page.pending %}
+<article class="card contribution">
+  <header class="card__header">
+    <h2 class="card__title">{{ c.title }}</h2>
+    <span class="tag">{{ c.kind_label }}</span>
+  </header>
+  <p class="card__meta">
+    <a href="{{ c.fiche_url }}">{{ c.fiche_title }}</a> · par {{ c.pseudo }} · le {{ c.created_at | datetime_fr }}
+    {% if c.api_version %} · API {{ c.api_version }}{% endif %}
+  </p>
+  {{ c.body_html }}
+  {% if c.source_url %}<p>Source : <a href="{{ c.source_url }}" rel="noopener noreferrer nofollow">{{ c.source_url }}</a></p>{% endif %}
+  <form class="form form--inline" method="post" action="/relecture/{{ c.id }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label for="note-{{ c.id }}">Note (facultatif)</label>
+    <input id="note-{{ c.id }}" name="note" type="text" maxlength="500">
+    <button type="submit" name="action" value="approve" class="button">Approuver</button>
+    <button type="submit" name="action" value="reject" class="button button--secondary">Refuser</button>
+  </form>
+</article>
+{% else %}
+<p class="empty">Aucune contribution en attente.</p>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,31 @@
+{
+  "description": "DONNÉES FICTIVES pour le développement de l'écran de relecture. E-mails sur le domaine réservé example.com.",
+  "contributions": [
+    {
+      "id": "fictif0000000000000000000000001",
+      "kind": "gotcha",
+      "fiche_slug": "mtn-momo",
+      "title": "[FICTIF] Le callback n'arrive pas si l'URL n'est pas en HTTPS",
+      "body_md": "Données de démonstration.\n\n**Symptôme** : aucun callback reçu.\n\n**Solution** : exposer une URL `https://`.",
+      "source_url": "https://example.com/fil-de-forum-fictif",
+      "api_version": "v1_0",
+      "pseudo": "dev_demo",
+      "email": "dev_demo@example.com",
+      "status": "pending",
+      "created_at": "2026-11-01T10:00:00Z"
+    },
+    {
+      "id": "fictif0000000000000000000000002",
+      "kind": "correction",
+      "fiche_slug": "wave-sn",
+      "title": "[FICTIF] La procédure d'ouverture du compte a changé",
+      "body_md": "Données de démonstration : une étape de la fiche Wave serait dépassée.",
+      "source_url": null,
+      "api_version": null,
+      "pseudo": "etudiant_demo",
+      "email": "etudiant_demo@example.com",
+      "status": "pending",
+      "created_at": "2026-11-01T15:30:00Z"
+    }
+  ]
+}

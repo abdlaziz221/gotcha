@@ -1,0 +1,32 @@
+[project]
+name = "gotcha"
+version = "0.1.0"
+description = "Les pièges du paiement et du déploiement en Afrique que personne ne documente."
+readme = "README.md"
+requires-python = ">=3.11"
+# Dépendances : requirements.txt (production) et requirements-dev.txt (outils).
+# Licences autorisées uniquement : MIT, BSD, Apache, ISC, PSF (scripts/check_licenses.py).
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "ASYNC", "RUF"]
+# RUF001 à RUF003 : les apostrophes et guillemets français sont voulus.
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106"]
+"scripts/**" = ["T201"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q --strict-markers"
+markers = ["postgres: tests qui demandent une base PostgreSQL (GOTCHA_TEST_DATABASE_URL)"]
+filterwarnings = ["ignore::DeprecationWarning:asyncpg.*"]

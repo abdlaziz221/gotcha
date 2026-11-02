@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% from "components/forms.html" import search_form %}
+
+{% block content %}
+<section class="message">
+  <p class="message__code">Erreur {{ page.status_code }}</p>
+  <h1>{{ page.meta.title }}</h1>
+  <p>{{ page.message }}</p>
+  {% if page.status_code == 404 %}{{ search_form() }}{% endif %}
+  <p><a href="/">Retour à l'accueil</a></p>
+</section>
+{% endblock %}

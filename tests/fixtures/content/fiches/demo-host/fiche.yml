@@ -1,0 +1,11 @@
+# Fiche de test en BROUILLON, valable dans tous les pays (country: null).
+service:
+  slug: demo-host
+  name: Demo Host
+  kind: hosting
+  operator: Demo
+country: null
+title: Demo Host
+summary: Fiche d'hébergement en brouillon.
+publication: draft
+last_confirmed_on: 2026-10-01
