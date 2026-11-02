@@ -58,7 +58,13 @@ class FicheStore(Protocol):
         ...
 
     async def upsert_fiche(self, fiche: Fiche) -> None:
-        """Crée ou remplace une fiche et ses pièges (utilisé par scripts/seed.py)."""
+        """Crée ou remplace une fiche et ses pièges (utilisé par scripts/seed.py).
+
+        Les pièges absents de la nouvelle version sont supprimés, l'ordre des pièges
+        est conservé. Les compteurs de confirmation déjà enregistrés sont gardés
+        (les fichiers de content/ ne les connaissent pas), et last_confirmed_on garde
+        la date la plus récente.
+        """
         ...
 
     async def upsert_glossary(self, terms: list[GlossaryTerm]) -> None: ...

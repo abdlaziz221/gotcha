@@ -254,3 +254,43 @@ async def test_confirmation_updates_fiche_unless_negative(store: Store) -> None:
     assert fiche is not None
     assert fiche.confirmations == 1
     assert fiche.last_confirmed_on.isoformat() == "2026-11-02"
+
+
+# --- Rechargement du contenu (scripts/seed.py) ---------------------------------
+
+
+async def test_gotchas_keep_their_order(store: Store) -> None:
+    fiche = await store.get_fiche("demo-pay-sn", include_drafts=True)
+    assert fiche is not None
+    assert [g.id for g in fiche.gotchas] == ["demo-pay-sn.brouillon", "demo-pay-sn.jeton-expire"]
+
+
+async def test_reseeding_keeps_confirmations(store: Store) -> None:
+    day = datetime(2026, 11, 2, 9, 0, tzinfo=UTC)
+    await store.add_confirmation(
+        Confirmation(target_kind=TargetKind.FICHE, target_id="demo-pay-sn", created_at=day)
+    )
+    await store.add_confirmation(
+        Confirmation(
+            target_kind=TargetKind.GOTCHA, target_id="demo-pay-sn.jeton-expire", created_at=day
+        )
+    )
+    reloaded = next(f for f in load_fiches(TEST_CONTENT_DIR) if f.slug == "demo-pay-sn")
+    await store.upsert_fiche(reloaded)
+
+    fiche = await store.get_fiche("demo-pay-sn", include_drafts=True)
+    assert fiche is not None
+    assert fiche.confirmations == 1
+    assert fiche.last_confirmed_on.isoformat() == "2026-11-02"
+    gotcha = fiche.find_gotcha("demo-pay-sn.jeton-expire")
+    assert gotcha is not None
+    assert gotcha.confirmations == 1
+
+
+async def test_reseeding_removes_gotchas_deleted_from_content(store: Store) -> None:
+    fiche = await store.get_fiche("demo-pay-sn", include_drafts=True)
+    assert fiche is not None
+    await store.upsert_fiche(fiche.model_copy(update={"gotchas": fiche.gotchas[1:]}))
+    updated = await store.get_fiche("demo-pay-sn", include_drafts=True)
+    assert updated is not None
+    assert [g.id for g in updated.gotchas] == ["demo-pay-sn.jeton-expire"]
