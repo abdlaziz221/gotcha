@@ -35,19 +35,24 @@ T0 = datetime(2026, 11, 1, 8, 0, tzinfo=UTC)
 
 
 async def _postgres_store() -> Store:
+    import asyncpg
+
     from app.stores.postgres.migrate import apply_migrations
     from app.stores.postgres.store import PostgresStore
 
     url = os.environ.get("GOTCHA_TEST_DATABASE_URL")
     if not url:
         pytest.skip("GOTCHA_TEST_DATABASE_URL non défini")
-    store = await PostgresStore.connect(url)
-    async with store._pool.acquire() as conn:  # accès interne, réservé aux tests
+    conn = await asyncpg.connect(url)
+    try:
         await apply_migrations(conn, ROOT_DIR / "migrations")
         await conn.execute(
             "TRUNCATE fiches, gotchas, fiche_revisions, glossary_terms, confirmations,"
             " contributions, incidents, ingest_runs CASCADE"
         )
+    finally:
+        await conn.close()
+    store = await PostgresStore.connect(url)
     for fiche in load_fiches(TEST_CONTENT_DIR):
         await store.upsert_fiche(fiche)
     await store.upsert_glossary(load_glossary(TEST_CONTENT_DIR))
@@ -213,7 +218,8 @@ async def test_contributions_queue(store: Store) -> None:
         "c2"
     ]
     fetched = await store.get_contribution("c1")
-    assert fetched is not None and fetched.status is ContributionStatus.APPROVED
+    assert fetched is not None
+    assert fetched.status is ContributionStatus.APPROVED
     assert fetched.email == "dev@example.com"
     assert await store.get_contribution("absente") is None
 

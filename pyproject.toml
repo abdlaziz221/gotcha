@@ -13,16 +13,73 @@ target-version = "py311"
 extend-exclude = [".venv"]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "B", "UP", "S", "ASYNC", "RUF"]
-# RUF001 à RUF003 : les apostrophes et guillemets français sont voulus.
-ignore = ["RUF001", "RUF002", "RUF003"]
+# Règles appliquées par la CI (voir .github/workflows/README.md).
+select = [
+    "E", "W", "F",  # erreurs de style et de logique de base
+    "I",            # ordre des imports
+    "B",            # bogues probables
+    "UP",           # syntaxe Python moderne
+    "S",            # sécurité
+    "ASYNC",        # erreurs en code asynchrone
+    "RUF",          # règles propres à ruff
+    "ANN",          # annotations de types partout
+    "ARG",          # arguments inutilisés
+    "C4",           # compréhensions
+    "DTZ",          # dates toujours avec fuseau horaire
+    "FAST",         # bonnes pratiques FastAPI
+    "N",            # nommage
+    "PERF",         # performance
+    "PIE",          # instructions inutiles
+    "PT",           # style des tests pytest
+    "RET",          # retours de fonction
+    "SIM",          # simplifications
+    "T20",          # pas de print dans l'application
+    "TID",          # imports interdits (licences)
+]  # fmt: skip
+ignore = [
+    "RUF001", "RUF002", "RUF003",  # apostrophes et guillemets français voulus
+    "ANN401",                      # Any toléré quand il est justifié
+]  # fmt: skip
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "S105", "S106"]
-"scripts/**" = ["T201"]
+"scripts/**" = ["T201", "S603"]  # scripts locaux : commandes fixes
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"requests".msg = "Interdit (licence) : requests dépend de certifi, sous MPL. Utiliser urllib."
+"httpx".msg = "Interdit (licence) : httpx dépend de certifi, sous MPL. Utiliser urllib."
+"certifi".msg = "Interdit (licence MPL)."
+"psycopg".msg = "Interdit (licence LGPL) : utiliser asyncpg."
+"psycopg2".msg = "Interdit (licence LGPL) : utiliser asyncpg."
+"redis".msg = "Interdit (licence non permissive)."
 
 [tool.ruff.format]
 quote-style = "double"
+
+[tool.pyright]
+include = ["app", "tests", "scripts"]
+pythonVersion = "3.11"
+typeCheckingMode = "standard"
+reportMissingParameterType = "error"
+reportPrivateUsage = "error"
+reportUnnecessaryCast = "error"
+reportUnnecessaryComparison = "error"
+reportUnnecessaryIsInstance = "error"
+reportUnnecessaryTypeIgnoreComment = "error"
+
+[tool.coverage.run]
+source = ["app"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = true
+exclude_also = [
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

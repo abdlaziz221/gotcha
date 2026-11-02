@@ -35,4 +35,5 @@ def test_glossary_terms_become_links() -> None:
 
 def test_unknown_glossary_term_stays_plain_text() -> None:
     html = render_markdown("Un [[terme-inconnu|mot]] ici.", GLOSSARY)
-    assert "mot" in html and "<a" not in html
+    assert "mot" in html
+    assert "<a" not in html

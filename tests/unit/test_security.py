@@ -9,27 +9,37 @@ from app.security.auth import hash_password, parse_reviewers, verify_password
 from app.security.ratelimit import RateLimiter, client_ip
 from app.security.secrets import scan_text
 
-# Clés FICTIVES, au bon format, construites pour les tests.
+# Clés FICTIVES, au bon format. Elles sont coupées en morceaux pour que le texte de ce
+# fichier ne déclenche pas lui-même scripts/scan_secrets.py.
+FAKE = "Zx8Yw7Vu6Ts5Rq4P"
 SECRETS = {
-    "clé privée": "-----BEGIN RSA PRIVATE KEY-----",
+    "clé privée": "-----BEGIN RSA " + "PRIVATE KEY-----",
     "jeton JWT": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0."
     + "dBjftJeZ4CVPmB92K27uhbUJU1p1r",
-    "clé AWS": "AKIAABCDEFGHIJKLMNOP",
+    "clé AWS": "AKIA" + "ABCDEFGHIJKLMNOP",
     "jeton GitHub": "ghp_" + "a1B2" * 9,
     "clé secrète Flutterwave": "FLWSECK_TEST-" + "abc123" * 5 + "-X",
     "clé secrète Paystack ou Stripe": "sk_live_" + "Ab12" * 6,
     "clé d'API Wave": "wave_sn_prod_" + "Xy9_" * 6,
     "clé d'abonnement MTN MoMo": "Ocp-Apim-Subscription-Key: " + "0123456789abcdef" * 2,
     "en-tête Authorization": "Authorization: Bearer " + "abcDEF123456" * 3,
-    "secret dans une affectation": 'consumer_secret = "' + "Zx8Yw7Vu6Ts5Rq4P" + '"',
+    "secret dans une affectation": 'consumer_secret = "' + FAKE + '"',
+    "secret dans un fichier .env": "\nCONSUMER_SECRET=" + FAKE + "\n",
+    "secret dans un fichier YAML": "\nconsumer_secret: " + FAKE + "\n",
 }
 
-PLACEHOLDERS = [
+NOT_SECRETS = [
     "Authorization: Bearer <VOTRE_JETON>",
     "api_key = xxxxxxxxxxxxxxxxxxxx",
     "consumer_secret: {{ secret }}",
+    "CONSUMER_SECRET=<VOTRE_SECRET>",
     "Envoyez l'en-tête X-Target-Environment: sandbox",
     "Le jeton expire au bout de 3600 secondes.",
+    # Du code qui manipule un secret sans le contenir :
+    "password = base64.b64decode(credentials).decode()",
+    "password = settings.reviewer_password",
+    "api_key: str = Field(min_length=12)",
+    "DATABASE_URL=postgresql://utilisateur:motdepasse@hote:5432/gotcha",
 ]
 
 
@@ -39,8 +49,8 @@ def test_each_rule_detects_its_secret(kind: str, text: str) -> None:
     assert kind in {f.kind for f in findings}
 
 
-@pytest.mark.parametrize("text", PLACEHOLDERS)
-def test_placeholders_and_normal_text_are_not_secrets(text: str) -> None:
+@pytest.mark.parametrize("text", NOT_SECRETS)
+def test_placeholders_code_and_normal_text_are_not_secrets(text: str) -> None:
     assert scan_text(text) == []
 
 

@@ -4,6 +4,8 @@
 
 | Script | Usage | Quand |
 | --- | --- | --- |
+| `check.py` | `python scripts/check.py` (`--fix`, `--quick`) | **Avant chaque PR** : lance exactement les contrôles de la CI |
+| `scan_secrets.py` | `python scripts/scan_secrets.py` | En CI, dans pre-commit ; cherche des clés dans les fichiers suivis par git |
 | `check_licenses.py` | `python scripts/check_licenses.py` (`--list` pour tout afficher) | Après chaque ajout de dépendance ; en CI ; avant la soumission |
 | `migrate.py` | `DATABASE_URL=… python scripts/migrate.py` | Avant le premier démarrage en production, puis à chaque nouvelle migration |
 | `seed.py` | `DATABASE_URL=… python scripts/seed.py` | Après `migrate.py`, puis à chaque mise à jour de `content/` (demande A6) |
@@ -14,6 +16,10 @@
 Le script lit les métadonnées de **tous les paquets installés** et refuse toute licence à réciprocité (GPL, LGPL, AGPL, MPL, EPL…) ou inconnue. En CI, il tourne dans un environnement neuf qui ne contient que `requirements.txt` : exactement ce qui est livré.
 
 Un paquet dont les métadonnées sont ambiguës peut être vérifié à la main, puis ajouté au dictionnaire `OVERRIDES` avec la justification.
+
+## Faux positif du scanner de secrets
+
+Pour une valeur de test volontaire, ajouter `# secret-scan: ignore` en fin de ligne. Mieux encore : couper la fausse clé en morceaux (`"sk_live_" + "Ab12" * 6`), comme dans `tests/unit/test_security.py`.
 
 ## Règles
 

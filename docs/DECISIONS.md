@@ -14,8 +14,11 @@ Une ligne par décision qui engage l'équipe : la date, le choix, la raison. On 
 | D8 | 2 nov. | **Serveur MCP sans état, réponses JSON**, monté dans la même application sur `/mcp` | Compatible avec le Serverless, aucune connexion longue |
 | D9 | 2 nov. | **Une contribution approuvée est intégrée au contenu par une PR** sur `content/` | Garde une trace et une relecture ; à automatiser plus tard si le temps le permet (A7) |
 | D10 | 2 nov. | **Les brouillons ne sont jamais affichés en production** ; un piège publié exige `verified_by` | Exigence d'exactitude : rien n'est publié sans relecture humaine |
-| D11 | 2 nov. | **Dépôt privé jusqu'à la soumission**, code sous droits réservés en attendant la réponse sur les droits du lauréat (A1) | Un concurrent direct publie déjà des recettes Mobile Money |
+| D11 | 2 nov. | ~~Dépôt privé jusqu'à la soumission~~ (remplacée par D13) | Un concurrent direct publie déjà des recettes Mobile Money |
 | D12 | 2 nov. | **Contributions publiées sous licence CC BY 4.0**, données personnelles limitées au pseudo et à l'e-mail | Réutilisation libre en citant la source ; loi sénégalaise 2008-12 |
+| D13 | 2 nov. | **Dépôt public**, code toujours sous droits réservés (aucun fichier de licence) | Sur un compte gratuit, GitHub Actions ne démarrait plus sur les dépôts privés ; en public, la CI est gratuite et illimitée, et les règles de `main` deviennent disponibles. Le plagiat reste une fraude au sens du règlement (article 10) |
+| D14 | 2 nov. | **Outils de qualité** : ruff (22 familles de règles), pyright pour les types, pytest avec 85 % de couverture minimale, tests d'architecture, scanner de secrets maison, pip-audit, pre-commit | Tous sous licence permissive. mypy écarté : il dépend de pathspec (MPL). pip-audit dépend de certifi : il ne tourne qu'en CI, isolé, et n'est jamais livré |
+| D15 | 2 nov. | **Règles imposées sur `main`** : PR obligatoire, une approbation, CI verte sur une branche à jour, squash uniquement, pas de push forcé | `main` est déployée telle quelle sur Datacloud : elle doit toujours marcher |
 
 ## À trancher
 

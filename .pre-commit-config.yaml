@@ -1,0 +1,54 @@
+# Contrôles automatiques avant chaque commit, et tests avant chaque push.
+# Installation (une fois) :
+#   pip install -r requirements-dev.txt
+#   python -m pre_commit install --hook-type pre-commit --hook-type pre-push
+# Tout vérifier à la main : python -m pre_commit run --all-files
+#
+# Les hooks sont lancés avec « python -m » plutôt qu'avec leurs fichiers .exe :
+# Windows (Smart App Control) bloque parfois ces lanceurs non signés.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        entry: python -m pre_commit_hooks.trailing_whitespace_fixer
+      - id: end-of-file-fixer
+        entry: python -m pre_commit_hooks.end_of_file_fixer
+      - id: mixed-line-ending
+        entry: python -m pre_commit_hooks.mixed_line_ending
+        args: ["--fix=lf"]
+      - id: check-yaml
+        entry: python -m pre_commit_hooks.check_yaml
+      - id: check-toml
+        entry: python -m pre_commit_hooks.check_toml
+      - id: check-json
+        entry: python -m pre_commit_hooks.check_json
+      - id: check-merge-conflict
+        entry: python -m pre_commit_hooks.check_merge_conflict
+      - id: check-added-large-files
+        entry: python -m pre_commit_hooks.check_added_large_files
+        args: ["--maxkb=300"]
+      - id: no-commit-to-branch
+        entry: python -m pre_commit_hooks.no_commit_to_branch
+        args: ["--branch", "main"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.3
+    hooks:
+      - id: ruff-check
+        args: ["--fix"]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: secrets
+        name: Secrets (règles de app/security/secrets.py)
+        entry: python scripts/scan_secrets.py
+        language: system
+        pass_filenames: false
+      - id: pytest
+        name: Tests (avant chaque push)
+        entry: python -m pytest -q -x
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
