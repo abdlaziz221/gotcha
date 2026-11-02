@@ -29,12 +29,14 @@
         "strict_required_status_checks_policy": true,
         "do_not_enforce_on_create": false,
         "required_status_checks": [
-          { "context": "Règles de PR", "integration_id": 15368 },
-          { "context": "Lint, types et secrets", "integration_id": 15368 },
-          { "context": "Tests (Python 3.11)", "integration_id": 15368 },
-          { "context": "Tests (Python 3.12)", "integration_id": 15368 },
-          { "context": "Tests (Python 3.13)", "integration_id": 15368 },
-          { "context": "Licences (dépendances livrées)", "integration_id": 15368 }
+          { "context": "ci/circleci: pr-rules" },
+          { "context": "ci/circleci: lint" },
+          { "context": "ci/circleci: tests-py3.11" },
+          { "context": "ci/circleci: tests-py3.12" },
+          { "context": "ci/circleci: tests-py3.13" },
+          { "context": "ci/circleci: licences" },
+          { "context": "ci/circleci: docker" },
+          { "context": "ci/circleci: audit" }
         ]
       }
     }

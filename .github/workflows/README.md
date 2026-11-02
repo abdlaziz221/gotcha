@@ -36,7 +36,7 @@ Imposées par GitHub (ensemble de règles « Protection de main ») :
 - **pas de push direct** : tout passe par une PR ;
 - **une approbation** d'un autre membre, et toutes les conversations résolues ;
 - une nouvelle modification **annule** l'approbation précédente ;
-- les contrôles obligatoires de `ci.yml` doivent être **verts**, sur une branche **à jour** avec `main` ;
+- les **huit contrôles CircleCI** (`ci/circleci: pr-rules`, `lint`, `tests-py3.11`, `tests-py3.12`, `tests-py3.13`, `licences`, `docker`, `audit`) doivent être **verts**, sur une branche **à jour** avec `main` ;
 - fusion en **squash** uniquement, historique linéaire ;
 - pas de suppression ni de réécriture (`force push`) de `main`.
 
@@ -77,6 +77,6 @@ python -m pre_commit install --hook-type pre-commit --hook-type pre-push
 ## Modifier la CI
 
 - Une PR qui touche à `.github/` est relue par Abdoul Aziz et Khalifa (CODEOWNERS).
-- Renommer un contrôle obligatoire (`name:` d'un job) casse la règle de `main` : mettre à jour l'ensemble de règles dans **Settings → Rules** dans la même foulée.
+- Renommer ou ajouter un job (dans `.circleci/config.yml` aujourd'hui) change le nom d'un contrôle obligatoire : mettre à jour `.github/rulesets/protection-main.json` et réappliquer la règle dans la même PR.
 - Les actions utilisées sont uniquement les actions officielles `actions/*`, en version majeure (`@v7`).
 - Toute modification se reporte aussi dans `.circleci/config.yml`, la CI active.

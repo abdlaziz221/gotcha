@@ -24,13 +24,11 @@ GitHub Actions ne peut pas tourner tant que le compte GitHub propriétaire du d�
 
 Ensuite, chaque push sur une branche qui a une PR ouverte lance la CI, et les résultats apparaissent sur la PR.
 
-## Rendre les contrôles obligatoires sur `main`
+## Contrôles obligatoires sur `main`
 
-Une fois la première exécution réussie sur une PR :
+Les huit jobs publient sur chaque PR un statut `ci/circleci: <job>` (`ci/circleci: lint`, `ci/circleci: tests-py3.12`…). **Tous les huit sont obligatoires** pour fusionner dans `main` : ils sont listés dans [`../.github/rulesets/protection-main.json`](../.github/rulesets/protection-main.json), appliqué sur GitHub (commande dans `.github/workflows/README.md`).
 
-1. relever les noms exacts des contrôles CircleCI affichés sur la PR ;
-2. les reporter dans [`../.github/rulesets/protection-main.json`](../.github/rulesets/protection-main.json) (bloc `required_status_checks`, à la place des noms GitHub Actions) ;
-3. appliquer la règle avec la commande décrite dans `.github/workflows/README.md`.
+Renommer ou ajouter un job demande donc de mettre à jour ce fichier **et** de réappliquer la règle dans la même PR, sinon plus rien ne peut être fusionné.
 
 ## Consommation
 
