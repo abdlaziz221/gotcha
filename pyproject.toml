@@ -13,7 +13,7 @@ target-version = "py311"
 extend-exclude = [".venv"]
 
 [tool.ruff.lint]
-# Règles appliquées par la CI (voir .github/workflows/README.md).
+# Règles appliquées par la CI (voir .circleci/README.md).
 select = [
     "E", "W", "F",  # erreurs de style et de logique de base
     "I",            # ordre des imports

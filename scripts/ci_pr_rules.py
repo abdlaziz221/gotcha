@@ -1,8 +1,8 @@
 """Règles de PR vérifiées par la CI : titre (bloquant), taille et nom de branche (avertissements).
 
-GitHub Actions fournit le titre, la taille et la branche par variables d'environnement
-(PR_TITLE, PR_ADDITIONS, PR_DELETIONS, PR_BRANCH). CircleCI ne les connaît pas : le
-script lit alors la PR sur l'API publique de GitHub (CIRCLE_PULL_REQUEST).
+Sur CircleCI, le script lit la PR sur l'API publique de GitHub (CIRCLE_PULL_REQUEST).
+On peut aussi lui passer le titre, la taille et la branche par variables d'environnement
+(PR_TITLE, PR_ADDITIONS, PR_DELETIONS, PR_BRANCH) : c'est ce que font les tests.
 Usage local : PR_TITLE="feat(web): mode pas à pas" python scripts/ci_pr_rules.py
 """
 

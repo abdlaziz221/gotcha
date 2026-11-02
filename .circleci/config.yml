@@ -1,5 +1,5 @@
-# CI de Gotcha sur CircleCI (plan gratuit) : les mêmes contrôles que .github/workflows/,
-# qui ne peuvent pas tourner tant que le compte GitHub propriétaire est bloqué.
+# CI de Gotcha sur CircleCI (plan gratuit). Les huit jobs sont obligatoires pour
+# fusionner dans main (voir .github/rulesets/protection-main.json).
 # Détails : .circleci/README.md. En local, la même chose : python scripts/check.py
 version: 2.1
 

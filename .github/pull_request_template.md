@@ -8,7 +8,7 @@
 
 ## Vérifications
 
-- [ ] `python scripts/check.py` passe en local (coller le résumé ci-dessous tant que la CI GitHub est bloquée)
+- [ ] `python scripts/check.py` passe en local (coller le résumé ci-dessous si la CI ne s'affiche pas sur la PR)
 - [ ] Testé dans le navigateur, y compris sur mobile (si l'interface change)
 - [ ] Aucun bouton mort, aucune page « bientôt disponible »
 - [ ] Aucun secret, aucune clé, aucun fichier `.env`
