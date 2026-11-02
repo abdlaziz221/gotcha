@@ -1,7 +1,6 @@
 # Gotcha
 
-[![CI](https://github.com/abdlaziz221/gotcha/actions/workflows/ci.yml/badge.svg)](https://github.com/abdlaziz221/gotcha/actions/workflows/ci.yml)
-[![Livraison](https://github.com/abdlaziz221/gotcha/actions/workflows/livraison.yml/badge.svg)](https://github.com/abdlaziz221/gotcha/actions/workflows/livraison.yml)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/abdlaziz221/gotcha/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/abdlaziz221/gotcha/tree/main)
 
 > Les pièges du paiement et du déploiement en Afrique que personne ne documente.
 

@@ -57,7 +57,7 @@ Le **titre de la PR** suit le même format (la CI le vérifie) : c'est lui qui d
 
 1. Ouvrir la PR **tôt**, en brouillon si besoin, avec le modèle proposé.
 2. Une PR fait **moins de 400 lignes** modifiées (hors contenu et fichiers générés).
-3. La CI doit être verte (détail dans [.github/workflows/README.md](.github/workflows/README.md)) :
+3. La CI doit être verte. Elle tourne aujourd'hui sur **CircleCI** (détail dans [.circleci/README.md](.circleci/README.md)) :
    - **Règles de PR** : titre au bon format ;
    - **Lint, types et secrets** : ruff, pyright, aucune clé dans le dépôt ;
    - **Tests** sur Python 3.11, 3.12 et 3.13, avec au moins 85 % de couverture ;
@@ -76,7 +76,7 @@ Le **titre de la PR** suit le même format (la CI le vérifie) : c'est lui qui d
 
 Ces règles sont **imposées par GitHub** sur `main` : le bouton de fusion reste grisé tant qu'elles ne sont pas remplies. Seule la règle des trois relecteurs pour les contrats reste une convention d'équipe.
 
-**Tant que GitHub Actions est bloqué** (voir [.github/workflows/README.md](.github/workflows/README.md)), la CI ne tourne pas : l'auteur lance `python scripts/check.py` et colle le résumé dans la PR, et le relecteur n'approuve pas sans ce résumé tout vert.
+**Si la CI ne s'affiche pas sur une PR** (CircleCI pas encore branché, panne du service), l'auteur lance `python scripts/check.py` et colle le résumé dans la PR, et le relecteur n'approuve pas sans ce résumé tout vert.
 
 ## Changer un contrat
 

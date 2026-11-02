@@ -16,9 +16,10 @@ Une ligne par décision qui engage l'équipe : la date, le choix, la raison. On 
 | D10 | 2 nov. | **Les brouillons ne sont jamais affichés en production** ; un piège publié exige `verified_by` | Exigence d'exactitude : rien n'est publié sans relecture humaine |
 | D11 | 2 nov. | ~~Dépôt privé jusqu'à la soumission~~ (remplacée par D13) | Un concurrent direct publie déjà des recettes Mobile Money |
 | D12 | 2 nov. | **Contributions publiées sous licence CC BY 4.0**, données personnelles limitées au pseudo et à l'e-mail | Réutilisation libre en citant la source ; loi sénégalaise 2008-12 |
-| D13 | 2 nov. | **Dépôt public**, code toujours sous droits réservés (aucun fichier de licence) | Sur un compte gratuit, GitHub Actions ne démarrait plus sur les dépôts privés ; en public, la CI est gratuite et illimitée, et les règles de `main` deviennent disponibles. Le plagiat reste une fraude au sens du règlement (article 10) |
+| D13 | 2 nov. | **Dépôt public**, code toujours sous droits réservés (aucun fichier de licence) | Sur un compte gratuit, les règles de `main` ne sont disponibles que pour un dépôt public, et GitHub Actions y est gratuit et illimité (le blocage du compte, découvert ensuite, touche aussi le public : voir D16). Le plagiat reste une fraude au sens du règlement (article 10) |
 | D14 | 2 nov. | **Outils de qualité** : ruff (22 familles de règles), pyright pour les types, pytest avec 85 % de couverture minimale, tests d'architecture, scanner de secrets maison, pip-audit, pre-commit | Tous sous licence permissive. mypy écarté : il dépend de pathspec (MPL). pip-audit dépend de certifi : il ne tourne qu'en CI, isolé, et n'est jamais livré |
 | D15 | 2 nov. | **Règles imposées sur `main`** : PR obligatoire, une approbation, CI verte sur une branche à jour, squash uniquement, pas de push forcé | `main` est déployée telle quelle sur Datacloud : elle doit toujours marcher |
+| D16 | 2 nov. | **CI sur CircleCI (plan gratuit)** tant que GitHub Actions est bloqué ; workflows GitHub conservés, prêts pour le déblocage ; Dependabot retiré | Le compte propriétaire est verrouillé « pour un problème de facturation » sans aucun usage ni paiement : seul le support GitHub peut le lever. CircleCI tourne sur ses propres serveurs et publie ses résultats sur les PR. Même contrôles dans les deux configurations |
 
 ## À trancher
 

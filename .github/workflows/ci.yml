@@ -26,40 +26,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: "Titre au format « type(zone): description »"
+      - uses: actions/checkout@v7
+      - name: Titre (bloquant), taille et nom de branche (avertissements)
         env:
-          TITLE: ${{ github.event.pull_request.title }}
-        run: |
-          python3 - <<'PY'
-          import os, re, sys
-          title = os.environ["TITLE"]
-          types = "feat|fix|content|style|refactor|perf|test|docs|chore|ci|build|revert"
-          if re.fullmatch(rf"({types})(\([a-z0-9][a-z0-9-]*\))?!?: \S.{{2,88}}", title):
-              print(f"Titre conforme : {title}")
-          else:
-              print(f"::error title=Titre de PR::« {title} » ne suit pas le format "
-                    "type(zone): description, ex. feat(web): mode pas à pas (CONTRIBUTING.md).")
-              sys.exit(1)
-          PY
-
-      - name: Taille de la PR (avertissement au-delà de 400 lignes)
-        env:
-          ADDITIONS: ${{ github.event.pull_request.additions }}
-          DELETIONS: ${{ github.event.pull_request.deletions }}
-        run: |
-          total=$((ADDITIONS + DELETIONS))
-          echo "Lignes modifiées : $total"
-          if [ "$total" -gt 400 ]; then
-            echo "::warning title=PR volumineuse::$total lignes modifiées : découpez si possible (règle : moins de 400, hors contenu)."
-          fi
-
-      - name: Nom de branche « prénom/tâche-sujet » (avertissement)
-        env:
-          BRANCH: ${{ github.head_ref }}
-        run: |
-          if ! printf '%s' "$BRANCH" | grep -Eq '^((aziz|loum|khalifa)/[A-Za-z0-9]+-[a-z0-9-]+|dependabot/.+)$'; then
-            echo "::warning title=Nom de branche::« $BRANCH » ne suit pas prénom/tâche-sujet, ex. loum/L3-page-fiche."
-          fi
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_ADDITIONS: ${{ github.event.pull_request.additions }}
+          PR_DELETIONS: ${{ github.event.pull_request.deletions }}
+          PR_BRANCH: ${{ github.head_ref }}
+        run: python3 scripts/ci_pr_rules.py
 
   lint:
     name: Lint, types et secrets

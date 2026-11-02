@@ -4,12 +4,9 @@
 
 Dépôt public : GitHub Actions est **gratuit et illimité**. Toute PR vers `main` passe par ces contrôles ; une PR qui échoue ne peut pas être fusionnée.
 
-> **État au 2 novembre 2026 : la CI ne démarre pas.** GitHub refuse de lancer les jobs (« your account is locked due to a billing issue ») tant que la facturation du compte propriétaire du dépôt n'est pas réglée. En attendant :
+> **État au 2 novembre 2026 : la CI active est CircleCI** ([`../../.circleci/README.md`](../../.circleci/README.md)). GitHub refuse de lancer ces workflows (« your account is locked due to a billing issue ») tant que la facturation du compte propriétaire n'est pas réglée par le support GitHub : sur chaque PR, leurs contrôles apparaissent en échec **sans avoir tourné**. Ce ne sont pas des erreurs du code : seuls les contrôles CircleCI comptent. Dependabot, qui tourne lui aussi sur GitHub Actions, est retiré pour la même raison.
 >
-> - chacun lance `python scripts/check.py` avant d'ouvrir une PR et **colle le résumé dans la PR** ;
-> - la règle de `main` impose déjà la PR et l'approbation, mais **pas encore** les contrôles de la CI (sinon plus rien ne pourrait être fusionné).
->
-> Dès que la CI tourne : relancer les jobs de la dernière PR, vérifier qu'ils passent, puis appliquer la règle complète (section « Les règles de `main` »).
+> Pour masquer ces échecs, le propriétaire peut désactiver les deux workflows (onglet **Actions**, puis le workflow, puis **Disable workflow**). Le jour où le compte est débloqué, ou le dépôt transféré dans une organisation, les réactiver, relancer la CI d'une PR, vérifier qu'elle passe, puis appliquer la règle complète (section « Les règles de `main` »).
 
 ## Les workflows
 
@@ -31,10 +28,6 @@ Dépôt public : GitHub Actions est **gratuit et illimité**. Toute PR vers `mai
 | **Failles connues (pip-audit)** | Aucune dépendance de `requirements.txt` n'a de faille publiée |
 
 Ces contrôles ne sont pas obligatoires pour fusionner (ils ne tournent pas sur toutes les PR), mais un échec sur `main` se corrige **en priorité**.
-
-### `../dependabot.yml`
-
-Chaque lundi, une PR groupée pour les mises à jour mineures des dépendances Python ; chaque mois, une pour les actions GitHub. Elles passent la même CI que les autres.
 
 ## Les règles de `main`
 
@@ -85,4 +78,5 @@ python -m pre_commit install --hook-type pre-commit --hook-type pre-push
 
 - Une PR qui touche à `.github/` est relue par Abdoul Aziz et Khalifa (CODEOWNERS).
 - Renommer un contrôle obligatoire (`name:` d'un job) casse la règle de `main` : mettre à jour l'ensemble de règles dans **Settings → Rules** dans la même foulée.
-- Les actions utilisées sont uniquement les actions officielles `actions/*`, en version majeure (`@v7`) ; Dependabot les met à jour.
+- Les actions utilisées sont uniquement les actions officielles `actions/*`, en version majeure (`@v7`).
+- Toute modification se reporte aussi dans `.circleci/config.yml`, la CI active.
