@@ -1,20 +1,30 @@
-"""Lecture du dossier content/ : fiches, étapes, pièges et glossaire.
+"""Lecture (et écriture des brouillons) du dossier content/ : fiches, étapes, pièges, glossaire.
 
-Utilisé par le stockage mémoire et par scripts/seed.py (content/ vers PostgreSQL).
-Le format est décrit dans content/README.md. Toute erreur indique le fichier fautif.
+Utilisé par le stockage mémoire, par scripts/seed.py (content/ vers PostgreSQL) et par
+scripts/export_contributions.py (contributions approuvées vers content/). Le format est
+décrit dans content/README.md. Toute erreur indique le fichier fautif.
 """
 
 from __future__ import annotations
 
 import re
 import unicodedata
+from datetime import date
 from pathlib import Path
 from typing import Any
 
 import yaml
 from pydantic import ValidationError
 
-from app.domain.models import Fiche, GlossaryTerm, Gotcha, Step
+from app.domain.models import (
+    Contribution,
+    ContributionKind,
+    ContributionStatus,
+    Fiche,
+    GlossaryTerm,
+    Gotcha,
+    Step,
+)
 
 _FRONTMATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---\s*\n?(.*)\Z", re.DOTALL)
 _SECTION_FIELDS = {"symptome": "symptom_md", "cause": "cause_md", "solution": "fix_md"}
@@ -57,6 +67,98 @@ def load_glossary(content_dir: Path) -> list[GlossaryTerm]:
         return [GlossaryTerm(**item) for item in data.get("termes", [])]
     except (ValidationError, TypeError) as exc:
         raise ContentError(f"{path} : {exc}") from exc
+
+
+def export_contributions(contributions: list[Contribution], content_dir: Path) -> list[Path]:
+    """Écrit les contributions approuvées dans content/, en brouillons à relire (tâche A7).
+
+    Un piège devient content/fiches/<fiche>/pieges/contribution-<id>.md, chargé comme
+    brouillon ; une étape ou une correction devient une note dans content/a-integrer/,
+    à reporter à la main. Un fichier déjà présent n'est jamais écrasé. L'e-mail du
+    contributeur n'est jamais écrit. Renvoie les fichiers créés.
+    """
+    written = []
+    for contribution in contributions:
+        if contribution.status is not ContributionStatus.APPROVED:
+            continue
+        short_id = contribution.id[:8]
+        fiche_dir = content_dir / "fiches" / contribution.fiche_slug
+        if contribution.kind is ContributionKind.GOTCHA and fiche_dir.is_dir():
+            path = fiche_dir / "pieges" / f"contribution-{short_id}.md"
+            text = _gotcha_draft(contribution)
+        else:
+            path = content_dir / "a-integrer" / f"{contribution.fiche_slug}-{short_id}.md"
+            text = _integration_note(contribution)
+        if path.exists():
+            continue
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8", newline="\n")
+        written.append(path)
+    return written
+
+
+def _contribution_day(contribution: Contribution) -> date:
+    return (contribution.reviewed_at or contribution.created_at).date()
+
+
+def _demote_headings(markdown: str) -> str:
+    """Un titre « ## » dans le texte casserait le découpage Symptôme / Cause / Solution."""
+    return re.sub(r"(?m)^## ", "### ", markdown).strip()
+
+
+def _gotcha_draft(contribution: Contribution) -> str:
+    day = _contribution_day(contribution)
+    source: dict[str, Any] = {
+        "title": f"Contribution de {contribution.pseudo} sur Gotcha",
+        "author": contribution.pseudo,
+        "accessed_on": day,
+    }
+    if contribution.source_url:
+        source["url"] = str(contribution.source_url)
+    meta = {
+        "title": contribution.title,
+        "severity": "major",
+        "environments": ["sandbox", "production"],
+        "api_version": contribution.api_version,
+        "error_codes": [],
+        "publication": "draft",
+        "verified_by": None,
+        "last_confirmed_on": day,
+        "sources": [source],
+    }
+    header = yaml.safe_dump(meta, allow_unicode=True, sort_keys=False).strip()
+    reviewer = contribution.reviewer or "un relecteur"
+    return (
+        f"---\n{header}\n---\n\n"
+        f"<!-- Contribution {contribution.id}, approuvée par {reviewer} le {day.isoformat()}.\n"
+        "À faire avant publication : répartir le texte entre Symptôme, Cause et Solution,\n"
+        "ajuster la gravité et les environnements, recouper la source, puis publier\n"
+        "(publication: published, verified_by: <pseudo>). -->\n\n"
+        f"## Symptôme\n\n{_demote_headings(contribution.body_md)}\n\n"
+        "## Cause\n\nÀ compléter à partir du texte de la contribution.\n\n"
+        "## Solution\n\nÀ compléter à partir du texte de la contribution.\n"
+    )
+
+
+def _integration_note(contribution: Contribution) -> str:
+    day = _contribution_day(contribution)
+    lines = [
+        f"# À intégrer : {contribution.title}",
+        "",
+        f"- Fiche : `{contribution.fiche_slug}`",
+        f"- Type : {contribution.kind.value}",
+        f"- Proposé par : {contribution.pseudo}, approuvé le {day.isoformat()}",
+        f"- Source : {contribution.source_url or 'aucune'}",
+        f"- Version de l'API : {contribution.api_version or 'non précisée'}",
+        "",
+        "Reporter ce changement dans les fichiers de la fiche, puis supprimer cette note.",
+        "",
+        "## Texte de la contribution",
+        "",
+        _demote_headings(contribution.body_md),
+        "",
+    ]
+    return "\n".join(lines)
 
 
 def _load_gotcha(fiche_slug: str, path: Path) -> Gotcha:

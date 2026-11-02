@@ -12,7 +12,7 @@ Une ligne par décision qui engage l'équipe : la date, le choix, la raison. On 
 | D6 | 2 nov. | **Fiches et pièges en JSONB** dans PostgreSQL, avec des colonnes extraites pour filtrer et chercher | Le modèle Pydantic se sérialise tel quel ; schéma simple à faire évoluer |
 | D7 | 2 nov. | **Lecture du flux de pannes à l'ouverture d'une fiche** si la dernière date de plus de 10 minutes ; tâche planifiée seulement sur VPS | Le Serverless ne garantit pas les tâches planifiées (à vérifier en A2) |
 | D8 | 2 nov. | **Serveur MCP sans état, réponses JSON**, monté dans la même application sur `/mcp` | Compatible avec le Serverless, aucune connexion longue |
-| D9 | 2 nov. | **Une contribution approuvée est intégrée au contenu par une PR** sur `content/` | Garde une trace et une relecture ; à automatiser plus tard si le temps le permet (A7) |
+| D9 | 2 nov. | **Une contribution approuvée est intégrée au contenu par une PR** sur `content/` : `scripts/export_contributions.py` l'écrit en brouillon (un piège dans sa fiche, une étape ou une correction en note dans `content/a-integrer/`) | Garde une trace et une relecture ; rien n'est publié sans qu'un humain complète et vérifie le brouillon |
 | D10 | 2 nov. | **Les brouillons ne sont jamais affichés en production** ; un piège publié exige `verified_by` | Exigence d'exactitude : rien n'est publié sans relecture humaine |
 | D11 | 2 nov. | ~~Dépôt privé jusqu'à la soumission~~ (remplacée par D13) | Un concurrent direct publie déjà des recettes Mobile Money |
 | D12 | 2 nov. | **Contributions publiées sous licence CC BY 4.0**, données personnelles limitées au pseudo et à l'e-mail | Réutilisation libre en citant la source ; loi sénégalaise 2008-12 |

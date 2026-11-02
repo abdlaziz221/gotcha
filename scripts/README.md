@@ -10,6 +10,7 @@
 | `check_licenses.py` | `python scripts/check_licenses.py` (`--list` pour tout afficher) | Après chaque ajout de dépendance ; en CI ; avant la soumission |
 | `migrate.py` | `DATABASE_URL=… python scripts/migrate.py` | Avant le premier démarrage en production, puis à chaque nouvelle migration |
 | `seed.py` | `DATABASE_URL=… python scripts/seed.py` | Après `migrate.py`, puis à chaque mise à jour de `content/` (demande A6) |
+| `export_contributions.py` | `GOTCHA_ENV=prod DATABASE_URL=… python scripts/export_contributions.py` | Après une séance de relecture : écrit les contributions approuvées en brouillons dans `content/` (voir `content/README.md`) |
 | `hash_password.py` | `python scripts/hash_password.py <pseudo>` | Pour créer un compte relecteur (`GOTCHA_REVIEWERS`) |
 
 ## Contrôle des licences

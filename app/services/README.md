@@ -19,7 +19,7 @@ Les services reçoivent le stockage par injection (voir `app/container.py`) et n
 
 | Id | Tâche | Qui |
 | --- | --- | --- |
-| A7 | Circuit de relecture en production : une contribution approuvée doit être intégrée au contenu (aujourd'hui par une PR sur `content/`, voir D9) ; automatiser si le temps le permet | Abdoul Aziz |
+| A7 | Circuit de relecture en production : **fait**. Une contribution approuvée sur `/relecture` est exportée en brouillon dans `content/` par `scripts/export_contributions.py`, puis complétée et publiée par une PR (décision D9) | Abdoul Aziz |
 | K5 | Ajuster et documenter les règles d'état ci-dessous (seuils, expiration, plusieurs signalements) | Khalifa |
 
 ## Règles d'état actuelles (`status.py`)
