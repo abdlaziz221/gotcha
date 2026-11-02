@@ -76,6 +76,8 @@ Le **titre de la PR** suit le même format (la CI le vérifie) : c'est lui qui d
 
 Ces règles sont **imposées par GitHub** sur `main` : le bouton de fusion reste grisé tant qu'elles ne sont pas remplies. Seule la règle des trois relecteurs pour les contrats reste une convention d'équipe.
 
+**Tant que GitHub Actions est bloqué** (voir [.github/workflows/README.md](.github/workflows/README.md)), la CI ne tourne pas : l'auteur lance `python scripts/check.py` et colle le résumé dans la PR, et le relecteur n'approuve pas sans ce résumé tout vert.
+
 ## Changer un contrat
 
 Les contrats sont décrits dans [docs/CONTRACTS.md](docs/CONTRACTS.md).

@@ -4,6 +4,13 @@
 
 Dépôt public : GitHub Actions est **gratuit et illimité**. Toute PR vers `main` passe par ces contrôles ; une PR qui échoue ne peut pas être fusionnée.
 
+> **État au 2 novembre 2026 : la CI ne démarre pas.** GitHub refuse de lancer les jobs (« your account is locked due to a billing issue ») tant que la facturation du compte propriétaire du dépôt n'est pas réglée. En attendant :
+>
+> - chacun lance `python scripts/check.py` avant d'ouvrir une PR et **colle le résumé dans la PR** ;
+> - la règle de `main` impose déjà la PR et l'approbation, mais **pas encore** les contrôles de la CI (sinon plus rien ne pourrait être fusionné).
+>
+> Dès que la CI tourne : relancer les jobs de la dernière PR, vérifier qu'ils passent, puis appliquer la règle complète (section « Les règles de `main` »).
+
 ## Les workflows
 
 ### `ci.yml` : à chaque PR et à chaque fusion dans `main` (obligatoire)
@@ -41,6 +48,16 @@ Imposées par GitHub (ensemble de règles « Protection de main ») :
 - pas de suppression ni de réécriture (`force push`) de `main`.
 
 L'administrateur du dépôt peut contourner les règles **pour une PR** seulement, en cas d'urgence (CI en panne côté GitHub, par exemple). Ça ne doit pas arriver en temps normal.
+
+La règle complète est décrite dans [`../rulesets/protection-main.json`](../rulesets/protection-main.json). Pour l'appliquer (ou la réappliquer après un changement), l'administrateur lance :
+
+```bash
+gh api repos/abdlaziz221/gotcha/rulesets --jq '.[] | select(.name == "Protection de main") | .id'
+```
+
+```bash
+gh api -X PUT repos/abdlaziz221/gotcha/rulesets/<id> --input .github/rulesets/protection-main.json
+```
 
 ## Avant d'ouvrir une PR
 
