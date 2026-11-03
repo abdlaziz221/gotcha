@@ -22,7 +22,7 @@ UNREACHABLE = "http://127.0.0.1:9/"
 
 @pytest.fixture
 def probe_settings() -> Settings:
-    return Settings(env="test", probe=True, trust_proxy=True)
+    return Settings(env="test", probe=True, proxy_hops=1)
 
 
 @pytest.fixture
@@ -41,7 +41,8 @@ def test_probe_is_hidden_unless_enabled(client: TestClient, prod_client: TestCli
 def test_request_shows_what_the_proxy_sends(probe: TestClient) -> None:
     body = probe.get("/_sonde/requete", headers={"X-Forwarded-For": "203.0.113.7, 10.0.0.2"}).json()
     assert body["x_forwarded_for"] == "203.0.113.7, 10.0.0.2"
-    assert body["ip_retenue_pour_les_quotas"] == "203.0.113.7"
+    # Un proxy de confiance : la dernière valeur, ajoutée par lui ; la première est inventable.
+    assert body["ip_retenue_pour_les_quotas"] == "10.0.0.2"
     assert body["protocole"] == "http"
     assert "x-forwarded-for" in body["en_tetes"]
     assert body["instance"].endswith(f":{os.getpid()}")

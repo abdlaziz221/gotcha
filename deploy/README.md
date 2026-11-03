@@ -20,6 +20,7 @@ Offre Starter : 7,35 $ par mois avant remise, 512 Mo de mémoire, 0,5 processeur
    | `GOTCHA_SITE_URL` | `https://<domaine public>` |
    | `GOTCHA_ALLOWED_HOSTS` | `<domaine public>` |
    | `GOTCHA_REVIEWERS` | voir `scripts/hash_password.py` |
+   | `GOTCHA_PROXY_HOPS` | `1` (valeur par défaut en production), à confirmer avec la sonde |
    | `GOTCHA_PROBE` | `1` le temps des mesures ci-dessous, puis à retirer |
    | `PORT` | celui qu'attend la plateforme, si elle l'impose |
 
@@ -48,7 +49,7 @@ En une dizaine de minutes, le script répond aux questions ci-dessous et imprime
 - [ ] Le Serverless joint-il la base managée (réseau, SSL), et en combien de temps ?
 - [ ] Le site joint-il Internet (flux de pannes Flutterwave) ?
 - [ ] Démarrage à froid : relancer le script après 30 minutes sans visite, puis lire « Premier appel »
-- [ ] En-tête `X-Forwarded-For` : le proxy le remplace-t-il ou l'ajoute-t-il ? (quotas par adresse IP, A11)
+- [ ] En-tête `X-Forwarded-For` : le proxy le remplace-t-il ou l'ajoute-t-il ? La ligne du compte rendu donne la valeur de `GOTCHA_PROXY_HOPS` (quotas par adresse IP, A11). Vérifier ensuite la ligne « IP retenue » : ce doit être l'adresse publique du poste qui lance le script.
 
 À relever dans l'interface de Datacloud, que le script ne voit pas :
 
@@ -69,10 +70,10 @@ docker build -t gotcha .
 ```
 
 ```bash
-docker run -d --name gotcha --restart unless-stopped --env-file /etc/gotcha.env -p 8000:8000 gotcha
+docker run -d --name gotcha --restart unless-stopped --env-file /etc/gotcha.env -p 127.0.0.1:8000:8000 gotcha
 ```
 
-Comme sur le Serverless, le conteneur prépare la base à son démarrage. Puis : un proxy HTTPS devant le port 8000 (Caddy ou Nginx, licences permissives), et une tâche planifiée pour les pannes :
+Le port 8000 n'écoute que sur la machine : tout passe par le proxy, sinon un visiteur pourrait choisir son adresse dans `X-Forwarded-For` et contourner les quotas (`GOTCHA_PROXY_HOPS=1` derrière un seul proxy). Comme sur le Serverless, le conteneur prépare la base à son démarrage. Puis : un proxy HTTPS devant le port 8000 (Caddy ou Nginx, licences permissives), et une tâche planifiée pour les pannes :
 
 ```bash
 */10 * * * * docker exec gotcha python -m app.ingest

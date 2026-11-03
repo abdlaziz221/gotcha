@@ -72,10 +72,43 @@ def test_rate_limiter_window() -> None:
     assert limiter.hit("k", limit=2, window_seconds=60)
 
 
-def test_client_ip_trusts_proxy_only_when_asked() -> None:
-    headers = {"x-forwarded-for": "41.82.1.2, 10.0.0.1"}
-    assert client_ip(headers, "10.0.0.1", trust_proxy=True) == "41.82.1.2"
-    assert client_ip(headers, "10.0.0.1", trust_proxy=False) == "10.0.0.1"
+def test_rate_limiter_check_does_not_count() -> None:
+    limiter = RateLimiter(clock=lambda: 0.0)
+    assert not limiter.exceeded("k", limit=1, window_seconds=60)
+    assert not limiter.exceeded("k", limit=1, window_seconds=60)
+    assert limiter.hit("k", limit=1, window_seconds=60)
+    assert limiter.exceeded("k", limit=1, window_seconds=60)
+
+
+# Le visiteur a inventé 6.6.6.6 ; le proxy de confiance a ajouté l'adresse qu'il a vue.
+FORWARDED = {"x-forwarded-for": "6.6.6.6, 41.82.1.2"}
+
+
+@pytest.mark.parametrize(
+    ("headers", "hops", "expected"),
+    [
+        (FORWARDED, 1, "41.82.1.2"),  # la dernière valeur, jamais la première
+        (FORWARDED, 2, "6.6.6.6"),  # deux proxys : l'avant-dernière
+        (FORWARDED, 0, "10.0.0.1"),  # aucun proxy de confiance : l'en-tête est ignoré
+        ({"x-forwarded-for": "41.82.1.2"}, 2, "10.0.0.1"),  # moins de valeurs que de proxys
+        ({"x-forwarded-for": " , "}, 1, "10.0.0.1"),
+        ({}, 1, "10.0.0.1"),
+    ],
+)
+def test_client_ip_reads_the_value_added_by_trusted_proxies(
+    headers: dict[str, str], hops: int, expected: str
+) -> None:
+    assert client_ip(headers, "10.0.0.1", proxy_hops=hops) == expected
+    assert client_ip({}, None, proxy_hops=hops) == "inconnu"
+
+
+def test_proxy_hops_setting() -> None:
+    assert Settings.from_env({}).proxy_hops == 0
+    prod = {"GOTCHA_ENV": "prod", "DATABASE_URL": "postgresql://x"}
+    assert Settings.from_env(prod).proxy_hops == 1
+    assert Settings.from_env({**prod, "GOTCHA_PROXY_HOPS": "2"}).proxy_hops == 2
+    with pytest.raises(ValueError, match="GOTCHA_PROXY_HOPS"):
+        Settings.from_env({"GOTCHA_PROXY_HOPS": "-1"})
 
 
 def test_production_settings_are_safe() -> None:

@@ -12,10 +12,18 @@ import binascii
 import hashlib
 import hmac
 import secrets
+from functools import cache
 
 from fastapi import HTTPException, Request
 
+from app.security.ratelimit import RateLimiter, client_ip
+
 _N, _R, _P = 2**14, 8, 1
+
+# Essais ratés par adresse IP avant blocage : freine la recherche du mot de passe, et
+# chaque essai coûte un calcul scrypt au processeur.
+MAX_FAILURES = 10
+FAILURE_WINDOW_SECONDS = 15 * 60
 
 
 def hash_password(password: str, *, salt: bytes | None = None) -> str:
@@ -54,6 +62,12 @@ def parse_reviewers(spec: str) -> dict[str, str]:
     return reviewers
 
 
+@cache
+def _unknown_reviewer_hash() -> str:
+    """Empreinte factice : un pseudo inconnu prend autant de temps qu'un mauvais mot de passe."""
+    return hash_password(secrets.token_urlsafe(16))
+
+
 def require_reviewer(request: Request) -> str:
     """Dépendance FastAPI : renvoie le pseudo du relecteur authentifié."""
     settings = request.app.state.settings
@@ -67,11 +81,19 @@ def require_reviewer(request: Request) -> str:
     scheme, _, credentials = request.headers.get("authorization", "").partition(" ")
     if scheme.lower() != "basic" or not credentials:
         raise HTTPException(status_code=401, headers=challenge)
+
+    limiter: RateLimiter = request.app.state.rate_limiter
+    peer = request.client.host if request.client else None
+    key = "relecture-echec:" + client_ip(request.headers, peer, proxy_hops=settings.proxy_hops)
+    if limiter.exceeded(key, limit=MAX_FAILURES, window_seconds=FAILURE_WINDOW_SECONDS):
+        raise HTTPException(status_code=429, detail="Trop d'essais : réessayez dans 15 minutes.")
     try:
         pseudo, _, password = base64.b64decode(credentials).decode().partition(":")
     except (ValueError, binascii.Error):
-        raise HTTPException(status_code=401, headers=challenge) from None
+        pseudo, password = "", ""
     encoded = reviewers.get(pseudo)
-    if encoded is None or not verify_password(password, encoded):
+    valid = verify_password(password, encoded or _unknown_reviewer_hash())
+    if encoded is None or not valid:
+        limiter.hit(key, limit=MAX_FAILURES, window_seconds=FAILURE_WINDOW_SECONDS)
         raise HTTPException(status_code=401, headers=challenge)
     return pseudo

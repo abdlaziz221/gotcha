@@ -106,7 +106,7 @@ def build_mcp_server(app: FastAPI) -> MCPServer:
         request = getattr(ctx.request_context, "request", None) if ctx else None
         headers = getattr(request, "headers", None) or {}
         peer = request.client.host if request is not None and request.client else None
-        ip = client_ip(headers, peer, trust_proxy=app.state.settings.trust_proxy)
+        ip = client_ip(headers, peer, proxy_hops=app.state.settings.proxy_hops)
         if not app.state.rate_limiter.hit(
             f"mcp-outage:{ip}", limit=REPORT_LIMIT, window_seconds=REPORT_WINDOW_SECONDS
         ):

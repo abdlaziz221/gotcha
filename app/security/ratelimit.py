@@ -29,16 +29,30 @@ class RateLimiter:
         hits.append(now)
         return True
 
+    def exceeded(self, key: str, *, limit: int, window_seconds: float) -> bool:
+        """Le quota est-il déjà atteint ? (ne compte pas d'appel)"""
+        now = self._clock()
+        hits = self._hits[key]
+        while hits and now - hits[0] > window_seconds:
+            hits.popleft()
+        return len(hits) >= limit
+
     def reset(self) -> None:
         self._hits.clear()
 
 
-def client_ip(headers: Mapping[str, str], peer: str | None, *, trust_proxy: bool) -> str:
-    if trust_proxy:
-        forwarded = headers.get("x-forwarded-for", "")
-        first = forwarded.split(",")[0].strip()
-        if first:
-            return first
+def client_ip(headers: Mapping[str, str], peer: str | None, *, proxy_hops: int) -> str:
+    """Adresse du visiteur, pour les quotas.
+
+    Chaque proxy de confiance ajoute à la fin de X-Forwarded-For l'adresse qu'il a vue :
+    derrière `proxy_hops` proxys, la bonne valeur est la `proxy_hops`-ième en partant de
+    la fin. Les valeurs plus à gauche viennent du visiteur, qui peut les inventer.
+    """
+    if proxy_hops > 0:
+        forwarded = [v.strip() for v in headers.get("x-forwarded-for", "").split(",")]
+        forwarded = [v for v in forwarded if v]
+        if len(forwarded) >= proxy_hops:
+            return forwarded[-proxy_hops]
     return peer or "inconnu"
 
 
@@ -51,7 +65,7 @@ def rate_limit(name: str, *, limit: int, window_seconds: float) -> Callable[[Req
     def dependency(request: Request) -> None:
         settings = request.app.state.settings
         peer = request.client.host if request.client else None
-        ip = client_ip(request.headers, peer, trust_proxy=settings.trust_proxy)
+        ip = client_ip(request.headers, peer, proxy_hops=settings.proxy_hops)
         limiter: RateLimiter = request.app.state.rate_limiter
         if not limiter.hit(f"{name}:{ip}", limit=limit, window_seconds=window_seconds):
             raise HTTPException(status_code=429, detail="Trop de demandes : réessayez plus tard.")

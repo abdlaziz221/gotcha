@@ -6,7 +6,7 @@ import pytest
 from starlette.testclient import TestClient
 
 from app.config import Settings
-from app.security.auth import hash_password
+from app.security.auth import MAX_FAILURES, hash_password
 from app.services.clock import FixedClock
 from app.stores import create_store
 from tests.conftest import make_client
@@ -35,6 +35,25 @@ def test_review_requires_valid_credentials_in_production(clock: FixedClock) -> N
         allowed = client.get("/relecture", auth=("aziz", PASSWORD))
         assert allowed.status_code == 200
         assert "aziz" in allowed.text
+
+
+def test_review_blocks_an_address_after_repeated_failures(clock: FixedClock) -> None:
+    with make_client(_prod_settings(f"aziz:{hash_password(PASSWORD)}"), clock) as client:
+        for _ in range(3):  # sans identifiants : le navigateur demande, rien n'est compté
+            assert client.get("/relecture").status_code == 401
+        for _ in range(MAX_FAILURES):
+            assert client.get("/relecture", auth=("aziz", "faux")).status_code == 401
+        # Bloqué, même avec le bon mot de passe, sans calcul scrypt.
+        assert client.get("/relecture", auth=("aziz", PASSWORD)).status_code == 429
+        client.app.state.rate_limiter.reset()  # type: ignore[attr-defined]
+        assert client.get("/relecture", auth=("aziz", PASSWORD)).status_code == 200
+
+
+def test_review_treats_unknown_pseudo_and_garbage_as_failures(clock: FixedClock) -> None:
+    with make_client(_prod_settings(f"aziz:{hash_password(PASSWORD)}"), clock) as client:
+        assert client.get("/relecture", auth=("inconnu", PASSWORD)).status_code == 401
+        garbage = {"Authorization": "Basic %%%"}
+        assert client.get("/relecture", headers=garbage).status_code == 401
 
 
 def test_healthz_reports_missing_database(client: TestClient) -> None:
