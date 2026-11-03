@@ -7,7 +7,7 @@
 | MTN MoMo | `mtn-momo` | Khalifa | K3, K10 |
 | M-Pesa | `mpesa-ke` | Khalifa | K10 |
 | Wave | `wave-sn` | Loum | L11 |
-| Orange Money | `orange-money-sn` (et `orange-money-ci` à créer) | Abdoul Aziz | A9 |
+| Orange Money | `orange-money-sn`, `orange-money-ci` | Abdoul Aziz | A9 |
 | Datacloud | `datacloud-sn` | Abdoul Aziz | A10 |
 
 Objectif : **30 pièges sourcés le dimanche 8 novembre**, dont une vingtaine sur MTN MoMo et M-Pesa, 3 à 5 recoupés sur Wave et sur Orange Money, plus la fiche Datacloud.
