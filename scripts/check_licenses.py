@@ -5,13 +5,18 @@ Toute licence à réciprocité (GPL, LGPL, AGPL, MPL…) rend le projet irreceva
 
 Usage : python scripts/check_licenses.py            (code de sortie 1 en cas de problème)
         python scripts/check_licenses.py --list     (affiche la licence de chaque paquet)
+        python scripts/check_licenses.py --markdown (écrit docs/LICENCES.md, la liste à déclarer)
 """
 
 from __future__ import annotations
 
 import re
 import sys
-from importlib.metadata import Distribution, distributions
+from importlib.metadata import Distribution, PackageNotFoundError, distributions, requires
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+MARKDOWN_FILE = ROOT / "docs" / "LICENCES.md"
 
 FORBIDDEN = re.compile(
     r"\b(?:A|L)?GPL|\bGNU\b|General Public License|\bMPL\b|Mozilla Public|\bEPL\b|"
@@ -42,10 +47,29 @@ def dist_name(dist: Distribution) -> str:
     return names[0].lower() if names else ""
 
 
+def canonical(name: str) -> str:
+    """Nom normalisé (PEP 503) : « Pre_Commit » et « pre-commit » désignent le même paquet."""
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
 def license_text(dist: Distribution) -> str:
     parts = _field(dist, "license_expression") + [v[:300] for v in _field(dist, "license")]
     parts += [c for c in _field(dist, "classifier") if c.startswith("License ::")]
     return " | ".join(p.strip() for p in parts if p.strip())
+
+
+def short_license(dist: Distribution) -> str:
+    """Licence en quelques mots, pour un tableau : expression SPDX, sinon classifieurs."""
+    expression = _field(dist, "license_expression")
+    if expression:
+        return expression[0].strip()
+    classifiers = [
+        c.split("::")[-1].strip() for c in _field(dist, "classifier") if c.startswith("License ::")
+    ]
+    if classifiers:
+        return ", ".join(classifiers)
+    declared = [v.strip().splitlines()[0] for v in _field(dist, "license") if v.strip()]
+    return declared[0][:80] if declared else "aucune information"
 
 
 def verdict(name: str, text: str) -> str:
@@ -58,7 +82,117 @@ def verdict(name: str, text: str) -> str:
     return "INCONNUE"
 
 
+def production_environment() -> dict[str, str]:
+    """Environnement de l'image de production (Dockerfile) : Linux et sa version de Python.
+
+    Une dépendance réservée à Windows ou à une autre version de Python n'y est pas installée.
+    """
+    match = re.search(r"^FROM python:(\d+\.\d+)", (ROOT / "Dockerfile").read_text("utf-8"), re.M)
+    version = match.group(1) if match else f"{sys.version_info[0]}.{sys.version_info[1]}"
+    return {
+        "python_version": version,
+        "python_full_version": f"{version}.0",
+        "sys_platform": "linux",
+        "platform_system": "Linux",
+        "os_name": "posix",
+        "extra": "",
+    }
+
+
+def shipped() -> set[str]:
+    """Paquets que l'image installe : requirements.txt et toutes leurs dépendances."""
+    # Outil de développement (dépendance de pytest), jamais nécessaire à l'application.
+    from packaging.requirements import Requirement
+
+    environment = production_environment()
+    lines = (ROOT / "requirements.txt").read_text("utf-8").splitlines()
+    specs = [line.split("#")[0].strip() for line in lines]
+    todo = [Requirement(spec) for spec in specs if spec and not spec.startswith("-")]
+    # Paquet -> options demandées (« pyjwt[crypto] » ajoute cryptography aux dépendances).
+    seen: dict[str, set[str]] = {}
+    while todo:
+        wanted = todo.pop()
+        name = canonical(wanted.name)
+        extras = {""} | wanted.extras
+        if extras <= seen.get(name, set()):
+            continue
+        seen.setdefault(name, set()).update(extras)
+        try:
+            dependencies = requires(name) or []
+        except PackageNotFoundError:
+            continue
+        for spec in dependencies:
+            requirement = Requirement(spec)
+            marker = requirement.marker
+            if marker is None or any(
+                marker.evaluate({**environment, "extra": extra}) for extra in extras
+            ):
+                todo.append(requirement)
+    return set(seen)
+
+
+def _table(rows: list[tuple[str, str, str]]) -> list[str]:
+    lines = ["| Composant | Version | Licence |", "| --- | --- | --- |"]
+    lines += [f"| {name} | {version} | {licence} |" for name, version, licence in rows]
+    return lines
+
+
+def markdown() -> str:
+    """Liste des composants à déclarer, livrés d'un côté, outils de développement de l'autre."""
+    delivered = shipped()
+    groups: dict[bool, list[tuple[str, str, str]]] = {True: [], False: []}
+    installed: set[str] = set()
+    for dist in sorted(distributions(), key=dist_name):
+        name = dist_name(dist)
+        if not name or name in IGNORED or canonical(name) in installed:
+            continue
+        installed.add(canonical(name))
+        licence = short_license(dist).replace("|", "/")
+        groups[canonical(name) in delivered].append((name, dist.version, licence))
+    missing = sorted(delivered - installed)
+    python = production_environment()["python_version"]
+    lines = [
+        "# Composants tiers et licences",
+        "",
+        "Liste à déclarer lors de la soumission (règlement, article 6). Fichier généré par "
+        "`python scripts/check_licenses.py --markdown` : ne pas le modifier à la main, "
+        "le regénérer après tout changement de `requirements*.txt`.",
+        "",
+        "Les composants qui ne sont pas des paquets Python (image Docker, base de données, "
+        "services de CI) sont dans [SUBMISSION.md](SUBMISSION.md).",
+        "",
+        f"## Livrés avec l'application ({len(groups[True])})",
+        "",
+        f"Installés dans l'image de production (Python {python} sous Linux) par "
+        "`requirements.txt`, avec leurs dépendances. Seules les dépendances directes ont une "
+        "version figée : la CI vérifie à chaque PR les licences d'une installation neuve.",
+        "",
+        *_table(groups[True]),
+    ]
+    if missing:
+        lines += [
+            "",
+            "Non installés sur le poste qui a généré ce fichier, licence à vérifier : "
+            + ", ".join(f"`{name}`" for name in missing)
+            + ".",
+        ]
+    lines += [
+        "",
+        f"## Outils de développement et de CI, jamais livrés ({len(groups[False])})",
+        "",
+        "Autres paquets du poste qui a généré ce fichier : outils de `requirements-dev.txt` "
+        "(tests, lint, types, crochets Git) et dépendances propres à Windows.",
+        "",
+        *_table(groups[False]),
+        "",
+    ]
+    return "\n".join(lines)
+
+
 def main(argv: list[str]) -> int:
+    if "--markdown" in argv:
+        MARKDOWN_FILE.write_text(markdown(), encoding="utf-8", newline="\n")
+        print(f"Liste écrite dans {MARKDOWN_FILE.relative_to(ROOT).as_posix()}.")
     problems = []
     for dist in sorted(distributions(), key=dist_name):
         name = dist_name(dist)
