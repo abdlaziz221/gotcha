@@ -23,4 +23,5 @@ RUN useradd --create-home --uid 10001 gotcha
 USER gotcha
 
 EXPOSE 8000
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --proxy-headers --forwarded-allow-ips='*'"]
+# Avant le site : schéma à jour et contenu de l'image chargé en base (scripts/release.py).
+CMD ["sh", "-c", "python scripts/release.py && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --proxy-headers --forwarded-allow-ips='*'"]

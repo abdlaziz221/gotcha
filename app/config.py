@@ -42,6 +42,8 @@ class Settings:
     # Derrière le proxy de Datacloud : lire l'adresse du client dans X-Forwarded-For.
     trust_proxy: bool = False
     site_url: str = "http://localhost:8000"
+    # Sonde des limites de l'hébergeur (/_sonde/…), le temps du test A2 seulement.
+    probe: bool = False
 
     @property
     def is_prod(self) -> bool:
@@ -78,6 +80,7 @@ class Settings:
             ),
             trust_proxy=_bool(e.get("GOTCHA_TRUST_PROXY"), default=prod),
             site_url=e.get("GOTCHA_SITE_URL", cls.site_url).rstrip("/"),
+            probe=_bool(e.get("GOTCHA_PROBE"), default=False),
         )
         settings.validate()
         return settings

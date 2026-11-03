@@ -47,6 +47,22 @@ commands:
           paths:
             - ~/.cache/pip
 
+  wait-ready:
+    description: Attendre que le conteneur réponde, base PostgreSQL comprise
+    steps:
+      - run:
+          name: Attente du site (/healthz?db=1)
+          command: |
+            for i in $(seq 1 60); do
+              if curl -fsS 'http://localhost:8000/healthz?db=1' 2>/dev/null | grep -q '"database":"ok"'; then
+                echo "Site prêt après ${i} s"
+                exit 0
+              fi
+              sleep 1
+            done
+            echo "ÉCHEC : le site ne répond pas après 60 s"
+            exit 1
+
 jobs:
   pr-rules:
     executor: python
@@ -121,21 +137,35 @@ jobs:
           name: Construction de l'image
           command: docker build --pull -t gotcha:ci .
       - run:
-          name: Démarrage en mode production
+          name: Base PostgreSQL jetable, comme la base managée de Datacloud
           command: |
-            docker run -d --name gotcha -p 8000:8000 \
-              -e GOTCHA_ENV=prod -e GOTCHA_STORE=memory -e GOTCHA_INGEST_LIVE=false \
-              -e GOTCHA_SITE_URL=http://localhost:8000 \
-              gotcha:ci
-            for i in $(seq 1 30); do
-              if curl -fsS http://localhost:8000/healthz > /dev/null 2>&1; then
-                echo "Conteneur prêt après ${i} s"
+            docker network create gotcha
+            docker run -d --name db --network gotcha \
+              -e POSTGRES_USER=gotcha -e POSTGRES_PASSWORD=gotcha -e POSTGRES_DB=gotcha \
+              postgres:17-alpine
+            # Par TCP : pendant son initialisation, le serveur n'écoute que sur un socket local.
+            for i in $(seq 1 60); do
+              if docker exec db pg_isready -h 127.0.0.1 -U gotcha -d gotcha > /dev/null 2>&1; then
+                echo "Base prête après ${i} s"
                 exit 0
               fi
               sleep 1
             done
-            echo "ÉCHEC : le conteneur ne répond pas après 30 s"
+            echo "ÉCHEC : la base ne répond pas après 60 s"
             exit 1
+      - run:
+          name: Démarrage en mode production (migrations et contenu chargés au démarrage)
+          command: |
+            docker run -d --name gotcha --network gotcha -p 8000:8000 \
+              -e GOTCHA_ENV=prod -e GOTCHA_INGEST_LIVE=false \
+              -e DATABASE_URL=postgresql://gotcha:gotcha@db:5432/gotcha \
+              -e GOTCHA_SITE_URL=http://localhost:8000 \
+              gotcha:ci
+      - wait-ready
+      - run:
+          name: Redémarrage (deuxième mise en service, sans rien casser)
+          command: docker restart gotcha
+      - wait-ready
       - run:
           name: Vérifications en mode production
           command: |
@@ -144,6 +174,9 @@ jobs:
             test "$(code /)" = 200 || { echo "ÉCHEC : l'accueil ne répond pas 200"; exit 1; }
             test "$(code /styleguide)" = 404 || { echo "ÉCHEC : /styleguide doit être caché"; exit 1; }
             test "$(code /relecture)" = 404 || { echo "ÉCHEC : /relecture doit être fermée"; exit 1; }
+            test "$(code /_sonde/requete)" = 404 || { echo "ÉCHEC : la sonde doit être éteinte"; exit 1; }
+            docker logs gotcha 2>&1 | grep -q "la base est à jour" \
+              || { echo "ÉCHEC : le redémarrage aurait dû trouver la base à jour"; exit 1; }
             headers="$(curl -sI http://localhost:8000/)"
             for header in content-security-policy strict-transport-security x-content-type-options x-frame-options; do
               printf '%s' "$headers" | grep -qi "^$header:" || { echo "ÉCHEC : en-tête $header absent"; exit 1; }

@@ -52,7 +52,7 @@ Règles garanties par le modèle :
 | `get_fiche(slug, include_drafts)` | La fiche, ou `None` (y compris pour un brouillon quand `include_drafts` est faux) |
 | `search(query, include_drafts)` (logique commune : `app/stores/search.py`) | Résultats triés par score décroissant, au plus `query.limit`, insensibles à la casse et aux accents, filtrés par service et pays ; un code d'erreur exact donne un résultat `error_code` |
 | `list_glossary()` | Termes triés par terme |
-| `upsert_fiche(fiche)` / `upsert_glossary(terms)` | Création ou remplacement (utilisés par `scripts/seed.py`). Les pièges retirés disparaissent, leur ordre est conservé ; les **compteurs de confirmation déjà enregistrés sont gardés** et `last_confirmed_on` garde la date la plus récente |
+| `upsert_fiche(fiche)` / `upsert_glossary(terms)` | Création ou remplacement (utilisés au chargement de `content/`, à chaque démarrage en production). Les pièges retirés disparaissent, leur ordre est conservé ; les **compteurs de confirmation déjà enregistrés sont gardés** et `last_confirmed_on` garde la date la plus récente |
 | `list_incidents(service_slug, country, active_only, limit)` | Pannes de la plus récente à la plus ancienne |
 | `upsert_incident(incident)` | Idempotent sur `incident.id` |
 | `get_last_ingest(source)` / `set_last_ingest(source, at)` | Dernière lecture réussie d'un flux |

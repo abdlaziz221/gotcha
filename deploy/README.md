@@ -6,11 +6,11 @@ Le règlement impose un déploiement sur Datacloud avec au moins un produit paya
 
 ## Option 1 : Serverless (à essayer en premier)
 
-Offre Starter (environ 7,35 $ par mois avant remise), dépôt Git connecté, Docker accepté.
+Offre Starter : 7,35 $ par mois avant remise, 512 Mo de mémoire, 0,5 processeur virtuel. La page de l'offre annonce le déploiement depuis Git, Python et Docker, les variables d'environnement et secrets, les journaux, une adresse HTTPS, l'accès SSH, des tâches ponctuelles et des disques persistants. Elle ne parle pas de tâches planifiées ([Serverless](https://systalink.com/en/serverless)).
 
 1. Créer le compte sur [platform.systalink.com](https://platform.systalink.com/) et appliquer le code promotionnel.
-2. Créer une base **PostgreSQL managée**.
-3. Créer le service Serverless : connecter le dépôt `abdlaziz221/gotcha`, branche `main`, construction par le `Dockerfile`.
+2. Créer une base **PostgreSQL managée** et noter son adresse de connexion (`postgresql://…`). Le pilote essaie le chiffrement de lui-même ; pour l'exiger, ajouter `?sslmode=require` à la fin de l'adresse.
+3. Créer le service Serverless : connecter le dépôt `abdlaziz221/gotcha`, branche `main`, construction par le `Dockerfile`. Chemin de vérification de santé, si la plateforme en demande un : `/healthz`.
 4. Variables d'environnement :
 
    | Variable | Valeur |
@@ -20,29 +20,43 @@ Offre Starter (environ 7,35 $ par mois avant remise), dépôt Git connecté, Doc
    | `GOTCHA_SITE_URL` | `https://<domaine public>` |
    | `GOTCHA_ALLOWED_HOSTS` | `<domaine public>` |
    | `GOTCHA_REVIEWERS` | voir `scripts/hash_password.py` |
+   | `GOTCHA_PROBE` | `1` le temps des mesures ci-dessous, puis à retirer |
    | `PORT` | celui qu'attend la plateforme, si elle l'impose |
 
-   En production, le site lit tout dans PostgreSQL (`GOTCHA_STORE=postgres`, valeur par défaut quand `GOTCHA_ENV=prod`) : appliquer les migrations et charger le contenu (étape 5) **avant** d'ouvrir le site.
-5. Appliquer le schéma et charger le contenu, depuis un poste qui joint la base :
+5. Déployer. **Rien à lancer à la main** : à chaque démarrage, le conteneur applique les migrations puis charge `content/` en base (`scripts/release.py`, décision D18). Les journaux affichent :
 
-   ```bash
-   DATABASE_URL=… python scripts/migrate.py
+   ```text
+   Migrations appliquées : 001_init
+   5 fiche(s), 8 piège(s), 15 terme(s) chargés.
    ```
 
-   ```bash
-   DATABASE_URL=… python scripts/seed.py
-   ```
-
+   Si le conteneur s'arrête aussitôt, la cause (base injoignable, mot de passe refusé) est juste au-dessus dans les journaux.
 6. Vérifier : `https://<domaine>/healthz?db=1` doit répondre `{"status": "ok", …, "database": "ok"}`.
 
-### À mesurer pendant A2 (et à noter dans `docs/DECISIONS.md`)
+### Mesurer les limites du Serverless (A2)
+
+Le site tourne avec `GOTCHA_PROBE=1`. Depuis un poste :
+
+```bash
+python scripts/probe_platform.py https://<domaine>
+```
+
+En une dizaine de minutes, le script répond aux questions ci-dessous et imprime un tableau en Markdown. On le recopie dans `docs/DECISIONS.md` (choix entre Serverless et VPS) et dans la fiche Datacloud (A10).
 
 - [ ] Durée maximale d'une requête (le rafraîchissement des pannes prend jusqu'à 5 secondes)
-- [ ] Tâches de fond après la réponse : sont-elles exécutées ou coupées ?
-- [ ] Tâches planifiées disponibles ?
-- [ ] Le Serverless joint-il la base managée (réseau, SSL) ?
-- [ ] Démarrage à froid : combien de secondes ?
-- [ ] En-tête `X-Forwarded-For` transmis par le proxy (quotas par IP) ?
+- [ ] Tâches de fond après la réponse : exécutées ou coupées ?
+- [ ] Le Serverless joint-il la base managée (réseau, SSL), et en combien de temps ?
+- [ ] Le site joint-il Internet (flux de pannes Flutterwave) ?
+- [ ] Démarrage à froid : relancer le script après 30 minutes sans visite, puis lire « Premier appel »
+- [ ] En-tête `X-Forwarded-For` : le proxy le remplace-t-il ou l'ajoute-t-il ? (quotas par adresse IP, A11)
+
+À relever dans l'interface de Datacloud, que le script ne voit pas :
+
+- [ ] Tâches planifiées disponibles ? Sinon, la lecture des pannes reste déclenchée par les visites (décision D7).
+- [ ] Nombre d'instances, mise en veille sans visite
+- [ ] Port imposé (`PORT`)
+
+Ensuite, retirer `GOTCHA_PROBE` et redéployer : `/_sonde/requete` doit répondre 404.
 
 **Sans réponse satisfaisante mercredi 4 au soir : passer à l'option 2.**
 
@@ -58,7 +72,7 @@ docker build -t gotcha .
 docker run -d --name gotcha --restart unless-stopped --env-file /etc/gotcha.env -p 8000:8000 gotcha
 ```
 
-Puis : un proxy HTTPS devant le port 8000 (Caddy ou Nginx, licences permissives), et une tâche planifiée pour les pannes :
+Comme sur le Serverless, le conteneur prépare la base à son démarrage. Puis : un proxy HTTPS devant le port 8000 (Caddy ou Nginx, licences permissives), et une tâche planifiée pour les pannes :
 
 ```bash
 */10 * * * * docker exec gotcha python -m app.ingest
