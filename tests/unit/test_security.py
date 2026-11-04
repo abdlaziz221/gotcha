@@ -44,7 +44,7 @@ LOOKALIKES = {
     "clé secrète Flutterwave": "FLWPUBK_TEST-" + "abc123" * 5 + "-X",
     "clé secrète Paystack ou Stripe": "pk_live_" + "Ab12" * 6,
     # L'exemple tronqué de docs.wave.com.
-    "clé d'API Wave": "Authorization: Bearer wave_sn_prod_YhUNb9d...i4bA6",
+    "clé d'API Wave": "Authorization: Bearer " + "wave_sn_prod_" + "YhUNb9d...i4bA6",
     "secret de signature Wave": "wave_sn_AKS_" + "X" * 40,
     "clé d'abonnement MTN MoMo": "Ocp-Apim-Subscription-Key: {{subscription_key}}",
     "clé marchand Orange Money": "merchant_key: process.env.OM_MERCHANT_KEY",
