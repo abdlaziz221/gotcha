@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import replace
 from datetime import datetime
+
+from markupsafe import Markup
 
 from app.domain.countries import country_name
 from app.domain.models import (
+    Confirmation,
     Contribution,
     Fiche,
     GlossaryTerm,
@@ -16,6 +20,7 @@ from app.domain.models import (
     ServiceStatus,
     Source,
 )
+from app.domain.text import first_sentence
 from app.services.status import counts_now
 from app.web.labels import (
     CONFIDENCE_LABELS,
@@ -28,6 +33,7 @@ from app.web.labels import (
 )
 from app.web.markdown import render_markdown
 from app.web.viewmodels import (
+    ConfirmationView,
     ContributionView,
     FicheCard,
     GotchaView,
@@ -152,6 +158,35 @@ def gotcha_view(
         confirmations=gotcha.confirmations,
         needs_review=needs_review,
         is_draft=gotcha.publication is not Publication.PUBLISHED,
+    )
+
+
+def gotcha_preview(
+    gotcha: Gotcha, glossary: Mapping[str, GlossaryTerm], *, needs_review: bool
+) -> GotchaView:
+    """Aperçu public : le symptôme, le début de la cause, le niveau et les sources.
+
+    Le reste n'est pas caché par le gabarit : il n'est tout simplement pas envoyé.
+    """
+    view = gotcha_view(gotcha, glossary, needs_review=needs_review)
+    return replace(
+        view,
+        cause_html=Markup("<p>{}</p>").format(first_sentence(gotcha.cause_md)),
+        fix_html=Markup(""),
+        failed_attempts_html=None,
+        proof_html=None,
+        locked=True,
+    )
+
+
+def confirmation_view(confirmation: Confirmation) -> ConfirmationView:
+    return ConfirmationView(
+        target_id=confirmation.target_id,
+        still_works=confirmation.still_works,
+        api_version=confirmation.api_version,
+        pseudo=confirmation.pseudo,
+        proof=confirmation.proof,
+        created_at=confirmation.created_at,
     )
 
 

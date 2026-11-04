@@ -3,6 +3,7 @@
 Chaque gabarit de templates/pages/ reçoit :
 - `page` : un objet d'une des classes ci-dessous (une classe par page) ;
 - `csrf_token` : à recopier dans chaque formulaire POST ;
+- `viewer` : qui regarde la page (voir Viewer) ;
 - `site` : nom, slogan, mentions du pied de page ;
 - `request` : la requête (pour request.url.path, par exemple).
 
@@ -37,6 +38,15 @@ DEFAULT_DESCRIPTION = (
 
 
 # --- Briques communes --------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class Viewer:
+    """Le visiteur : `pseudo` s'il est connecté, et ce qu'il peut faire."""
+
+    pseudo: str | None
+    site_auth: bool  # la connexion est-elle proposée sur ce site ?
+    can_write: bool  # peut-il envoyer un formulaire maintenant ?
 
 
 @dataclass(frozen=True, slots=True)
@@ -152,6 +162,7 @@ class GotchaView:
     confirmations: int
     needs_review: bool
     is_draft: bool
+    locked: bool = False  # aperçu public : ni solution, ni pistes, ni preuve
 
 
 @dataclass(frozen=True, slots=True)
@@ -222,6 +233,8 @@ class FichePage:
     report_url: str
     step_mode: StepMode | None = None  # renseigné si ?mode=pas-a-pas
     flash: Flash | None = None
+    locked: bool = False  # aperçu public : étapes et solutions réservées aux membres
+    login_url: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -274,11 +287,31 @@ class ContributionView:
 
 
 @dataclass(frozen=True, slots=True)
+class ConfirmationView:
+    target_id: str
+    still_works: bool
+    api_version: str | None
+    pseudo: str | None
+    proof: str | None
+    created_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
 class ReviewPage:
     meta: PageMeta
     reviewer: str
     pending: list[ContributionView]
     flash: Flash | None = None
+    confirmations: list[ConfirmationView] = field(default_factory=list)
+
+
+@dataclass(frozen=True, slots=True)
+class LoginPage:
+    meta: PageMeta
+    github_url: str
+    retour: str
+    jury_enabled: bool
+    form: FormState
 
 
 @dataclass(frozen=True, slots=True)

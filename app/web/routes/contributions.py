@@ -2,17 +2,20 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Request
 from pydantic import ValidationError
 from starlette.responses import RedirectResponse, Response
 
 from app.domain.errors import InvalidInputError, NotFoundError, SecretDetectedError
-from app.domain.models import ContributionInput, ContributionKind
+from app.domain.models import Account, ContributionInput, ContributionKind
 from app.security.csrf import verify_csrf
 from app.security.ratelimit import rate_limit
 from app.web.deps import ServicesDep, fiche_options
 from app.web.forms import FIELD_ERRORS, field_errors, form_values
 from app.web.labels import CONTRIBUTION_KIND_LABELS
+from app.web.session import writer_account
 from app.web.templating import render
 from app.web.viewmodels import ContributePage, FormState, MessagePage, Option, PageMeta
 
@@ -38,7 +41,7 @@ def _kind_options(selected: str) -> list[Option]:
     ]
 
 
-@router.get("/contribuer")
+@router.get("/contribuer", dependencies=[Depends(writer_account)])
 async def contribute_form(request: Request, services: ServicesDep, fiche: str = "") -> Response:
     fiches = await services.fiches.list()
     page = ContributePage(
@@ -57,7 +60,11 @@ async def contribute_form(request: Request, services: ServicesDep, fiche: str = 
         Depends(rate_limit("contribuer", limit=5, window_seconds=3600)),
     ],
 )
-async def contribute_submit(request: Request, services: ServicesDep) -> Response:
+async def contribute_submit(
+    request: Request,
+    services: ServicesDep,
+    account: Annotated[Account | None, Depends(writer_account)],
+) -> Response:
     values = form_values(await request.form(), FIELDS)
     errors: dict[str, str] = {}
     if values["licence"] != "oui":
@@ -72,8 +79,9 @@ async def contribute_submit(request: Request, services: ServicesDep) -> Response
                 "body_md": values["body_md"],
                 "source_url": values["source_url"] or None,
                 "api_version": values["api_version"] or None,
-                "pseudo": values["pseudo"],
-                "email": values["email"],
+                "pseudo": account.pseudo[:40] if account is not None else values["pseudo"],
+                "email": None if account is not None else values["email"] or None,
+                "account_id": account.id if account is not None else None,
             }
         )
     except ValidationError as exc:
@@ -112,7 +120,7 @@ async def contribute_thanks(request: Request) -> Response:
         heading="Merci, votre contribution est bien reçue",
         message=(
             "Un relecteur la vérifie avant publication. Elle sera publiée avec votre pseudo, "
-            "sous licence CC BY 4.0. Votre e-mail reste privé."
+            "sous licence CC BY 4.0."
         ),
         back_url="/",
         back_label="Retour à l'accueil",

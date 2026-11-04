@@ -356,3 +356,63 @@ async def test_expired_oauth_grants_are_deleted(store: Store) -> None:
     assert (
         await store.take_oauth_grant(OAuthGrantKind.LOGIN, "vieux", T0 - timedelta(hours=1)) is None
     )
+
+
+async def test_contribution_with_an_account_has_no_email(store: Store) -> None:
+    contribution = Contribution(
+        id="avec-compte",
+        kind=ContributionKind.GOTCHA,
+        fiche_slug="demo-pay-sn",
+        title="Un titre de test",
+        body_md="Un corps de test assez long.",
+        pseudo="awa",
+        account_id="github:1",
+        created_at=T0,
+    )
+    await store.add_contribution(contribution)
+    assert await store.get_contribution("avec-compte") == contribution
+    listed = await store.list_contributions(status=ContributionStatus.PENDING)
+    assert contribution in listed
+    updated = contribution.model_copy(update={"status": ContributionStatus.APPROVED})
+    await store.update_contribution(updated)
+    saved = await store.get_contribution("avec-compte")
+    assert saved is not None
+    assert saved.account_id == "github:1"
+
+
+async def test_recent_confirmations_are_found_by_account(store: Store) -> None:
+    confirmation = Confirmation(
+        target_kind=TargetKind.FICHE,
+        target_id="demo-pay-sn",
+        account_id="github:1",
+        pseudo="awa",
+        proof="API v1, appel réussi.",
+        created_at=T0,
+    )
+    await store.add_confirmation(confirmation)
+    has = store.has_recent_confirmation
+    assert await has("github:1", "demo-pay-sn", T0 - timedelta(days=1))
+    assert not await has("github:1", "demo-pay-sn", T0 + timedelta(days=1))
+    assert not await has("github:2", "demo-pay-sn", T0 - timedelta(days=1))
+    assert not await has("github:1", "autre", T0 - timedelta(days=1))
+    later = confirmation.model_copy(update={"created_at": T0 + timedelta(hours=1)})
+    await store.add_confirmation(later)
+    listed = await store.list_confirmations(limit=1)
+    assert listed == [later]
+
+
+async def test_open_access_is_kept(store: Store) -> None:
+    fiche = await store.get_fiche("demo-pay-sn", include_drafts=True)
+    assert fiche is not None
+    assert not fiche.open_access
+    await store.upsert_fiche(fiche.model_copy(update={"open_access": True}))
+    saved = await store.get_fiche("demo-pay-sn", include_drafts=True)
+    assert saved is not None
+    assert saved.open_access
+
+
+async def test_session_grants_can_be_stored(store: Store) -> None:
+    await store.add_oauth_grant(
+        OAuthGrantKind.SESSION, "k", {"subject": "x"}, T0 + timedelta(days=1)
+    )
+    assert await store.get_oauth_grant(OAuthGrantKind.SESSION, "k", T0) == {"subject": "x"}

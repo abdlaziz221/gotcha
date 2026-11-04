@@ -51,6 +51,6 @@
 <section class="cta">
   <h2>Vous avez payé le prix d'un piège ?</h2>
   <p>Évitez-le au suivant : ajoutez-le en deux minutes, ou confirmez qu'une solution marche encore.</p>
-  <p><a class="button" href="/contribuer">Contribuer</a></p>
+  {% if viewer.can_write or viewer.site_auth %}<p><a class="button" href="/contribuer">Contribuer</a></p>{% endif %}
 </section>
 {% endblock %}

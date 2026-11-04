@@ -2,17 +2,20 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from pydantic import ValidationError
 from starlette.responses import RedirectResponse, Response
 
 from app.domain.errors import InvalidInputError, NotFoundError
-from app.domain.models import OutageReport
+from app.domain.models import Account, OutageReport
 from app.security.csrf import verify_csrf
 from app.security.ratelimit import rate_limit
 from app.web.deps import ServicesDep, country_options, fiche_options, flash_from
 from app.web.forms import FIELD_ERRORS, field_errors, form_values
 from app.web.presenters import fiche_url, incident_view, service_names
+from app.web.session import writer_account
 from app.web.templating import render
 from app.web.viewmodels import FormState, IncidentsPage, PageMeta, ReportOutagePage
 
@@ -38,7 +41,7 @@ async def incidents(
     return render(request, "pages/incidents.html", page)
 
 
-@router.get("/pannes/signaler")
+@router.get("/pannes/signaler", dependencies=[Depends(writer_account)])
 async def report_form(request: Request, services: ServicesDep, fiche: str = "") -> Response:
     page = ReportOutagePage(
         meta=REPORT_META,
@@ -56,7 +59,11 @@ async def report_form(request: Request, services: ServicesDep, fiche: str = "") 
         Depends(rate_limit("signaler", limit=5, window_seconds=3600)),
     ],
 )
-async def report_submit(request: Request, services: ServicesDep) -> Response:
+async def report_submit(
+    request: Request,
+    services: ServicesDep,
+    account: Annotated[Account | None, Depends(writer_account)],
+) -> Response:
     values = form_values(await request.form(), ("fiche_slug", "country", "description", "pseudo"))
     errors: dict[str, str] = {}
     try:
@@ -72,7 +79,11 @@ async def report_submit(request: Request, services: ServicesDep) -> Response:
                     service_slug=fiche.service.slug,
                     country=fiche.country or values["country"] or None,
                     description=values["description"],
-                    reported_by=values["pseudo"][:40] or None,
+                    reported_by=(
+                        account.pseudo[:40]
+                        if account is not None
+                        else values["pseudo"][:40] or None
+                    ),
                 )
             )
             return RedirectResponse(f"{fiche_url(fiche.slug)}?ok=signalement", status_code=303)

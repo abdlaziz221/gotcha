@@ -67,9 +67,13 @@ async def build_services(
         min_interval=timedelta(minutes=settings.ingest_min_interval_minutes),
     )
     contributions = ContributionService(store, fiches, clock, scan=scan_text)
-    if identity is None and settings.mcp_auth:
+    if identity is None and (settings.mcp_auth or settings.site_auth):
         identity = GitHubIdentity(settings.github_client_id, settings.github_client_secret)
     oauth = OAuthService(
-        store, clock, identity, callback_url=f"{settings.site_url}/github/callback"
+        store,
+        clock,
+        identity,
+        callback_url=f"{settings.site_url}/github/callback",
+        jury_code=settings.jury_code,
     )
     return Services(settings, store, clock, fiches, incidents, contributions, oauth)

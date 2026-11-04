@@ -33,7 +33,7 @@
 {%- endmacro %}
 
 {# Carte d'un piège avec le bouton « ça marche encore ». `g` : GotchaView. À importer « with context » (csrf_token). #}
-{% macro gotcha_card(g, fiche_slug) -%}
+{% macro gotcha_card(g, fiche_slug, login_url="/connexion") -%}
 <article class="gotcha gotcha--{{ g.severity.value }}" id="{{ g.anchor }}">
   <header>
     <h3 class="gotcha__title">{{ g.title }}</h3>
@@ -51,6 +51,9 @@
   {{ g.symptom_html }}
   <h4>Cause</h4>
   {{ g.cause_html }}
+  {% if g.locked %}
+  <p class="notice">La solution est réservée aux membres. Compte gratuit, <a href="{{ login_url }}">connexion avec GitHub</a>.</p>
+  {% else %}
   <h4>Solution</h4>
   {{ g.fix_html }}
   {% if g.failed_attempts_html %}
@@ -61,10 +64,27 @@
   <h4>Preuve</h4>
   {{ g.proof_html }}
   {% endif %}
+  {% endif %}
   <details class="gotcha__sources">
     <summary>Sources ({{ g.sources | length }})</summary>
     {{ source_list(g.sources) }}
   </details>
+  {% if viewer.pseudo %}
+  <details class="confirm">
+    <summary>Ça marche encore ({{ g.confirmations }})</summary>
+    <form class="form" method="post" action="/fiches/{{ fiche_slug }}/confirmer">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="target_kind" value="gotcha">
+      <input type="hidden" name="target_id" value="{{ g.id }}">
+      <div class="field">
+        <label for="preuve-{{ g.anchor }}">Votre preuve</label>
+        <textarea id="preuve-{{ g.anchor }}" name="proof" rows="3" maxlength="4000" required></textarea>
+        <p class="field__help">Versions, configuration sans secret, étapes et résultat obtenu.</p>
+      </div>
+      <button type="submit" class="button button--small">Confirmer</button>
+    </form>
+  </details>
+  {% elif viewer.can_write %}
   <form class="confirm" method="post" action="/fiches/{{ fiche_slug }}/confirmer">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <input type="hidden" name="target_kind" value="gotcha">
@@ -72,5 +92,8 @@
     <button type="submit" class="button button--small">Ça marche encore</button>
     <span class="confirm__count">{{ g.confirmations }} confirmation{% if g.confirmations > 1 %}s{% endif %}{% if g.confirmations %} · dernière le {{ g.last_confirmed_on | date_fr }}{% endif %}</span>
   </form>
+  {% else %}
+  <p class="confirm__count">{{ g.confirmations }} confirmation{% if g.confirmations > 1 %}s{% endif %}{% if g.confirmations %} · dernière le {{ g.last_confirmed_on | date_fr }}{% endif %}</p>
+  {% endif %}
 </article>
 {%- endmacro %}

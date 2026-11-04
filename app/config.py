@@ -50,6 +50,11 @@ class Settings:
     mcp_auth: bool = False
     github_client_id: str = ""
     github_client_secret: str = field(default="", repr=False)
+    # Connexion sur le site : aperçu public, solutions et formulaires réservés aux comptes.
+    # Sans elle, le site se lit librement, et la production n'accepte aucun formulaire.
+    site_auth: bool = False
+    # Code d'accès du jury, donné dans le formulaire de soumission.
+    jury_code: str = field(default="", repr=False)
 
     @property
     def is_prod(self) -> bool:
@@ -90,6 +95,8 @@ class Settings:
             mcp_auth=_bool(e.get("GOTCHA_MCP_AUTH"), default=prod),
             github_client_id=e.get("GOTCHA_GITHUB_CLIENT_ID", "").strip(),
             github_client_secret=e.get("GOTCHA_GITHUB_CLIENT_SECRET", "").strip(),
+            site_auth=_bool(e.get("GOTCHA_SITE_AUTH"), default=prod),
+            jury_code=e.get("GOTCHA_JURY_CODE", "").strip(),
         )
         settings.validate()
         return settings
@@ -101,18 +108,19 @@ class Settings:
             raise ValueError("GOTCHA_PROXY_HOPS doit être positif ou nul")
         if self.is_prod and self.show_drafts:
             raise ValueError("les brouillons ne doivent jamais être affichés en production")
-        if self.mcp_auth:
-            self._validate_mcp_auth()
+        if self.mcp_auth or self.site_auth:
+            self._validate_connection()
 
-    def _validate_mcp_auth(self) -> None:
+    def _validate_connection(self) -> None:
         if not (self.github_client_id and self.github_client_secret):
             raise ValueError(
-                "GOTCHA_MCP_AUTH demande GOTCHA_GITHUB_CLIENT_ID et GOTCHA_GITHUB_CLIENT_SECRET"
+                "la connexion demande GOTCHA_GITHUB_CLIENT_ID et GOTCHA_GITHUB_CLIENT_SECRET "
+                "(ou GOTCHA_MCP_AUTH=false et GOTCHA_SITE_AUTH=false)"
             )
         if self.is_prod and self.store == "memory":
             raise ValueError(
-                "GOTCHA_MCP_AUTH demande PostgreSQL en production : le stockage memory perdrait "
+                "la connexion demande PostgreSQL en production : le stockage memory perdrait "
                 "les comptes et les connexions à chaque redémarrage"
             )
         if self.is_prod and not self.site_url.startswith("https://"):
-            raise ValueError("GOTCHA_MCP_AUTH demande un GOTCHA_SITE_URL en https en production")
+            raise ValueError("la connexion demande un GOTCHA_SITE_URL en https en production")

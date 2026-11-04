@@ -21,7 +21,7 @@ from app.security import github
 from app.security.github import GitHubIdentity
 from app.services.clock import FixedClock
 from app.stores.memory.store import MemoryStore
-from tests.conftest import NOW, make_client
+from tests.conftest import NOW, FakeIdentity, make_client
 
 CALLBACK = "http://localhost:9000/callback"
 RESOURCE = "http://localhost:8000/mcp"
@@ -31,17 +31,6 @@ CHALLENGE = (
 )
 MCP_HEADERS = {"Accept": "application/json, text/event-stream"}
 TOOLS_LIST = {"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}}
-
-
-class FakeIdentity:
-    def authorize_url(self, *, state: str, redirect_uri: str) -> str:
-        return f"https://github.example/authorize?state={state}&redirect_uri={redirect_uri}"
-
-    async def fetch_identity(self, code: str, redirect_uri: str) -> ExternalIdentity:
-        if code == "mauvais":
-            raise IdentityError("échec")
-        assert redirect_uri.endswith("/github/callback")
-        return ExternalIdentity(id="github:42", pseudo="aminata")
 
 
 @pytest.fixture
@@ -295,7 +284,7 @@ def test_unknown_or_reused_login_is_refused(auth_client: TestClient) -> None:
     github_returns(auth_client, state=state, code="bon")
     reused = auth_client.get("/github/callback", params={"state": state, "code": "x"})
     assert reused.status_code == 400
-    assert "relancez-la" in reused.text
+    assert "relancez la connexion" in reused.text
 
 
 def test_login_expires(auth_client: TestClient, clock: FixedClock) -> None:

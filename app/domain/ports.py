@@ -118,6 +118,16 @@ class ContributionStore(Protocol):
         """
         ...
 
+    async def has_recent_confirmation(
+        self, account_id: str, target_id: str, since: datetime
+    ) -> bool:
+        """Ce compte a-t-il déjà confirmé cette cible depuis cette date ?"""
+        ...
+
+    async def list_confirmations(self, *, limit: int = 50) -> list[Confirmation]:
+        """Les plus récentes d'abord."""
+        ...
+
 
 class AccountStore(Protocol):
     """Comptes et données de connexion OAuth.

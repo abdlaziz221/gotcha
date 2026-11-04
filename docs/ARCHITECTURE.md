@@ -77,6 +77,7 @@ Une seule application Python (FastAPI) sert le site web et le serveur MCP. Pages
 | HSTS, cookie `Secure` | non | non | oui |
 | `GOTCHA_PROXY_HOPS` (proxys de confiance) | 0 | 0 | 1 |
 | `GOTCHA_MCP_AUTH` (connexion GitHub pour le serveur MCP) | faux | faux | vrai |
+| `GOTCHA_SITE_AUTH` (aperçu public, compte pour le reste) | faux | faux | vrai |
 
 Toutes les variables sont décrites dans `.env.example`.
 

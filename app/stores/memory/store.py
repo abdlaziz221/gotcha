@@ -181,6 +181,18 @@ class MemoryStore:
         ]
         self._fiches[fiche_slug] = fiche.model_copy(update={"gotchas": gotchas})
 
+    async def has_recent_confirmation(
+        self, account_id: str, target_id: str, since: datetime
+    ) -> bool:
+        return any(
+            c.account_id == account_id and c.target_id == target_id and c.created_at >= since
+            for c in self._confirmations
+        )
+
+    async def list_confirmations(self, *, limit: int = 50) -> list[Confirmation]:
+        ordered = sorted(self._confirmations, key=lambda c: c.created_at, reverse=True)
+        return ordered[:limit]
+
     # --- AccountStore ---------------------------------------------------------
 
     async def save_account(self, account: Account) -> None:

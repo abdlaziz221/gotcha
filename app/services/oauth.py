@@ -16,13 +16,15 @@ from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from app.domain.errors import IdentityError, InvalidInputError
-from app.domain.models import Account, OAuthGrantKind
+from app.domain.models import Account, ExternalIdentity, OAuthGrantKind
 from app.domain.ports import AccountStore, Clock, IdentityProvider
 
 LOGIN_TTL = timedelta(minutes=10)
 CODE_TTL = timedelta(minutes=5)
 ACCESS_TTL = timedelta(hours=1)
 REFRESH_TTL = timedelta(days=30)
+SESSION_TTL = timedelta(days=30)
+JURY_ACCOUNT = ExternalIdentity(id="jury:code", pseudo="jury")
 
 
 def _digest(token: str) -> str:
@@ -35,6 +37,19 @@ def _with_query(url: str, **params: str | None) -> str:
     query = parse_qsl(parts.query, keep_blank_values=True)
     query += [(key, value) for key, value in params.items() if value is not None]
     return urlunsplit(parts._replace(query=urlencode(query)))
+
+
+def safe_next_url(url: str) -> str:
+    """Adresse de retour après connexion : seulement une page de ce site."""
+    if not url.startswith("/") or url.startswith("//") or "\\" in url:
+        return "/"
+    return url
+
+
+@dataclass(frozen=True)
+class LoginResult:
+    redirect_url: str
+    session_token: str | None = None
 
 
 @dataclass(frozen=True)
@@ -52,11 +67,13 @@ class OAuthService:
         identity: IdentityProvider | None,
         *,
         callback_url: str,
+        jury_code: str = "",
     ) -> None:
         self._store = store
         self._clock = clock
         self._identity = identity
         self._callback_url = callback_url
+        self._jury_code = jury_code
 
     async def _new_grant(
         self, kind: OAuthGrantKind, data: dict[str, Any], ttl: timedelta
@@ -85,8 +102,12 @@ class OAuthService:
         state, _ = await self._new_grant(OAuthGrantKind.LOGIN, data, LOGIN_TTL)
         return self._identity.authorize_url(state=state, redirect_uri=self._callback_url)
 
-    async def finish_login(self, state: str, code: str | None, error: str | None) -> str:
-        """Traite le retour de GitHub ; renvoie l'adresse de retour vers l'outil MCP."""
+    async def begin_web_login(self, next_url: str) -> str:
+        """Connexion sur le site : renvoie l'adresse de connexion chez GitHub."""
+        return await self.begin_login({"web": True, "next": safe_next_url(next_url)})
+
+    async def finish_login(self, state: str, code: str | None, error: str | None) -> LoginResult:
+        """Traite le retour de GitHub : vers l'outil MCP, ou vers le site avec une session."""
         if self._identity is None:
             raise InvalidInputError("La connexion n'est pas activée sur ce serveur.")
         login = await self._store.take_oauth_grant(
@@ -94,31 +115,77 @@ class OAuthService:
         )
         if login is None:
             raise InvalidInputError(
-                "Demande de connexion inconnue ou expirée : relancez-la depuis votre outil."
+                "Demande de connexion inconnue ou expirée : relancez la connexion."
             )
-        back, client_state = login["redirect_uri"], login.get("state")
+
+        def refused(reason: str) -> LoginResult:
+            if login.get("web"):
+                query = urlencode({"erreur": "bloque" if reason == "blocked" else "refus"})
+                query += "&" + urlencode({"retour": login["next"]})
+                return LoginResult(f"/connexion?{query}")
+            mcp_error = "server_error" if reason == "failed" else "access_denied"
+            return LoginResult(
+                _with_query(login["redirect_uri"], error=mcp_error, state=login.get("state"))
+            )
+
         if error or not code:
-            return _with_query(back, error="access_denied", state=client_state)
+            return refused("denied")
         try:
             identity = await self._identity.fetch_identity(code, self._callback_url)
         except IdentityError:
-            return _with_query(back, error="server_error", state=client_state)
+            return refused("failed")
+        if not await self._save_account(identity):
+            return refused("blocked")
 
+        if login.get("web"):
+            token = await self._new_session(identity.id)
+            return LoginResult(login["next"], session_token=token)
+        data = {key: value for key, value in login.items() if key != "expires_at"}
+        authorization_code, _ = await self._new_grant(
+            OAuthGrantKind.CODE, {**data, "subject": identity.id}, CODE_TTL
+        )
+        return LoginResult(
+            _with_query(login["redirect_uri"], code=authorization_code, state=login.get("state"))
+        )
+
+    async def _save_account(self, identity: ExternalIdentity) -> bool:
+        """Crée ou met à jour le compte ; renvoie False s'il est bloqué."""
         now = self._clock.now()
         account = await self._store.get_account(identity.id)
         if account is not None and account.blocked:
-            return _with_query(back, error="access_denied", state=client_state)
+            return False
         created_at = account.created_at if account is not None else now
         await self._store.save_account(
             Account(
                 id=identity.id, pseudo=identity.pseudo, created_at=created_at, last_login_at=now
             )
         )
-        data = {key: value for key, value in login.items() if key != "expires_at"}
-        authorization_code, _ = await self._new_grant(
-            OAuthGrantKind.CODE, {**data, "subject": identity.id}, CODE_TTL
+        return True
+
+    async def _new_session(self, account_id: str) -> str:
+        token, _ = await self._new_grant(
+            OAuthGrantKind.SESSION, {"subject": account_id}, SESSION_TTL
         )
-        return _with_query(back, code=authorization_code, state=client_state)
+        return token
+
+    async def login_with_code(self, code: str) -> str | None:
+        """Accès du jury ; renvoie un jeton de session, ou None si le code est faux."""
+        if not self._jury_code or not secrets.compare_digest(code, self._jury_code):
+            return None
+        if not await self._save_account(JURY_ACCOUNT):
+            return None
+        return await self._new_session(JURY_ACCOUNT.id)
+
+    async def session_account(self, token: str) -> Account | None:
+        now = self._clock.now()
+        grant = await self._store.get_oauth_grant(OAuthGrantKind.SESSION, _digest(token), now)
+        if grant is None:
+            return None
+        account = await self._store.get_account(grant["subject"])
+        return account if account is not None and not account.blocked else None
+
+    async def end_session(self, token: str) -> None:
+        await self.revoke(OAuthGrantKind.SESSION, token)
 
     # --- Codes et jetons -------------------------------------------------------
 

@@ -196,6 +196,7 @@ class Fiche(Model):
     publication: Publication = Publication.DRAFT
     last_confirmed_on: date
     confirmations: int = Field(default=0, ge=0)
+    open_access: bool = False  # lisible entière sans compte (D23)
 
     @model_validator(mode="after")
     def _consistent(self) -> Self:
@@ -232,7 +233,9 @@ class ContributionInput(Model):
     source_url: HttpUrl | None = None
     api_version: str | None = Field(default=None, max_length=40)
     pseudo: str = Field(min_length=2, max_length=40)
-    email: str = Field(min_length=5, max_length=254)  # PRIVÉ : jamais affiché ni exposé
+    # PRIVÉ : jamais affiché ni exposé. Obligatoire seulement sans compte (développement).
+    email: str | None = Field(default=None, min_length=5, max_length=254)
+    account_id: str | None = None
 
 
 class Contribution(Model):
@@ -244,7 +247,8 @@ class Contribution(Model):
     source_url: HttpUrl | None = None
     api_version: str | None = None
     pseudo: str
-    email: str  # PRIVÉ : jamais affiché, jamais renvoyé par le serveur MCP
+    email: str | None = None  # PRIVÉ : jamais affiché, jamais renvoyé par le serveur MCP
+    account_id: str | None = None
     status: ContributionStatus = ContributionStatus.PENDING
     created_at: datetime
     reviewed_at: datetime | None = None
@@ -260,6 +264,8 @@ class Confirmation(Model):
     still_works: bool = True
     api_version: str | None = Field(default=None, max_length=40)
     pseudo: str | None = Field(default=None, max_length=40)
+    account_id: str | None = None
+    proof: str | None = Field(default=None, max_length=4000)
     created_at: datetime
 
 
@@ -340,6 +346,7 @@ class OAuthGrantKind(StrEnum):
     CODE = "code"  # code d'autorisation, à usage unique
     ACCESS = "access"  # jeton d'accès au serveur MCP
     REFRESH = "refresh"  # jeton de renouvellement, remplacé à chaque usage
+    SESSION = "session"  # session d'un visiteur connecté sur le site
 
 
 class ExternalIdentity(Model):

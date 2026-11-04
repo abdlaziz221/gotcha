@@ -11,7 +11,7 @@ from app.security.auth import require_reviewer
 from app.security.csrf import verify_csrf
 from app.web.deps import ServicesDep, flash_from
 from app.web.forms import form_values
-from app.web.presenters import contribution_view
+from app.web.presenters import confirmation_view, contribution_view
 from app.web.templating import render
 from app.web.viewmodels import PageMeta, ReviewPage
 
@@ -28,6 +28,9 @@ async def review_list(request: Request, services: ServicesDep, reviewer: Reviewe
         reviewer=reviewer,
         pending=[contribution_view(c, titles) for c in await services.contributions.pending()],
         flash=flash_from(request),
+        confirmations=[
+            confirmation_view(c) for c in await services.contributions.recent_confirmations()
+        ],
     )
     return render(request, "pages/review.html", page)
 

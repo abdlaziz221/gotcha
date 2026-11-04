@@ -43,7 +43,7 @@ async def _release(url: str) -> ReleaseReport:
 
 async def test_first_release_creates_schema_and_loads_content(empty_database: str) -> None:
     report = await _release(empty_database)
-    assert report.migrations == ["001_init", "002_comptes_oauth"]
+    assert report.migrations == ["001_init", "002_comptes_oauth", "003_compte_site"]
     assert report.seed == SeedReport(fiches=2, gotchas=2, terms=2)
 
     again = await _release(empty_database)
@@ -53,7 +53,7 @@ async def test_first_release_creates_schema_and_loads_content(empty_database: st
 
 async def test_instances_starting_together_do_not_collide(empty_database: str) -> None:
     reports = await asyncio.gather(*(_release(empty_database) for _ in range(3)))
-    assert sorted(len(r.migrations) for r in reports) == [0, 0, 2]
+    assert sorted(len(r.migrations) for r in reports) == [0, 0, 3]
     conn = await asyncpg.connect(empty_database)
     try:
         assert await conn.fetchval("SELECT count(*) FROM fiches") == 2

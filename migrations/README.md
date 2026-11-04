@@ -8,6 +8,7 @@ Fichiers SQL appliqués dans l'ordre de leur nom, **une seule fois chacun**, par
 | --- | --- |
 | `001_init.sql` | Schéma initial : fiches et pièges (JSONB, ordre des pièges, compteurs de confirmation), historique du contenu, glossaire, confirmations, contributions, pannes, lectures des flux |
 | `002_comptes_oauth.sql` | Comptes et données de connexion OAuth du serveur MCP (D20) |
+| `003_compte_site.sql` | Sessions du site, contributions et confirmations liées à un compte (D23) |
 
 ## Comment faire
 
