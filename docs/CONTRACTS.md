@@ -24,7 +24,7 @@ Objets immuables (Pydantic), champs inconnus refusés. Les valeurs des énuméra
 | --- | --- | --- |
 | `Service` | Un opérateur ou un hébergeur | `slug` (`mtn-momo`), `name`, `kind` (`payment` ou `hosting`), `operator`, `docs_url` |
 | `Fiche` | Un service dans un pays | `slug` (`orange-money-sn`), `service`, `country` (code ISO ou vide = tous les pays), `title`, `summary`, `prerequisites`, `steps`, `gotchas`, `differences`, `error_codes`, `sources`, `publication`, `last_confirmed_on`, `confirmations` |
-| `Gotcha` | Un piège | `id` (`<fiche>.<fichier>`), `title`, `symptom_md`, `cause_md`, `fix_md`, `severity` (`blocking`, `major`, `minor`), `environments` (`sandbox`, `production`), `api_version`, `error_codes`, `sources` (au moins une), `publication`, `verified_by`, `last_confirmed_on`, `confirmations` |
+| `Gotcha` | Un piège | `id` (`<fiche>.<fichier>`), `title`, `symptom_md`, `cause_md`, `fix_md`, `severity` (`blocking`, `major`, `minor`), `confidence` (`sourced`, `reproduced`, `production`), `failed_attempts_md?`, `proof_md?` (obligatoire au-dessus de `sourced`), `environments` (`sandbox`, `production`), `api_version`, `error_codes`, `sources` (au moins une), `publication`, `verified_by`, `last_confirmed_on`, `confirmations` |
 | `Source` | D'où vient une information | `title`, `url` ou `author`, `accessed_on` |
 | `GlossaryTerm` | Un terme expliqué | `slug`, `term`, `definition` |
 | `ContributionInput` / `Contribution` | Une proposition à relire | `kind` (`gotcha`, `step`, `correction`), `fiche_slug`, `title`, `body_md`, `source_url`, `api_version`, `pseudo`, `email` (**privé**), `status` (`pending`, `approved`, `rejected`) |

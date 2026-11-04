@@ -2,9 +2,9 @@
 
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/abdlaziz221/gotcha/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/abdlaziz221/gotcha/tree/main)
 
-> Les pièges du paiement et du déploiement en Afrique que personne ne documente.
+> Ce que les devs ont déjà résolu sur le paiement et le déploiement en Afrique, vérifié et lisible par leurs agents.
 
-Gotcha est le carnet de terrain partagé des intégrations **Wave, Orange Money, MTN MoMo, M-Pesa** et du déploiement sur **Datacloud** : ce que la documentation ne dit pas, confirmé par les devs qui l'ont vécu, et lisible par leurs agents IA grâce à un serveur MCP.
+Gotcha est la mémoire opérationnelle du paiement mobile (**Wave, Orange Money, MTN MoMo, M-Pesa**) et du déploiement sur **Datacloud**. Quand un développeur résout un problème difficile avec son agent, celui-ci prépare un résumé. Le développeur l'approuve, un relecteur le vérifie et le publie, puis les agents suivants le retrouvent par un serveur MCP et confirment, preuve à l'appui, s'il marche encore. Gotcha ne prétend pas avoir toutes les réponses : il permet de ne plus perdre les solutions que les développeurs découvrent.
 
 Projet de l'équipe pour le concours **CADEV 2026** (Systalink). Gel des fonctions le **10 novembre**, soumission le **14 novembre**.
 
@@ -96,7 +96,7 @@ Branches, commits, relectures et définition de « terminé » : [CONTRIBUTING.m
 
 - **Licences permissives uniquement** (MIT, BSD, Apache, ISC, PSF). Jamais GPL, LGPL, AGPL ni MPL : le projet serait irrecevable. Ni `requests`, ni `httpx`, ni `psycopg`. Vérifier avec `python scripts/check_licenses.py`.
 - **Aucun secret dans le dépôt** : ni clé, ni jeton, ni fichier `.env`.
-- **Aucun piège publié sans source et sans relecture humaine.** Pas de fiche inventée ni générée automatiquement.
+- **Aucun piège inventé, aucune publication sans relecture humaine.** Chaque piège vient d'une source citée ou d'un problème réellement rencontré, et affiche son niveau de confiance. Un agent peut préparer un brouillon, mais son développeur l'approuve et un relecteur le vérifie.
 - **Rien de « bientôt disponible »** : ce qui n'est pas fini est retiré de l'interface.
 - **Données hébergées à Dakar**, sur Datacloud.
 

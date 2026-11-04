@@ -33,7 +33,7 @@ async def home(request: Request, services: ServicesDep, background: BackgroundTa
     recent = await services.incidents.recent(active_only=True, limit=30)
     active = [v for v in (incident_view(i, names, now) for i in recent) if v.is_active]
     page = HomePage(
-        meta=PageMeta(title="Gotcha, les pièges du paiement que personne ne documente", path="/"),
+        meta=PageMeta(title="Gotcha, ce que les devs ont déjà résolu en Afrique", path="/"),
         cards=[
             fiche_card(f, statuses[f.slug], names, needs_review=services.fiches.needs_review(f))
             for f in fiches

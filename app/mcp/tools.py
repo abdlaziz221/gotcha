@@ -72,6 +72,11 @@ def _gotcha_out(services: Services, fiche: Fiche, gotcha: Gotcha) -> GotchaOut:
         symptom=strip_term_links(gotcha.symptom_md),
         cause=strip_term_links(gotcha.cause_md),
         fix=strip_term_links(gotcha.fix_md),
+        failed_attempts=(
+            strip_term_links(gotcha.failed_attempts_md) if gotcha.failed_attempts_md else None
+        ),
+        proof=strip_term_links(gotcha.proof_md) if gotcha.proof_md else None,
+        confidence=gotcha.confidence.value,
         error_codes=gotcha.error_codes,
         api_version=gotcha.api_version,
         sources=[str(s.url) if s.url else f"{s.title} ({s.author})" for s in gotcha.sources],

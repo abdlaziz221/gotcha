@@ -10,6 +10,7 @@ last_confirmed_on: 2026-10-28
 sources:
   - title: "Kolonell : bac à sable Wave et Orange Money (blog, non officiel)"
     url: https://kolonell.com/fr/blog/sandbox-paiement-wave-orange-money-dev-2026
+    published_on: 2026-06-02
     accessed_on: 2026-10-28
 ---
 

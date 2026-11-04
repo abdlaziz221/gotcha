@@ -18,6 +18,7 @@ from app.domain.models import (
 )
 from app.services.status import counts_now
 from app.web.labels import (
+    CONFIDENCE_LABELS,
     CONTRIBUTION_KIND_LABELS,
     ENVIRONMENT_LABELS,
     INCIDENT_SOURCE_LABELS,
@@ -56,6 +57,7 @@ def source_view(source: Source) -> SourceView:
         title=source.title,
         url=str(source.url) if source.url else None,
         author=source.author,
+        published_on=source.published_on,
         accessed_on=source.accessed_on,
     )
 
@@ -137,6 +139,14 @@ def gotcha_view(
         symptom_html=render_markdown(gotcha.symptom_md, glossary),
         cause_html=render_markdown(gotcha.cause_md, glossary),
         fix_html=render_markdown(gotcha.fix_md, glossary),
+        failed_attempts_html=(
+            render_markdown(gotcha.failed_attempts_md, glossary)
+            if gotcha.failed_attempts_md
+            else None
+        ),
+        proof_html=render_markdown(gotcha.proof_md, glossary) if gotcha.proof_md else None,
+        confidence=gotcha.confidence,
+        confidence_label=CONFIDENCE_LABELS[gotcha.confidence],
         sources=[source_view(s) for s in gotcha.sources],
         last_confirmed_on=gotcha.last_confirmed_on,
         confirmations=gotcha.confirmations,

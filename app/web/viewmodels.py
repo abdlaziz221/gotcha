@@ -20,6 +20,7 @@ from typing import Literal
 from markupsafe import Markup
 
 from app.domain.models import (
+    ConfidenceLevel,
     EnvDifference,
     ErrorCode,
     GlossaryTerm,
@@ -75,6 +76,7 @@ class SourceView:
     url: str | None
     author: str | None
     accessed_on: date
+    published_on: date | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -141,6 +143,10 @@ class GotchaView:
     symptom_html: Markup
     cause_html: Markup
     fix_html: Markup
+    failed_attempts_html: Markup | None
+    proof_html: Markup | None
+    confidence: ConfidenceLevel
+    confidence_label: str
     sources: list[SourceView]
     last_confirmed_on: date
     confirmations: int

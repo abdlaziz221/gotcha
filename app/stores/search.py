@@ -83,12 +83,17 @@ def _score(tokens: list[str], text: str, weight: float) -> float:
     return sum(weight for t in tokens if t in haystack)
 
 
+def _searchable_text(gotcha: Gotcha) -> str:
+    parts = [gotcha.symptom_md, gotcha.cause_md, gotcha.fix_md, gotcha.failed_attempts_md or ""]
+    return " ".join(parts)
+
+
 def _gotcha_hits(fiche: Fiche, tokens: list[str]) -> list[SearchHit]:
     hits = []
     for gotcha in fiche.gotchas:
         score = (
             _score(tokens, gotcha.title, 3)
-            + _score(tokens, f"{gotcha.symptom_md} {gotcha.cause_md} {gotcha.fix_md}", 1)
+            + _score(tokens, _searchable_text(gotcha), 1)
             + 5 * sum(1 for code in gotcha.error_codes if normalize(code) in tokens)
         )
         if score:

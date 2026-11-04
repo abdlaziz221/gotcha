@@ -18,6 +18,10 @@ from app.domain.models import Fiche, GlossaryTerm, Gotcha, Step
 
 _FRONTMATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---\s*\n?(.*)\Z", re.DOTALL)
 _SECTION_FIELDS = {"symptome": "symptom_md", "cause": "cause_md", "solution": "fix_md"}
+_OPTIONAL_SECTION_FIELDS = {
+    "pistes qui ont echoue": "failed_attempts_md",
+    "preuve": "proof_md",
+}
 
 
 class ContentError(ValueError):
@@ -67,10 +71,12 @@ def _load_gotcha(fiche_slug: str, path: Path) -> Gotcha:
     sections = _split_sections(match.group(2))
     fields: dict[str, Any] = {}
     for heading, body in sections.items():
-        key = _SECTION_FIELDS.get(_normalize(heading))
+        name = _normalize(heading)
+        key = _SECTION_FIELDS.get(name) or _OPTIONAL_SECTION_FIELDS.get(name)
         if key is None:
             raise ContentError(
-                f"{path} : section inconnue « {heading} » (Symptôme, Cause, Solution)"
+                f"{path} : section inconnue « {heading} » "
+                "(Symptôme, Cause, Solution, Pistes qui ont échoué, Preuve)"
             )
         fields[key] = body
     missing = [h for h, key in _SECTION_FIELDS.items() if key not in fields]

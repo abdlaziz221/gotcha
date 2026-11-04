@@ -38,6 +38,9 @@ class GotchaOut(BaseModel):
     symptom: str
     cause: str
     fix: str
+    failed_attempts: str | None
+    proof: str | None
+    confidence: str  # sourced, reproduced ou production
     error_codes: list[str]
     api_version: str | None
     sources: list[str]

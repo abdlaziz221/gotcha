@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from app.domain.models import (
+    ConfidenceLevel,
     ContributionKind,
     Environment,
     IncidentSource,
@@ -90,3 +91,10 @@ def datetime_fr(value: object) -> str:
     if hour is None:
         return date_fr(value)
     return f"{date_fr(value)} à {hour} h {value.minute:02d}"  # type: ignore[attr-defined]
+
+
+CONFIDENCE_LABELS = {
+    ConfidenceLevel.SOURCED: "Sourcé",
+    ConfidenceLevel.REPRODUCED: "Reproduit",
+    ConfidenceLevel.PRODUCTION: "Confirmé en production",
+}

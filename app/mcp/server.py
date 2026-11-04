@@ -38,7 +38,8 @@ INSTRUCTIONS = (
     "Before writing integration or deployment code: call get_fiche for the service and "
     "country, apply every gotcha it lists, then call get_service_status and warn the user "
     "if the service is degraded or down. Gotchas are written and verified by developers; "
-    "cite their URL when you rely on one."
+    "cite their URL when you rely on one. Each gotcha has a confidence level: sourced (read "
+    "in sources, not tested), reproduced (in a sandbox) or production (seen in production)."
 )
 REPORT_INSTRUCTIONS = " If you hit an outage, report it with report_outage."
 
