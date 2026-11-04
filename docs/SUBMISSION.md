@@ -36,24 +36,26 @@ grep -l "publication: published" content/fiches/*/pieges/*.md | wc -l
 
 **Nom du projet :** Gotcha
 
-**Accroche :** Les pièges du paiement et du déploiement en Afrique que personne ne documente.
+**Accroche :** Ce que les devs ont déjà résolu sur le paiement et le déploiement en Afrique, vérifié et lisible par leurs agents.
 
 **Description courte :**
 
-> Gotcha est le carnet de terrain partagé des devs africains qui intègrent Wave, Orange Money, MTN MoMo ou M-Pesa, ou qui déploient sur Datacloud. On y trouve ce que la documentation ne dit pas : des pièges sourcés et relus par un humain, l'état des services en direct, et un serveur MCP pour que les agents de code IA les évitent aussi.
+> Gotcha est la mémoire opérationnelle du paiement mobile (Wave, Orange Money, MTN MoMo, M-Pesa) et du déploiement sur Datacloud. Quand un dev résout un problème difficile avec son agent IA, celui-ci prépare un résumé : le dev l'approuve, un relecteur le vérifie et le publie, puis les agents suivants le retrouvent et confirment, preuve à l'appui, s'il marche encore. Gotcha ajoute l'état des services en direct, et il ne prétend pas avoir toutes les réponses : il permet de ne plus perdre les solutions que les devs découvrent.
 
 **Problème :**
 
-> Un dev qui intègre un paiement mobile en Afrique perd des jours sur des détails absents de la documentation officielle. Par exemple : une devise fictive en bac à sable, une adresse qui change en production, un statut « en attente » qu'il ne faut pas relancer. Les réponses existent, mais elles sont éparpillées dans des groupes WhatsApp, des tickets GitHub et des blogs. Les agents de code IA, de plus en plus utilisés, refont les mêmes erreurs.
+> Un dev qui intègre un paiement mobile en Afrique perd des jours sur des détails difficiles à trouver : une devise fictive en bac à sable, une adresse qui change en production, un statut « en attente » qu'il ne faut pas relancer. Les réponses sont éparpillées dans des groupes WhatsApp, des tickets GitHub et des blogs, et ces services sont presque absents de Stack Overflow. De plus en plus de solutions sont trouvées avec un agent IA, puis restent enfermées dans une conversation privée : le dev suivant refait tout le chemin.
 
 **Solution :**
 
-> Une fiche par service et par pays : les étapes, puis les pièges, chacun présenté en symptôme, cause et solution, avec ses sources. Les devs confirment qu'un piège existe encore ou en proposent un nouveau, relu avant publication. L'état de chaque service combine le flux public d'incidents de Flutterwave et les signalements des devs. Un serveur MCP donne le même savoir aux agents IA : lister les services, lire une fiche, chercher un piège, connaître l'état d'un service, signaler une panne.
+> Une fiche par service et par pays : les étapes, puis les pièges, chacun présenté en symptôme, cause, solution et pistes qui ont échoué, avec ses sources, sa preuve et un niveau de confiance honnête (sourcé, reproduit, confirmé en production). L'état de chaque service combine le flux public d'incidents de Flutterwave et les signalements des devs. Le site montre un aperçu public, et un compte gratuit donne tout, avec une connexion GitHub en un clic. Un serveur MCP donne le même savoir aux agents, qui peuvent aussi proposer et confirmer des pièges : rien n'est publié sans l'accord du dev et une relecture humaine.
 
 **Ce qui le distingue :**
 
-> - Rien n'est publié sans source et sans relecture humaine.
-> - Lisible par les agents IA (MCP), pas seulement par les humains.
+> - Un niveau de confiance sur chaque piège : on distingue ce qui a été lu de ce qui a été testé.
+> - Rien n'est publié sans relecture humaine, et aucune session d'agent n'est conservée.
+> - Spécialisé sur des services presque absents de Stack Overflow, avec les pannes en direct.
+> - Lu et enrichi par les agents IA (MCP), sans jeton à copier.
 > - Pensé pour la 3G : pages de moins de 200 Ko, utilisables sans JavaScript.
 > - Glossaire et mode pas à pas pour les débutants.
 > - Données hébergées à Dakar, sur Datacloud.
@@ -64,7 +66,9 @@ grep -l "publication: published" content/fiches/*/pieges/*.md | wc -l
 | --- | --- |
 | Site en ligne | `https://<domaine>` (A8) |
 | Page la plus parlante | `https://<domaine>/fiches/<la fiche la plus riche en pièges publiés>` |
-| Serveur MCP | `https://<domaine>/mcp` |
+| Serveur MCP | `https://<domaine>/mcp` (connexion GitHub) |
+| Fiche ouverte, sans compte | `https://<domaine>/fiches/datacloud-sn` |
+| Accès du jury | `https://<domaine>/connexion`, avec le code `GOTCHA_JURY_CODE` (à donner dans le formulaire, jamais dans le dépôt) |
 | Code source | <https://github.com/abdlaziz221/gotcha> |
 | Vidéo de démo | Lien de la vidéo de secours (K11) |
 
@@ -93,6 +97,7 @@ Le règlement n'admet que des composants sous licence permissive et demande de l
 | `postgres:17-alpine` | Base jetable des tests en CI | PostgreSQL License | Non : CI seulement |
 | pip-audit | Recherche de failles connues, en CI | Apache-2.0 ; dépend de certifi (MPL-2.0) | Non : installé dans un environnement isolé de la CI, jamais dans l'image (D14) |
 | CircleCI, GitHub | Intégration continue, hébergement du code | Services en ligne | Non |
+| Connexion GitHub (OAuth) | Identifie les comptes, sans aucune permission ; seuls l'identifiant et le pseudo sont gardés à Dakar | Service en ligne | Non |
 | Logo, favicon, feuille de style, JavaScript | Interface | Créés par l'équipe | Oui |
 | Polices | Texte | Polices du système du visiteur | Aucune police livrée |
 
@@ -140,12 +145,13 @@ La qualité technique compte pour 30 % de la note, et la maîtrise par l'équipe
 | Architecture : couches, ports, deux stockages, tests de contrat | Abdoul Aziz | D1, D4, D17 ; [ARCHITECTURE.md](ARCHITECTURE.md) |
 | PostgreSQL : schéma, migrations, préparation au démarrage | Abdoul Aziz | D6, D18 ; `migrations/`, `scripts/release.py` |
 | Sécurité : CSP, CSRF, quotas derrière le proxy, relecteurs | Abdoul Aziz | D19 ; [app/security/README.md](../app/security/README.md) |
+| Connexion : comptes, jetons opaques, aperçu public | Abdoul Aziz | D20, D23 ; `app/services/oauth.py`, `app/web/session.py` |
 | Déploiement : Datacloud, Serverless ou VPS, variables | Abdoul Aziz | [deploy/README.md](../deploy/README.md) |
 | Licences : pourquoi ni requests, ni httpx, ni psycopg | Abdoul Aziz | D2, D3, D14 ; [LICENCES.md](LICENCES.md) |
 | Interface : 3G, sans JavaScript indispensable, accessibilité | Loum | D1 ; budget de 200 Ko par page |
-| Serveur MCP : outils, réponses, signalement des pannes | Khalifa | D8 ; [DEMO.md](DEMO.md) |
+| Serveur MCP : outils, réponses, signalement des pannes, propositions des agents | Khalifa | D8, D24 ; [DEMO.md](DEMO.md) |
 | Pannes : flux Flutterwave, règles d'état | Khalifa | D7 ; `app/services/status.py` |
-| Contenu : sources, vérification, publication | Les trois | D10 ; [content/README.md](../content/README.md) |
+| Contenu : sources, niveaux de confiance, preuves, publication | Les trois | D10, D21, D22 ; [content/README.md](../content/README.md) |
 
 Pour s'entraîner, chacun présente aux deux autres une partie qu'il n'a pas écrite, puis répond à leurs questions.
 
@@ -157,9 +163,10 @@ Pour s'entraîner, chacun présente aux deux autres une partie qu'il n'a pas éc
    - `/healthz?db=1` répond `"database":"ok"` ;
    - HTTPS actif ;
    - les brouillons n'apparaissent pas ;
-   - le serveur MCP répond.
+   - le serveur MCP demande une connexion, et un vrai outil s'y connecte ;
+   - une fiche sans compte n'affiche que l'aperçu, et le code du jury ouvre tout.
    Faire aussi les vérifications de [app/security/README.md](../app/security/README.md).
-4. **Chiffres :** compter les pièges publiés et mettre à jour les textes de la section 2.
+4. **Chiffres :** compter les pièges publiés et mettre à jour les textes de la section 2. Ne promettre une économie de tokens que si le test de `docs/DEMO.md` la mesure.
 5. **Formulaire :** coller les textes et les liens de la section 2, puis joindre la liste des composants (section 3).
 6. **Déclarations :** titularité de chaque membre (section 5) et usage des outils d'IA (section 6).
 7. **Après l'envoi :** faire une capture de la confirmation et cocher la section 1.
