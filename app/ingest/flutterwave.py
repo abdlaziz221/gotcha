@@ -1,8 +1,8 @@
 """Import du flux public d'incidents de Flutterwave (format Statuspage v2). Responsable : Khalifa.
 
 Le flux ne donne ni opérateur ni pays sous forme structurée : on les déduit du
-texte (titre et messages). Les règles ci-dessous sont un point de départ, testées
-sur un extrait réel enregistré dans fixtures/flutterwave_incidents.json.
+texte (titre et messages). Les règles sont testées sur des incidents réels enregistrés
+dans fixtures/flutterwave_incidents.json.
 
 Lecture réseau avec urllib (bibliothèque standard) : ni requests ni httpx, qui
 entraînent certifi (licence MPL).
@@ -57,6 +57,23 @@ COUNTRY_WORDS: dict[str, str] = {
     "tanzania": "TZ",
     "rwanda": "RW",
     "zambia": "ZM",
+    # Sans ces pays, une panne « Orange Guinée » s'afficherait sur Orange Sénégal.
+    "guinea": "GN",
+    "guinee": "GN",
+    "gabon": "GA",
+    "drc": "CD",
+    "dr congo": "CD",
+    "democratic republic of congo": "CD",
+    "liberia": "LR",
+    "sierra leone": "SL",
+    "botswana": "BW",
+    "madagascar": "MG",
+    "malawi": "MW",
+    "mozambique": "MZ",
+    "south africa": "ZA",
+    "egypt": "EG",
+    "tunisia": "TN",
+    "morocco": "MA",
 }
 
 # Devises d'un seul pays. XOF et XAF couvrent plusieurs pays : on n'en déduit rien.
@@ -68,18 +85,55 @@ CURRENCY_COUNTRIES: dict[str, str] = {
     "RWF": "RW",
     "ZMW": "ZM",
     "NGN": "NG",
+    "MWK": "MW",
+    "EGP": "EG",
+    "ZAR": "ZA",
 }
 
 MOBILE_MONEY_WORDS = ("mobile money", "momo")
 
+# Une phrase avec ces mots dit que le Mobile Money marche : ce n'est pas une panne.
+WORKING_WORDS = (
+    "restored",
+    "resumed",
+    "working",
+    "unaffected",
+    "operational",
+    "back online",
+    "returned to normal",
+)
+
+# « Senegal: Orange, Wave » : un élément de liste, dans un message qui détaille les canaux.
+_CHANNEL_LIST_ITEM = re.compile(r"(?:^|\n|\*\*)[ \t]*([a-z' -]{3,40}?)[ \t]*:[ \t]*([^*\n]+)")
+
 
 def _norm(text: str) -> str:
-    decomposed = unicodedata.normalize("NFKD", html.unescape(text))
+    decomposed = unicodedata.normalize("NFKD", html.unescape(text)).replace("’", "'")
     return "".join(c for c in decomposed if not unicodedata.combining(c)).lower()
 
 
 def _contains_word(text: str, word: str) -> bool:
     return re.search(rf"\b{re.escape(word)}\b", text) is not None
+
+
+def _listed_channels(text: str) -> set[tuple[str, str]]:
+    """Couples (service, pays) d'un message qui détaille les canaux touchés par pays."""
+    return {
+        (service, COUNTRY_WORDS[country])
+        for country, channels in _CHANNEL_LIST_ITEM.findall(text)
+        if country in COUNTRY_WORDS
+        for word, service in OPERATORS.items()
+        if service and _contains_word(channels, word)
+    }
+
+
+def _reports_mobile_money_outage(text: str) -> bool:
+    """Le texte dit-il que le Mobile Money est touché, et pas seulement qu'il remarche ?"""
+    return any(
+        _contains_word(sentence, word) and not any(working in sentence for working in WORKING_WORDS)
+        for sentence in re.split(r"[.!?]+", text)
+        for word in MOBILE_MONEY_WORDS
+    )
 
 
 def _parse_dt(value: str) -> datetime:
@@ -93,13 +147,13 @@ def map_incident(raw: dict[str, Any]) -> list[Incident]:
     Mobile Money, ou seulement des opérateurs que Gotcha ne suit pas.
     """
     updates = raw.get("incident_updates") or []
-    text = _norm(" ".join([raw.get("name", "")] + [u.get("body", "") for u in updates]))
+    text = _norm(". ".join([raw.get("name", "")] + [u.get("body", "") for u in updates]))
 
     operators = {op for word, op in OPERATORS.items() if _contains_word(text, word)}
     tracked = sorted(op for op in operators if op)
     if operators and not tracked:
         return []
-    if not operators and not any(w in text for w in MOBILE_MONEY_WORDS):
+    if not operators and not _reports_mobile_money_outage(text):
         return []
 
     countries = sorted({c for w, c in COUNTRY_WORDS.items() if _contains_word(text, w)})
@@ -107,6 +161,9 @@ def map_incident(raw: dict[str, Any]) -> list[Incident]:
         countries = sorted(
             {c for cur, c in CURRENCY_COUNTRIES.items() if _contains_word(text, cur.lower())}
         )
+    targets: list[tuple[str | None, str | None]] = sorted(_listed_channels(text)) or [
+        (service, country) for service in (tracked or [None]) for country in (countries or [None])
+    ]
 
     resolved_at = _parse_dt(raw["resolved_at"]) if raw.get("resolved_at") else None
     if resolved_at is None and raw.get("status") in ("resolved", "postmortem"):
@@ -127,8 +184,7 @@ def map_incident(raw: dict[str, Any]) -> list[Incident]:
             started_at=_parse_dt(raw.get("started_at") or raw["created_at"]),
             resolved_at=resolved_at,
         )
-        for service in (tracked or [None])
-        for country in (countries or [None])
+        for service, country in targets
     ]
 
 
