@@ -1,6 +1,7 @@
 """Écrit les contributions approuvées dans content/, en brouillons à relire (tâche A7).
 
-Usage (production) : GOTCHA_ENV=prod DATABASE_URL=… python scripts/export_contributions.py
+Usage (production) :
+  GOTCHA_ENV=prod GOTCHA_MCP_AUTH=false GOTCHA_SITE_AUTH=false DATABASE_URL=… \n  python scripts/export_contributions.py
 Ensuite : relire les fichiers créés, les compléter, puis ouvrir une PR `content(<fiche>): …`.
 
 - Un piège devient content/fiches/<fiche>/pieges/contribution-<id>.md (brouillon).

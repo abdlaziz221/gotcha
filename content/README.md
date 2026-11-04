@@ -115,7 +115,7 @@ Dans le texte d'une étape ou d'un piège, `[[webhook]]` ou `[[jeton-acces|jeton
 Une contribution approuvée sur `/relecture` n'est pas publiée telle quelle. Abdoul Aziz lance :
 
 ```bash
-GOTCHA_ENV=prod DATABASE_URL=… python scripts/export_contributions.py
+GOTCHA_ENV=prod GOTCHA_MCP_AUTH=false GOTCHA_SITE_AUTH=false DATABASE_URL=… python scripts/export_contributions.py
 ```
 
 - un **piège** devient `fiches/<fiche>/pieges/contribution-<id>.md`, en brouillon : son texte est entier dans « Symptôme », à répartir entre Symptôme, Cause et Solution ;
