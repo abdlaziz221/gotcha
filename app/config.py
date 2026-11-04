@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal, cast
 
@@ -45,6 +45,11 @@ class Settings:
     site_url: str = "http://localhost:8000"
     # Sonde des limites de l'hébergeur (/_sonde/…), le temps du test A2 seulement.
     probe: bool = False
+    # Connexion GitHub obligatoire pour le serveur MCP. Sans elle, la production n'expose
+    # que les outils de lecture : aucune écriture anonyme, même en secours.
+    mcp_auth: bool = False
+    github_client_id: str = ""
+    github_client_secret: str = field(default="", repr=False)
 
     @property
     def is_prod(self) -> bool:
@@ -82,6 +87,9 @@ class Settings:
             proxy_hops=int(e.get("GOTCHA_PROXY_HOPS", "1" if prod else "0")),
             site_url=e.get("GOTCHA_SITE_URL", cls.site_url).rstrip("/"),
             probe=_bool(e.get("GOTCHA_PROBE"), default=False),
+            mcp_auth=_bool(e.get("GOTCHA_MCP_AUTH"), default=prod),
+            github_client_id=e.get("GOTCHA_GITHUB_CLIENT_ID", "").strip(),
+            github_client_secret=e.get("GOTCHA_GITHUB_CLIENT_SECRET", "").strip(),
         )
         settings.validate()
         return settings
@@ -93,3 +101,18 @@ class Settings:
             raise ValueError("GOTCHA_PROXY_HOPS doit être positif ou nul")
         if self.is_prod and self.show_drafts:
             raise ValueError("les brouillons ne doivent jamais être affichés en production")
+        if self.mcp_auth:
+            self._validate_mcp_auth()
+
+    def _validate_mcp_auth(self) -> None:
+        if not (self.github_client_id and self.github_client_secret):
+            raise ValueError(
+                "GOTCHA_MCP_AUTH demande GOTCHA_GITHUB_CLIENT_ID et GOTCHA_GITHUB_CLIENT_SECRET"
+            )
+        if self.is_prod and self.store == "memory":
+            raise ValueError(
+                "GOTCHA_MCP_AUTH demande PostgreSQL en production : le stockage memory perdrait "
+                "les comptes et les connexions à chaque redémarrage"
+            )
+        if self.is_prod and not self.site_url.startswith("https://"):
+            raise ValueError("GOTCHA_MCP_AUTH demande un GOTCHA_SITE_URL en https en production")

@@ -161,14 +161,19 @@ async def get_service_status(
 
 
 async def report_outage(
-    services: Services, service: str, description: str, country: str | None = None
+    services: Services,
+    service: str,
+    description: str,
+    country: str | None = None,
+    *,
+    reported_by: str = "agent",
 ) -> OutageReportOut:
     incident = await services.incidents.report(
         OutageReport(
             service_slug=service,
             country=country.upper() if country else None,
             description=description,
-            reported_by="agent",
+            reported_by=reported_by,
             source=IncidentSource.AGENT,
         )
     )

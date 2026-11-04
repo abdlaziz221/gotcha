@@ -104,20 +104,59 @@ def test_client_ip_reads_the_value_added_by_trusted_proxies(
 
 def test_proxy_hops_setting() -> None:
     assert Settings.from_env({}).proxy_hops == 0
-    prod = {"GOTCHA_ENV": "prod", "DATABASE_URL": "postgresql://x"}
+    prod = {"GOTCHA_ENV": "prod", "DATABASE_URL": "postgresql://x", "GOTCHA_MCP_AUTH": "0"}
     assert Settings.from_env(prod).proxy_hops == 1
     assert Settings.from_env({**prod, "GOTCHA_PROXY_HOPS": "2"}).proxy_hops == 2
     with pytest.raises(ValueError, match="GOTCHA_PROXY_HOPS"):
         Settings.from_env({"GOTCHA_PROXY_HOPS": "-1"})
 
 
+PROD_WITH_CONNECTION = {
+    "GOTCHA_ENV": "prod",
+    "DATABASE_URL": "postgresql://x",
+    "GOTCHA_SITE_URL": "https://gotcha.test",
+    "GOTCHA_GITHUB_CLIENT_ID": "identifiant",
+    "GOTCHA_GITHUB_CLIENT_SECRET": "secret-a-cacher",
+}
+
+
+def test_production_requires_the_mcp_connection_by_default() -> None:
+    settings = Settings.from_env(PROD_WITH_CONNECTION)
+    assert settings.mcp_auth
+    assert "secret-a-cacher" not in repr(settings)
+    assert not Settings.from_env({}).mcp_auth
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        ({"GOTCHA_GITHUB_CLIENT_SECRET": ""}, "GOTCHA_GITHUB_CLIENT_SECRET"),
+        ({"GOTCHA_GITHUB_CLIENT_ID": ""}, "GOTCHA_GITHUB_CLIENT_ID"),
+        ({"GOTCHA_STORE": "memory"}, "PostgreSQL"),
+        ({"GOTCHA_SITE_URL": "http://gotcha.test"}, "https"),
+    ],
+)
+def test_unsafe_mcp_connection_settings_are_refused(change: dict[str, str], message: str) -> None:
+    with pytest.raises(ValueError, match=message):
+        Settings.from_env({**PROD_WITH_CONNECTION, **change})
+
+
 def test_production_settings_are_safe() -> None:
-    settings = Settings.from_env({"GOTCHA_ENV": "prod", "DATABASE_URL": "postgresql://x"})
+    settings = Settings.from_env(
+        {"GOTCHA_ENV": "prod", "DATABASE_URL": "postgresql://x", "GOTCHA_MCP_AUTH": "0"}
+    )
     assert settings.store == "postgres"
     assert not settings.show_drafts
     assert not settings.load_fixtures
     assert settings.ingest_live
     with pytest.raises(ValueError, match="brouillons"):
-        Settings.from_env({"GOTCHA_ENV": "prod", "DATABASE_URL": "x", "GOTCHA_SHOW_DRAFTS": "1"})
+        Settings.from_env(
+            {
+                "GOTCHA_ENV": "prod",
+                "DATABASE_URL": "x",
+                "GOTCHA_SHOW_DRAFTS": "1",
+                "GOTCHA_MCP_AUTH": "0",
+            }
+        )
     with pytest.raises(ValueError, match="DATABASE_URL"):
         Settings.from_env({"GOTCHA_STORE": "postgres"})

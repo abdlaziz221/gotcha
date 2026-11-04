@@ -7,6 +7,7 @@ Fichiers SQL appliqués dans l'ordre de leur nom, **une seule fois chacun**, par
 | Fichier | Contenu |
 | --- | --- |
 | `001_init.sql` | Schéma initial : fiches et pièges (JSONB, ordre des pièges, compteurs de confirmation), historique du contenu, glossaire, confirmations, contributions, pannes, lectures des flux |
+| `002_comptes_oauth.sql` | Comptes et données de connexion OAuth du serveur MCP (D20) |
 
 ## Comment faire
 

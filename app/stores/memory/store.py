@@ -6,11 +6,14 @@ Tout ce qui est écrit pendant l'exécution est perdu au redémarrage.
 
 from __future__ import annotations
 
+import copy
 import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 from app.domain.models import (
+    Account,
     Confirmation,
     Contribution,
     ContributionStatus,
@@ -19,6 +22,7 @@ from app.domain.models import (
     Gotcha,
     Incident,
     IncidentSource,
+    OAuthGrantKind,
     SearchHit,
     SearchQuery,
     TargetKind,
@@ -56,6 +60,9 @@ class MemoryStore:
         self._contributions = {c.id: c for c in contributions or []}
         self._confirmations: list[Confirmation] = []
         self._last_ingest: dict[IncidentSource, datetime] = {}
+        self._accounts: dict[str, Account] = {}
+        self._oauth_clients: dict[str, dict[str, Any]] = {}
+        self._oauth_grants: dict[tuple[str, str], tuple[dict[str, Any], datetime]] = {}
 
     @classmethod
     def from_directories(
@@ -173,6 +180,42 @@ class MemoryStore:
             for g in fiche.gotchas
         ]
         self._fiches[fiche_slug] = fiche.model_copy(update={"gotchas": gotchas})
+
+    # --- AccountStore ---------------------------------------------------------
+
+    async def save_account(self, account: Account) -> None:
+        existing = self._accounts.get(account.id)
+        blocked = account.blocked or (existing is not None and existing.blocked)
+        self._accounts[account.id] = account.model_copy(update={"blocked": blocked})
+
+    async def get_account(self, account_id: str) -> Account | None:
+        return self._accounts.get(account_id)
+
+    async def save_oauth_client(self, client_id: str, data: dict[str, Any]) -> None:
+        self._oauth_clients[client_id] = copy.deepcopy(data)
+
+    async def get_oauth_client(self, client_id: str) -> dict[str, Any] | None:
+        return copy.deepcopy(self._oauth_clients.get(client_id))
+
+    async def add_oauth_grant(
+        self, kind: OAuthGrantKind, key_hash: str, data: dict[str, Any], expires_at: datetime
+    ) -> None:
+        self._oauth_grants[(kind.value, key_hash)] = (copy.deepcopy(data), expires_at)
+
+    async def get_oauth_grant(
+        self, kind: OAuthGrantKind, key_hash: str, now: datetime
+    ) -> dict[str, Any] | None:
+        grant = self._oauth_grants.get((kind.value, key_hash))
+        return copy.deepcopy(grant[0]) if grant is not None and grant[1] > now else None
+
+    async def take_oauth_grant(
+        self, kind: OAuthGrantKind, key_hash: str, now: datetime
+    ) -> dict[str, Any] | None:
+        grant = self._oauth_grants.pop((kind.value, key_hash), None)
+        return grant[0] if grant is not None and grant[1] > now else None
+
+    async def delete_expired_oauth_grants(self, now: datetime) -> None:
+        self._oauth_grants = {k: g for k, g in self._oauth_grants.items() if g[1] > now}
 
     async def close(self) -> None:
         return None

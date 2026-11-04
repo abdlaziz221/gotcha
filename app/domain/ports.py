@@ -8,16 +8,19 @@ tests/contract/ vérifient que les deux se comportent exactement pareil.
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Protocol
+from typing import Any, Protocol
 
 from app.domain.models import (
+    Account,
     Confirmation,
     Contribution,
     ContributionStatus,
+    ExternalIdentity,
     Fiche,
     GlossaryTerm,
     Incident,
     IncidentSource,
+    OAuthGrantKind,
     SearchHit,
     SearchQuery,
 )
@@ -116,7 +119,41 @@ class ContributionStore(Protocol):
         ...
 
 
-class Store(FicheStore, IncidentStore, ContributionStore, Protocol):
+class AccountStore(Protocol):
+    """Comptes et données de connexion OAuth.
+
+    Une autorisation (grant) est retrouvée par l'empreinte de son jeton : jetons et codes
+    ne sont jamais stockés en clair. Une autorisation expirée se comporte comme absente.
+    """
+
+    async def save_account(self, account: Account) -> None:
+        """Création ou remplacement, sur account.id. Conserve un blocage déjà posé."""
+        ...
+
+    async def get_account(self, account_id: str) -> Account | None: ...
+
+    async def save_oauth_client(self, client_id: str, data: dict[str, Any]) -> None: ...
+
+    async def get_oauth_client(self, client_id: str) -> dict[str, Any] | None: ...
+
+    async def add_oauth_grant(
+        self, kind: OAuthGrantKind, key_hash: str, data: dict[str, Any], expires_at: datetime
+    ) -> None: ...
+
+    async def get_oauth_grant(
+        self, kind: OAuthGrantKind, key_hash: str, now: datetime
+    ) -> dict[str, Any] | None: ...
+
+    async def take_oauth_grant(
+        self, kind: OAuthGrantKind, key_hash: str, now: datetime
+    ) -> dict[str, Any] | None:
+        """Renvoie et supprime en une seule opération : deux appels ne peuvent pas réussir."""
+        ...
+
+    async def delete_expired_oauth_grants(self, now: datetime) -> None: ...
+
+
+class Store(FicheStore, IncidentStore, ContributionStore, AccountStore, Protocol):
     """Le stockage complet. Choisi au démarrage selon GOTCHA_STORE (memory ou postgres)."""
 
     async def close(self) -> None: ...
@@ -129,4 +166,14 @@ class IncidentFeed(Protocol):
 
     async def fetch(self) -> list[Incident]:
         """Lit le flux et le traduit en pannes Gotcha. Lève une exception en cas d'échec."""
+        ...
+
+
+class IdentityProvider(Protocol):
+    """Identifie un développeur (GitHub en production, un faux dans les tests)."""
+
+    def authorize_url(self, *, state: str, redirect_uri: str) -> str: ...
+
+    async def fetch_identity(self, code: str, redirect_uri: str) -> ExternalIdentity:
+        """Échange le code contre l'identité ; lève IdentityError en cas d'échec."""
         ...
