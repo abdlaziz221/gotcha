@@ -13,7 +13,9 @@
 | 1:00 | **Avec Gotcha** : connexion GitHub en un clic, l'agent appelle `get_fiche`, prévient qu'aucun bac à sable n'est documenté, simule l'appel en local et cite sa source et son niveau de confiance | Le savoir vérifié, lisible par les agents |
 | 1:30 | L'agent résout un problème absent de Gotcha, montre un brouillon à son développeur et le propose. Un relecteur le publie | Les solutions ne se perdent plus |
 | 2:10 | Une panne d'Orange Money Sénégal est signalée : la fiche passe en « dégradé », et l'agent prévient avant d'écrire le code | Les pannes en direct |
-| 2:40 | Sur mobile, un étudiant ouvre la même fiche en mode pas à pas ; le pied de page rappelle « Hébergé à Dakar » | Accessible aux débutants, souverain |
+| 2:40 | Sur mobile, un étudiant ouvre la même fiche en mode pas à pas et écoute une dizaine de secondes d'explication en wolof, avec sa transcription (si l'audio est livré, D26) ; le pied de page rappelle « Hébergé à Dakar » | Accessible aux débutants, souverain |
+
+**Le cœur de la démo reste Wave sans puis avec Gotcha, et la panne en direct.** Le wolof la complète sans la remplacer : un jury panafricain ne le comprendra pas forcément, d'où une séquence courte et sa transcription.
 
 **Piège de rechange :** M-Pesa, où l'agent fait confiance au callback sans demander le statut à Safaricom. La fiche Datacloud reviendra dans la démo quand elle sera écrite à partir de notre déploiement (A10).
 
