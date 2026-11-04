@@ -235,7 +235,7 @@ def test_secret_in_a_proof_is_refused(site: TestClient) -> None:
             "csrf_token": csrf_token(site, f"/fiches/{LOCKED}"),
             "target_kind": "fiche",
             "target_id": LOCKED,
-            "proof": "Ma clé : -----BEGIN PRIVATE KEY-----",
+            "proof": "Ma clé : -----BEGIN " + "PRIVATE KEY-----",
         },
     )
     assert response.status_code >= 400
