@@ -9,7 +9,7 @@ from pydantic import ValidationError
 from starlette.responses import RedirectResponse, Response
 
 from app.domain.errors import InvalidInputError, NotFoundError, SecretDetectedError
-from app.domain.models import Account, ContributionInput, ContributionKind
+from app.domain.models import Account, ContributionInput, ContributionKind, UsageEvent
 from app.security.csrf import verify_csrf
 from app.security.ratelimit import rate_limit
 from app.web.deps import ServicesDep, fiche_options
@@ -90,6 +90,9 @@ async def contribute_submit(
     if data is not None and not errors:
         try:
             await services.contributions.submit(data)
+            await services.usage.record(
+                UsageEvent.PROPOSE, account.id if account is not None else None
+            )
             return RedirectResponse("/contribuer/merci", status_code=303)
         except SecretDetectedError as exc:
             errors["body_md"] = (

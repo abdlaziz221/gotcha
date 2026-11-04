@@ -89,7 +89,7 @@ Toutes les variables sont décrites dans `.env.example`.
 - **Markdown** sans HTML brut, nettoyé par nh3 avec une liste blanche de balises.
 - **Secrets** refusés dans les contributions, jamais stockés ni journalisés.
 - **Relecteurs** authentifiés en HTTP Basic, mots de passe hachés avec scrypt ; 10 essais ratés par adresse et par quart d'heure, puis blocage.
-- **Serveur MCP** : connexion GitHub obligatoire en production (D20), jetons stockés sous forme d'empreinte, quotas sur les routes OAuth ; en lecture seule, sauf `report_outage` limité par quota ; protection contre le DNS rebinding (`GOTCHA_ALLOWED_HOSTS`).
+- **Serveur MCP** : connexion GitHub obligatoire en production (D20), jetons stockés sous forme d'empreinte, quotas sur les routes OAuth ; les outils d'écriture (`report_outage`, `propose_gotcha`, `confirm_gotcha`) ont un quota par compte et ne publient rien sans relecture humaine ; protection contre le DNS rebinding (`GOTCHA_ALLOWED_HOSTS`).
 
 ## Pourquoi ces choix
 

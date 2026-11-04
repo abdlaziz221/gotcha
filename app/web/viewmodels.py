@@ -297,12 +297,20 @@ class ConfirmationView:
 
 
 @dataclass(frozen=True, slots=True)
+class UsageView:
+    label: str
+    count: int
+    accounts: int
+
+
+@dataclass(frozen=True, slots=True)
 class ReviewPage:
     meta: PageMeta
     reviewer: str
     pending: list[ContributionView]
     flash: Flash | None = None
     confirmations: list[ConfirmationView] = field(default_factory=list)
+    usage: list[UsageView] = field(default_factory=list)
 
 
 @dataclass(frozen=True, slots=True)

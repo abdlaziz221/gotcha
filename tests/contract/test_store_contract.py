@@ -25,6 +25,7 @@ from app.domain.models import (
     SearchQuery,
     Status,
     TargetKind,
+    UsageEvent,
 )
 from app.domain.ports import Store
 from app.stores.content_files import load_fiches, load_glossary
@@ -50,7 +51,8 @@ async def _postgres_store() -> Store:
         await apply_migrations(conn, ROOT_DIR / "migrations")
         await conn.execute(
             "TRUNCATE fiches, gotchas, fiche_revisions, glossary_terms, confirmations,"
-            " contributions, incidents, ingest_runs, accounts, oauth_clients, oauth_grants CASCADE"
+            " contributions, incidents, ingest_runs, accounts, oauth_clients, oauth_grants,"
+            " usage_counters CASCADE"
         )
     finally:
         await conn.close()
@@ -416,3 +418,18 @@ async def test_session_grants_can_be_stored(store: Store) -> None:
         OAuthGrantKind.SESSION, "k", {"subject": "x"}, T0 + timedelta(days=1)
     )
     assert await store.get_oauth_grant(OAuthGrantKind.SESSION, "k", T0) == {"subject": "x"}
+
+
+async def test_usage_is_counted_by_event_and_account(store: Store) -> None:
+    today = T0.date()
+    await store.add_usage(today, UsageEvent.READ_FICHE, "github:1")
+    await store.add_usage(today, UsageEvent.READ_FICHE, "github:1")
+    await store.add_usage(today, UsageEvent.READ_FICHE, "github:2")
+    await store.add_usage(today, UsageEvent.READ_FICHE, None)
+    await store.add_usage(today - timedelta(days=40), UsageEvent.READ_FICHE, "github:3")
+    await store.add_usage(today, UsageEvent.SEARCH_MISS, None)
+    totals = await store.usage_totals(today - timedelta(days=30))
+    assert [(t.event, t.count, t.accounts) for t in totals] == [
+        (UsageEvent.READ_FICHE, 4, 2),
+        (UsageEvent.SEARCH_MISS, 1, 0),
+    ]

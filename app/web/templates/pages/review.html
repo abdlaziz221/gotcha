@@ -28,6 +28,20 @@
 <p class="empty">Aucune contribution en attente.</p>
 {% endfor %}
 
+{% if page.usage %}
+<section aria-labelledby="usage">
+  <h2 id="usage">Usage des 30 derniers jours</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">Indicateur</th><th scope="col">Total</th><th scope="col">Comptes différents</th></tr></thead>
+      <tbody>
+        {% for u in page.usage %}<tr><th scope="row">{{ u.label }}</th><td>{{ u.count }}</td><td>{{ u.accounts }}</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
 {% if page.confirmations %}
 <section aria-labelledby="confirmations">
   <h2 id="confirmations">Dernières confirmations</h2>

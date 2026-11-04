@@ -44,7 +44,7 @@ Règles garanties par le modèle :
 
 ## 2. Ports de stockage
 
-`Store` réunit quatre interfaces : `FicheStore`, `IncidentStore`, `ContributionStore`, `AccountStore`. Deux implémentations : `MemoryStore` (référence, fichiers) et `PostgresStore` (production). Les tests de `tests/contract/` tournent sur les deux.
+`Store` réunit cinq interfaces : `FicheStore`, `IncidentStore`, `ContributionStore`, `AccountStore`, `UsageStore`. Deux implémentations : `MemoryStore` (référence, fichiers) et `PostgresStore` (production). Les tests de `tests/contract/` tournent sur les deux.
 
 | Méthode | Comportement promis |
 | --- | --- |
@@ -60,6 +60,7 @@ Règles garanties par le modèle :
 | `list_contributions(status)` | De la plus ancienne à la plus récente (file de relecture) |
 | `add_confirmation(c)` | Si `still_works` : le compteur de la cible augmente de 1 et sa date de dernière confirmation devient celle du jour |
 | `has_recent_confirmation(account_id, target_id, since)` / `list_confirmations(limit)` | Évite qu'un compte recompte la même cible ; dernières confirmations d'abord |
+| `add_usage(day, event, account_id)` / `usage_totals(since)` | Compteurs par jour, événement et compte ; aucun texte de recherche n'est conservé |
 | `save_account(account)` / `get_account(id)` | Création ou remplacement ; un blocage déjà posé est conservé |
 | `save_oauth_client(id, data)` / `get_oauth_client(id)` | Outils MCP enregistrés |
 | `add_oauth_grant`, `get_oauth_grant`, `take_oauth_grant`, `delete_expired_oauth_grants` | Autorisations retrouvées par l'empreinte de leur jeton. Expirée = absente. `take` renvoie et supprime en une seule opération : deux appels ne peuvent pas réussir |
@@ -100,6 +101,8 @@ Transport HTTP « streamable », sans état, réponses JSON, point d'entrée `PO
 | `search_gotchas` | `query`, `service?`, `country?` | `list[SearchResultOut]` | 10 résultats au plus |
 | `get_service_status` | `service`, `country?` | `StatusOut` | Avec un conseil (`advice`) pour l'agent |
 | `report_outage` | `service`, `description`, `country?` | `OutageReportOut` | Seul outil qui écrit ; 10 signalements par heure et par compte. Absent en production sans connexion |
+| `propose_gotcha` | `service`, `title`, `symptom`, `cause`, `fix`, `developer_approved`, `failed_attempts?`, `proof?`, `country?`, `api_version?`, `source_url?` | `ProposalOut` | Avec connexion seulement. Refusé sans l'accord du développeur. Reste en attente de relecture. 10 par heure et par compte |
+| `confirm_gotcha` | `gotcha_id`, `still_works`, `proof`, `api_version?` | `ConfirmationOut` | Avec connexion seulement. Preuve obligatoire. Compte une fois par mois. 30 par heure et par compte |
 
 Erreurs : un service ou une fiche inconnus renvoient une erreur d'outil lisible (`isError: true`), jamais une exception brute. Les textes des pièges sont renvoyés sans la syntaxe `[[terme]]` du glossaire.
 

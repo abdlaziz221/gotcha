@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 from collections import defaultdict
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
 import asyncpg
@@ -29,6 +29,8 @@ from app.domain.models import (
     SearchHit,
     SearchQuery,
     TargetKind,
+    UsageEvent,
+    UsageTotal,
 )
 from app.stores.search import keep_confirmations, search_fiches, sort_fiches, sort_glossary
 
@@ -457,3 +459,28 @@ class PostgresStore:
     async def delete_expired_oauth_grants(self, now: datetime) -> None:
         async with self._pool.acquire() as conn:
             await conn.execute("DELETE FROM oauth_grants WHERE expires_at <= $1", now)
+
+    # --- UsageStore -----------------------------------------------------------
+
+    async def add_usage(self, day: date, event: UsageEvent, account_id: str | None) -> None:
+        await self._pool.execute(
+            """
+            INSERT INTO usage_counters (day, event, account_id, count) VALUES ($1, $2, $3, 1)
+            ON CONFLICT (day, event, account_id)
+            DO UPDATE SET count = usage_counters.count + 1
+            """,
+            day,
+            event.value,
+            account_id or "",
+        )
+
+    async def usage_totals(self, since: date) -> list[UsageTotal]:
+        rows = await self._pool.fetch(
+            """
+            SELECT event, SUM(count)::int AS count,
+                   COUNT(DISTINCT NULLIF(account_id, ''))::int AS accounts
+            FROM usage_counters WHERE day >= $1 GROUP BY event ORDER BY event
+            """,
+            since,
+        )
+        return [UsageTotal.model_validate(dict(row)) for row in rows]

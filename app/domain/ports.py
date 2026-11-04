@@ -23,6 +23,8 @@ from app.domain.models import (
     OAuthGrantKind,
     SearchHit,
     SearchQuery,
+    UsageEvent,
+    UsageTotal,
 )
 
 
@@ -163,7 +165,17 @@ class AccountStore(Protocol):
     async def delete_expired_oauth_grants(self, now: datetime) -> None: ...
 
 
-class Store(FicheStore, IncidentStore, ContributionStore, AccountStore, Protocol):
+class UsageStore(Protocol):
+    async def add_usage(self, day: date, event: UsageEvent, account_id: str | None) -> None:
+        """Ajoute 1 au compteur du jour, de cet événement et de ce compte."""
+        ...
+
+    async def usage_totals(self, since: date) -> list[UsageTotal]:
+        """Totaux par événement depuis cette date incluse, triés par événement."""
+        ...
+
+
+class Store(FicheStore, IncidentStore, ContributionStore, AccountStore, UsageStore, Protocol):
     """Le stockage complet. Choisi au démarrage selon GOTCHA_STORE (memory ou postgres)."""
 
     async def close(self) -> None: ...
