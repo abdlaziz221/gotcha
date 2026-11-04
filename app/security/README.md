@@ -30,6 +30,8 @@
 
 - Les quotas sont **par instance** : sur le Serverless, plusieurs instances ont chacune leurs compteurs. Suffisant pour le MVP ; à déplacer dans PostgreSQL en cas d'abus.
 - La détection des secrets attrape les formats connus, pas tout : la relecture humaine reste obligatoire.
+- Les formats Wave viennent de docs.wave.com. Les longueurs de la clé d'abonnement MTN MoMo et de la clé marchand Orange Money restent à confirmer sur de vrais comptes (K1) ; les clés Daraja n'ont pas de format publié et passent par les règles génériques.
+- Un secret sans guillemets et sans chiffre, ou contenant un point ou un souligné, n'est détecté que dans un fichier `.env` ou YAML : sinon on signalerait les noms de variables.
 
 ## Tester
 
