@@ -65,20 +65,22 @@ grep -l "publication: published" content/fiches/*/pieges/*.md | wc -l
 | Quoi | Lien |
 | --- | --- |
 | Site en ligne | `https://<domaine>` (A8) |
-| Page la plus parlante | `https://<domaine>/fiches/<la fiche la plus riche en pièges publiés>` |
+| Page la plus parlante, ouverte sans compte (D27) | `https://<domaine>/fiches/wave-sn` |
 | Serveur MCP | `https://<domaine>/mcp` (connexion GitHub) |
-| Fiche ouverte, sans compte | `https://<domaine>/fiches/datacloud-sn` |
+| Autre fiche ouverte, sans compte | `https://<domaine>/fiches/datacloud-sn` |
 | Accès du jury | `https://<domaine>/connexion`, avec le code `GOTCHA_JURY_CODE` (à donner dans le formulaire, jamais dans le dépôt) |
 | Code source | <https://github.com/abdlaziz221/gotcha> |
 | Vidéo de démo | Lien de la vidéo de secours (K11) |
 
-**Rôles :**
+**Rôles :** ce tableau donne les responsabilités prévues. Il est réécrit le 13 novembre d'après le travail réellement fait (D28) : on ne garde que ce qui est vrai, et on ne réécrit jamais l'historique Git.
 
 | Membre | GitHub | Rôle | Parties du projet |
 | --- | --- | --- | --- |
-| Abdoul Aziz | `abdlaziz221` | Full-Stack : backend, DevOps, intégration | Stockage PostgreSQL et migrations, services des fiches et des contributions, routes du site, sécurité, déploiement sur Datacloud, CI, contenu Orange Money et Datacloud |
-| Loum | `AliouLoum` | Frontend et design | Identité visuelle, pages et composants, accessibilité, budget 3G, contenu Wave, visuels |
-| Khalifa | `TechwithXalifa` | Ingénieur IA | Serveur MCP, import des pannes Flutterwave, règles d'état des services, détection des secrets, démo avec un agent, contenu MTN MoMo et M-Pesa |
+| Abdoul Aziz | `abdlaziz221` | Full-Stack : backend, DevOps, intégration | Architecture, backend, PostgreSQL, sécurité, OAuth, déploiement sur Datacloud, CI, contenu Orange Money et Datacloud |
+| Loum | `AliouLoum` | Frontend et design | Interface, UX, design, accessibilité, budget 3G, lecteur audio, contenu Wave, visuels |
+| Khalifa | `TechwithXalifa` | Ingénieur IA | Serveur MCP, intégration des agents, pannes, détection des secrets, tests, reproduction des pièges, démo, contenu MTN MoMo et M-Pesa |
+
+Chacun pousse son travail sous son propre compte et participe aux relectures et aux tests. On garde les preuves de ce qui n'est pas du code : maquettes, tests, documentation, enregistrements, relectures.
 
 **Visuels :** ceux de la tâche L13.
 
@@ -98,14 +100,16 @@ Le règlement n'admet que des composants sous licence permissive et demande de l
 | pip-audit | Recherche de failles connues, en CI | Apache-2.0 ; dépend de certifi (MPL-2.0) | Non : installé dans un environnement isolé de la CI, jamais dans l'image (D14) |
 | CircleCI, GitHub | Intégration continue, hébergement du code | Services en ligne | Non |
 | Connexion GitHub (OAuth) | Identifie les comptes, sans aucune permission ; seuls l'identifiant et le pseudo sont gardés à Dakar | Service en ligne | Non |
-| Logo, favicon, feuille de style, JavaScript | Interface | Créés par l'équipe | Oui |
+| Logo, favicon, feuille de style, JavaScript | Interface | Créés pour ce projet, sans composant tiers | Oui |
 | Polices | Texte | Polices du système du visiteur | Aucune police livrée |
 
 ## 4. Originalité et droits des tiers
 
-- **Code :** le dépôt a été créé le 2 novembre 2026 (premier commit `e2e0c97`), après l'ouverture du concours le 29 septembre. Aucun élément de code antérieur au concours n'y est intégré. Si un membre en intègre un, il le déclare ici avant la soumission (article 6).
-- **Contenu :** les fiches et les pièges sont écrits par l'équipe à partir de sources citées sur chaque page. Rien n'est copié, et rien n'est publié sans relecture humaine (D10).
-- **Contributions des visiteurs :** publiées sous licence CC BY 4.0 (D12). Les données personnelles se limitent au pseudo et à l'e-mail.
+- **Code :** le dépôt a été créé le 2 novembre 2026 (premier commit `e2e0c97`), après l'ouverture du concours le 29 septembre. Cette date ne prouve pas à elle seule que tout a été créé pendant le concours : chaque membre vérifie qu'aucun élément ne vient d'un prototype ou d'un projet antérieur, et le déclare ici avant la soumission si c'est le cas (article 6). [ ] Abdoul Aziz · [ ] Loum · [ ] Khalifa
+- **Contenu :** les fiches et les pièges partent de sources citées sur chaque page. Rien n'est copié, et rien n'est publié sans relecture humaine (D10).
+- **Contributions des visiteurs :** publiées sous licence CC BY 4.0 (D12), avec le pseudo de leur auteur.
+- **Données de nos utilisateurs :** avec un compte, on garde l'identifiant et le pseudo GitHub. Sans connexion, seul le plan de secours demande un pseudo et un e-mail, jamais affiché. L'article 11 ne couvre que les traitements faits par Systalink : nos propres obligations viennent de la loi 2008-12, d'où la page « Où sont vos données » et la formalité à vérifier auprès de la CDP.
+- **Droits du lauréat :** l'article 9 ne couvre que les non-lauréats. L'article 6 parle d'exploitation exclusive à propos des licences des composants, ce qui ne prouve pas une cession de nos droits. On demande une confirmation écrite à Systalink avant la soumission (A1).
 - **Pannes :** le flux public d'incidents de Flutterwave est lu en direct. Chaque incident garde le lien vers sa page d'origine quand le flux le fournit.
 - **Licence du code :** droits réservés à l'équipe (D13), sans fichier de licence. Le dépôt est public, mais le code n'est pas réutilisable sans accord.
 
@@ -136,6 +140,8 @@ La déclaration se fait dans le formulaire. Elle doit être **exacte et complèt
 
 Le règlement demande aussi de garantir que cet usage respecte les conditions d'utilisation des outils et les droits des tiers.
 
+**Inventaire à préparer (T8) :** pour chaque outil, les fonctions concernées et le niveau de validation humaine. Pas de formule vague comme « projet développé avec l'IA ». On n'attribue à un outil que ce qu'il a réellement produit, et une partie écrite directement par un membre est indiquée comme telle. Le texte se remplit dans le formulaire, pas dans ce dépôt.
+
 ## 7. Maîtrise de la solution devant le jury
 
 La qualité technique compte pour 30 % de la note, et la maîtrise par l'équipe en fait partie (annexe 1). Chaque membre doit pouvoir expliquer ses parties, et les grandes lignes de celles des autres.
@@ -154,6 +160,8 @@ La qualité technique compte pour 30 % de la note, et la maîtrise par l'équipe
 | Contenu : sources, niveaux de confiance, preuves, publication | Les trois | D10, D21, D22 ; [content/README.md](../content/README.md) |
 
 Pour s'entraîner, chacun présente aux deux autres une partie qu'il n'a pas écrite, puis répond à leurs questions.
+
+**Séance interne (T10) :** chacun doit pouvoir expliquer le fonctionnement d'OAuth, le cycle MCP, PostgreSQL, les niveaux de confiance, les protections contre les contributions malveillantes et le déploiement sur Datacloud. La relecture des PR sert aussi à s'y préparer.
 
 ## 8. Le jour J (samedi 14 novembre)
 
@@ -179,7 +187,23 @@ Pour s'entraîner, chacun présente aux deux autres une partie qu'il n'a pas éc
 
 | Étape | Dates | À faire |
 | --- | --- | --- |
-| Vote des pairs | 15 nov. 18 h – 16 nov. 23 h 59 | **Les trois votent** : un seul oubli exclut le projet (article 7) |
+| Vote des pairs | 15 nov. 18 h – 16 nov. 23 h 59 | **Les trois votent**, chacun depuis son compte, et vérifient la confirmation : un seul oubli exclut le projet (article 7) |
 | Vote du public (10 % de la note au plus) | 17 – 20 nov. | Message de campagne prêt avant le 15 ; Galsen DEV, écoles, testeurs. Chaque vote est confirmé par e-mail : prévenir les votants |
 | Jury | 21 – 22 nov. | Démo répétée, chacun capable d'expliquer son code (section 7) |
 | Résultats | 23 nov. | |
+
+## 10. La note finale
+
+**Le vote des pairs vient d'abord (article 7).** Chaque membre reçoit jusqu'à 10 projets de son groupe national et vote pour un seul. Les 3 projets les plus votés de chaque groupe sont retenus, et la grille ne s'applique qu'ensuite. Un votant doit donc comprendre et essayer Gotcha en une minute, sans compte (D27).
+
+**Grille officielle (annexe 1).** Chaque critère est noté sur 20 par chaque membre du jury, et la note du jury est la moyenne des notes individuelles.
+
+| Critère | Évaluateur | Poids | Ce que Gotcha doit montrer |
+| --- | --- | --- | --- |
+| Qualité technique : architecture, robustesse, sécurité, qualité du code, maîtrise par l'équipe, conformité des licences | Jury | 30 % | Site, MCP et PostgreSQL en ligne, redémarrage sans perte, tests, et une équipe qui explique tout le code (section 7) |
+| Pertinence et utilité au regard du sujet | Jury | 25 % | Des développeurs partagent leurs difficultés et apprennent de l'expérience des autres : contributions, relectures et confirmations visibles |
+| Expérience utilisateur et ergonomie | Jury | 20 % | Un débutant comprend et utilise le site sur mobile : mode pas à pas, glossaire, explications en wolof si elles sont livrées (D26) |
+| Innovation et originalité | Jury | 15 % | L'association d'une mémoire de terrain, de preuves, de pannes en direct et d'un accès par MCP |
+| Vote du public | Public | 10 % au plus | Une campagne prête avant le 15 novembre |
+
+Datacloud est une condition de recevabilité, pas un critère de notation (article 6). Le libellé exact du sujet n'est pas dans le règlement : à copier depuis l'interface du concours (T9).
