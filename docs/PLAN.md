@@ -103,7 +103,7 @@ Chaque tâche a son issue sur GitHub (même identifiant dans le titre). Le READM
 | --- | --- | --- | --- |
 | K1 | Ouvrir les comptes bac à sable MTN MoMo et Daraja ; demander l'accès Orange Money | — | lun. 2 |
 | K2 | Brancher un vrai agent de code sur le serveur MCP local ; affiner les descriptions et les réponses des outils | `app/mcp/` | mar. 3 |
-| K3 | Reproduire le piège `X-Target-Environment` dans le bac à sable MTN (sinon la devise EUR) ; mettre la fiche à jour | `content/fiches/mtn-momo/` | mer. 4 |
+| K3 | Reproduire des pièges dans les bacs à sable MTN et Daraja (dont le callback M-Pesa) ; passer les fiches au niveau `reproduced` | `content/fiches/mtn-momo/` | mer. 4 |
 | K4 | Import Flutterwave : affiner la correspondance opérateur et pays, tester sur le flux en direct | `app/ingest/` | jeu. 5 |
 | K5 | Règles d'état (seuils, expiration des signalements), documentées | `app/services/status.py` | jeu. 5 |
 | K6 | Outil `report_outage` : quotas, abus, messages | `app/mcp/` | ven. 6 |
@@ -117,7 +117,7 @@ Chaque tâche a son issue sur GitHub (même identifiant dans le titre). Le READM
 
 1. **Datacloud (A2)** : c'est le premier risque, pas le code. Sans réponse mercredi soir, on bascule sur un VPS à Dakar sans débattre.
 2. **Contenu (A9, A10, L11, K10)** : un carnet vide ne vaut rien. On écrit tous les jours.
-3. **Bac à sable MTN (K1, K3)** : la démo en dépend. Piège de rechange : la devise EUR.
+3. **Bacs à sable (K1, K3)** : ils ne servent plus à la démo (D25), mais ils font passer des pièges de « sourcé » à « reproduit », à commencer par M-Pesa.
 
 ## Critères de réussite du MVP
 

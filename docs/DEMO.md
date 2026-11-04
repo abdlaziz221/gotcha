@@ -8,22 +8,62 @@
 
 | Temps | Ce qu'on montre | Ce qu'on dit |
 | --- | --- | --- |
-| 0:00 | Un agent de code reçoit la consigne : « Ajoute le paiement MTN MoMo à cette petite boutique » | Le problème : la doc ne dit pas tout |
-| 0:30 | **Sans Gotcha** : l'agent échoue sur le piège retenu, ou y passe plus de temps et de tokens. On montre le résultat réel du test | Ce que vivent les devs, et leurs agents |
-| 1:00 | **Avec Gotcha** : connexion GitHub en un clic, l'agent appelle `get_fiche`, applique le piège et cite sa source et son niveau de confiance | Le savoir vérifié, lisible par les agents |
+| 0:00 | Un agent de code reçoit la consigne : « Intègre le paiement Wave à cette boutique, je veux tester dans le bac à sable » | Le problème : ce savoir est difficile à trouver |
+| 0:30 | **Sans Gotcha** : l'agent prépare une configuration pour un bac à sable que la documentation de Wave ne mentionne pas. On montre son vrai résultat | Ce que vivent les devs, et leurs agents |
+| 1:00 | **Avec Gotcha** : connexion GitHub en un clic, l'agent appelle `get_fiche`, prévient qu'aucun bac à sable n'est documenté, simule l'appel en local et cite sa source et son niveau de confiance | Le savoir vérifié, lisible par les agents |
 | 1:30 | L'agent résout un problème absent de Gotcha, montre un brouillon à son développeur et le propose. Un relecteur le publie | Les solutions ne se perdent plus |
-| 1:40 | L'agent lit la fiche Datacloud et déploie la boutique du premier coup | Utile aussi pour les autres équipes |
-| 2:10 | Un dev signale une panne d'Orange Money Sénégal : la fiche passe en « dégradé », l'agent prévient et propose un repli | Les pannes en direct |
+| 2:10 | Une panne d'Orange Money Sénégal est signalée : la fiche passe en « dégradé », et l'agent prévient avant d'écrire le code | Les pannes en direct |
 | 2:40 | Sur mobile, un étudiant ouvre la même fiche en mode pas à pas ; le pied de page rappelle « Hébergé à Dakar » | Accessible aux débutants, souverain |
 
-**Le piège est choisi parmi les échecs réels d'un agent sans Gotcha** (au moins 5 essais avec et sans Gotcha, en mesurant tokens, tentatives, temps et réussite), et reproduit dans le bac à sable (K3). Un agent connaît peut-être déjà `X-Target-Environment` : ne rien affirmer sans ce test. Sans gain mesuré, on ne promet pas d'économie de tokens et on défend le savoir vérifié et les pannes.
+**Piège de rechange :** M-Pesa, où l'agent fait confiance au callback sans demander le statut à Safaricom. La fiche Datacloud reviendra dans la démo quand elle sera écrite à partir de notre déploiement (A10).
+
+**Ne pas utiliser `X-Target-Environment` :** l'agent le connaît déjà, même sans web et sans Gotcha. La démo prévue au départ n'aurait rien montré.
+
+## Résultats de l'essai du 4 novembre
+
+Un agent de code du commerce, avec un modèle économique, a reçu la même consigne dans un dossier vide. Chaque case compte 5 essais, et le score mesure la part des pièges de la fiche pris en compte dans le code ou le README produit.
+
+| Tâche | Sans web ni Gotcha | Avec le web | Avec Gotcha |
+| --- | --- | --- | --- |
+| MTN MoMo | 100 % | 100 % | 100 % |
+| Orange Money Sénégal | 90 % | 93 % | 100 % |
+| M-Pesa | 60 % | 70 % | 100 % |
+| Wave Sénégal | 50 % | 40 % | 100 % |
+| Datacloud | 25 % | 75 % | 100 % |
+
+**Les écarts les plus nets :**
+
+| Ce qui est vérifié | Sans web | Avec le web | Avec Gotcha |
+| --- | --- | --- | --- |
+| Wave : dire qu'aucun bac à sable n'est documenté | 0 sur 5 | 0 sur 5 | 5 sur 5 |
+| M-Pesa : confirmer le paiement par une requête de statut | 1 sur 5 | 0 sur 5 | 5 sur 5 |
+| Datacloud : citer `platform.systalink.com` | 0 sur 5 | 4 sur 5 | 5 sur 5 |
+| Orange Money en panne : prévenir le développeur | Impossible | Non testé | 5 sur 5 |
+
+**Coût pour l'ensemble des cinq tâches** (somme des médianes de tokens et de temps, somme des coûts moyens), par rapport à Gotcha :
+
+| Comparaison | Tokens | Coût | Temps |
+| --- | --- | --- | --- |
+| Gotcha face à l'agent qui cherche sur le web | -21 % | -51 % | -26 % |
+| Gotcha face à l'agent sans web ni Gotcha | +40 % | +30 % | +14 % |
+
+**Ce qu'on peut dire :** un agent qui consulte Gotcha couvre plus de pièges, et il coûte moins qu'un agent qui cherche sur le web. Il coûte plus qu'un agent qui répond de mémoire, souvent à tort sur ces services. On ne promet donc pas une « économie de tokens » sans préciser la comparaison.
+
+**Les limites de cet essai :**
+- 5 essais par case, un seul agent et son modèle le moins cher : un modèle plus fort peut réduire les écarts.
+- Les points vérifiés viennent de nos propres fiches, ce qui avantage Gotcha par construction.
+- Un point vérifié veut dire que le code ou le README en tient compte, pas que le code marche : aucune API de paiement n'a été appelée.
+- Les pièges eux-mêmes sont encore au niveau « sourcé ». Si une fiche se trompe, l'agent recopie l'erreur.
+- La consigne Wave demande un bac à sable, ce qui pousse l'agent à en supposer un.
+- L'agent avait déjà Gotcha installé, sans connexion, et le serveur lui demandait de le consulter. Il l'a fait dans tous les essais.
 
 ## Préparation
 
 - [ ] Configuration du client MCP de l'agent pointant vers `https://<domaine>/mcp`
 - [ ] Projet « boutique » minimal prêt, dans deux états (sans et avec Gotcha)
-- [ ] Comptes bac à sable MTN MoMo fonctionnels, clés dans les variables d'environnement
-- [ ] Test de l'agent sans puis avec Gotcha, résultats notés ici
+- [ ] Comptes Wave Business et bac à sable Daraja, pour vérifier ce que la démo affirme
+- [x] Test de l'agent sans puis avec Gotcha, résultats notés ici
+- [ ] Refaire ce test avec l'agent qui servira à la démo, avant de figer le scénario
 - [ ] Test automatisé reproductible du scénario (ne dépend pas de l'humeur de l'agent)
 - [ ] Vidéo de secours enregistrée (K11)
 - [ ] Démo répétée **10 fois** avant le 14 novembre
