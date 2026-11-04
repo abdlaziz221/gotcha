@@ -6,12 +6,14 @@
 pytest                      # tout
 pytest tests/web -x         # un dossier, arrêt au premier échec
 pytest -k pas_a_pas         # par nom
+pytest --cov                # avec la couverture (85 % minimum, comme la CI)
 ```
 
 | Dossier | Ce qu'il vérifie | Responsable |
 | --- | --- | --- |
 | `contract/` | MemoryStore et PostgresStore se comportent pareil | Abdoul Aziz |
 | `unit/` | Modèle, règles d'état, fraîcheur, Markdown sûr, secrets, quotas, configuration | Chacun pour son code |
+| `unit/test_architecture.py` | **Règle de dépendance entre couches** : chaque dossier de `app/` n'importe que ce qu'il a le droit d'importer | Les trois |
 | `services/` | Services métier (contributions, signalements, rafraîchissement des flux) | Abdoul Aziz, Khalifa |
 | `ingest/` | Import Flutterwave sur l'extrait réel | Khalifa |
 | `mcp/` | Outils MCP appelés en JSON-RPC, comme un agent | Khalifa |

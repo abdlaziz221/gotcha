@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from http import HTTPStatus
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -45,13 +46,14 @@ def _error_response(
 def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(StarletteHTTPException)
     async def http_error(request: Request, exc: StarletteHTTPException) -> Response:
-        detail = exc.detail if isinstance(exc.detail, str) and exc.status_code != 404 else None
-        if detail and detail == "Not Found":
+        # Le message par défaut de Starlette est la phrase HTTP en anglais : on la remplace.
+        detail: str | None = exc.detail
+        if exc.status_code == 404 or detail == _default_phrase(exc.status_code):
             detail = None
-        return _error_response(request, exc.status_code, detail, exc.headers)
+        return _error_response(request, exc.status_code, detail, dict(exc.headers or {}))
 
     @app.exception_handler(NotFoundError)
-    async def not_found(request: Request, exc: NotFoundError) -> Response:
+    async def not_found(request: Request, _exc: NotFoundError) -> Response:
         return _error_response(request, 404, None)
 
     @app.exception_handler(InvalidInputError)
@@ -59,10 +61,17 @@ def install_error_handlers(app: FastAPI) -> None:
         return _error_response(request, 400, str(exc))
 
     @app.exception_handler(RequestValidationError)
-    async def invalid_request(request: Request, exc: RequestValidationError) -> Response:
+    async def invalid_request(request: Request, _exc: RequestValidationError) -> Response:
         return _error_response(request, 400, None)
 
     @app.exception_handler(Exception)
-    async def server_error(request: Request, exc: Exception) -> Response:
+    async def server_error(request: Request, _exc: Exception) -> Response:
         log.exception("erreur inattendue sur %s", request.url.path)
         return _error_response(request, 500, None)
+
+
+def _default_phrase(status_code: int) -> str | None:
+    try:
+        return HTTPStatus(status_code).phrase
+    except ValueError:
+        return None

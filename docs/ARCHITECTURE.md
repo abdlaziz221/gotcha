@@ -34,6 +34,7 @@ Une seule application Python (FastAPI) sert le site web et le serveur MCP. Pages
 - `app/services` dépend de `app/domain` (et reçoit le stockage par injection).
 - `app/web`, `app/mcp` et `app/ingest` dépendent de `app/services` et de `app/domain`, **jamais** de `app/stores`.
 - `app/container.py` est le seul endroit qui choisit les implémentations concrètes.
+- Ces règles sont vérifiées à chaque PR par `tests/unit/test_architecture.py`.
 - `app/security` est transverse : middlewares et dépendances FastAPI, détection des secrets.
 
 ## Flux principaux

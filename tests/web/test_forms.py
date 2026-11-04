@@ -41,7 +41,7 @@ def test_contribution_with_a_secret_is_refused(
 ) -> None:
     data = {
         **GOOD_CONTRIBUTION,
-        "body_md": "Mon code : Authorization: Bearer abcDEF123456abcDEF123456abcDEF123456",
+        "body_md": "Mon code : Authorization: Bearer " + "abcDEF123456" * 3,
         "csrf_token": csrf("/contribuer"),
     }
     response = client.post("/contribuer", data=data)
@@ -119,7 +119,8 @@ def test_review_approves_a_contribution(client: TestClient, csrf: Callable[[str]
 def test_security_headers_and_cookie(client: TestClient) -> None:
     response = client.get("/")
     csp = response.headers["content-security-policy"]
-    assert "script-src 'self'" in csp and "frame-ancestors 'none'" in csp
+    assert "script-src 'self'" in csp
+    assert "frame-ancestors 'none'" in csp
     assert response.headers["x-content-type-options"] == "nosniff"
     assert "HttpOnly" in response.headers["set-cookie"]
     assert "SameSite=Lax" in response.headers["set-cookie"]

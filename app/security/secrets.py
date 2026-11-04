@@ -13,6 +13,10 @@ from dataclasses import dataclass
 
 # Une valeur de substitution (xxxx, <VOTRE_CLE>, {{token}}, ****) n'est pas un secret.
 _NOT_PLACEHOLDER = r"(?![xX*]{6,}|<|\{|\$\{)"
+_SENSITIVE_FIELDS = (
+    r"(?:api[_-]?key|secret[_-]?key|client[_-]?secret|consumer[_-]?(?:key|secret)"
+    r"|pass[_-]?key|password|passwd|access[_-]?token)"
+)
 
 
 @dataclass(frozen=True)
@@ -46,16 +50,35 @@ RULES: list[tuple[str, re.Pattern[str]]] = [
             + r"[A-Za-z0-9+/=._-]{16,}"
         ),
     ),
+    # Affectations : la valeur doit être une chaîne entre guillemets (code), une ligne
+    # NOM=valeur (fichier .env) ou une valeur seule sur sa ligne (YAML). Une expression
+    # comme « password = base64.b64decode(...) » n'est pas un secret.
     (
         "secret dans une affectation",
         re.compile(
-            r"(?i)\b(?:api[_-]?key|secret[_-]?key|client[_-]?secret|consumer[_-]?(?:key|secret)"
-            r"|pass[_-]?key|password|passwd|access[_-]?token)\b[\"']?\s*[:=]\s*[\"']?"
+            r"(?i)\b" + _SENSITIVE_FIELDS + r"\b[\"']?\s*[:=]\s*[\"']"
             + _NOT_PLACEHOLDER
-            + r"[A-Za-z0-9/+_.=-]{16,}"
+            + r"[A-Za-z0-9/+_.=-]{16,}[\"']"
         ),
     ),
-]
+    (
+        "secret dans un fichier .env",
+        re.compile(
+            r"(?m)^\s*(?:export\s+)?[A-Z0-9_]*"
+            r"(?:API_KEY|SECRET|PASSKEY|PASSWORD|ACCESS_TOKEN|CONSUMER_KEY)[A-Z0-9_]*="
+            + _NOT_PLACEHOLDER
+            + r"[^\s\"'#]{16,}"
+        ),
+    ),
+    (
+        "secret dans un fichier YAML",
+        re.compile(
+            r"(?im)^\s*" + _SENSITIVE_FIELDS + r"\s*:\s*"
+            + _NOT_PLACEHOLDER
+            + r"[A-Za-z0-9/+_.=-]{16,}\s*$"
+        ),
+    ),
+]  # fmt: skip
 
 
 def scan_text(text: str) -> list[SecretFinding]:

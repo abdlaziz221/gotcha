@@ -82,9 +82,7 @@ async def test_submit_stores_a_pending_contribution() -> None:
 async def test_submit_refuses_secrets_and_never_stores_them() -> None:
     services = await _services()
     with pytest.raises(SecretDetectedError):
-        await services.contributions.submit(
-            _input(body_md="Ma clé : sk_live_Ab12Ab12Ab12Ab12Ab12Ab12")
-        )
+        await services.contributions.submit(_input(body_md="Ma clé : sk_live_" + "Ab12" * 6))
     assert await services.contributions.pending() == []
 
 

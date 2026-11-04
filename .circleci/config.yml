@@ -1,0 +1,160 @@
+# CI de Gotcha sur CircleCI (plan gratuit). Les huit jobs sont obligatoires pour
+# fusionner dans main (voir .github/rulesets/protection-main.json).
+# Détails : .circleci/README.md. En local, la même chose : python scripts/check.py
+version: 2.1
+
+executors:
+  python:
+    parameters:
+      version:
+        type: string
+        default: "3.12"
+    docker:
+      - image: cimg/python:<< parameters.version >>
+    resource_class: small
+  python-node:
+    docker:
+      - image: cimg/python:3.12-node
+    resource_class: small
+
+commands:
+  install:
+    description: Installer les dépendances de développement (avec cache pip)
+    steps:
+      - restore_cache:
+          keys:
+            - pip-v1-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
+      - run:
+          name: Installation
+          command: python -m pip install --quiet -r requirements-dev.txt
+      - save_cache:
+          key: pip-v1-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
+          paths:
+            - ~/.cache/pip
+
+jobs:
+  pr-rules:
+    executor: python
+    steps:
+      - checkout
+      - run:
+          name: "Titre de PR au format « type(zone): description »"
+          command: python scripts/ci_pr_rules.py
+
+  lint:
+    executor: python-node
+    steps:
+      - checkout
+      - install
+      - run:
+          name: Lint (ruff)
+          command: python -m ruff check .
+      - run:
+          name: Format (ruff)
+          command: python -m ruff format --check --diff .
+      - run:
+          name: Types (pyright)
+          command: python -m pyright --pythonpath "$(command -v python)"
+      - run:
+          name: Secrets dans le dépôt
+          command: python scripts/scan_secrets.py
+
+  tests:
+    parameters:
+      python:
+        type: string
+    executor:
+      name: python
+      version: << parameters.python >>
+    steps:
+      - checkout
+      - install
+      - run:
+          name: Tests et couverture (85 % minimum)
+          command: |
+            mkdir -p test-results
+            python -m pytest --cov --cov-report=term-missing:skip-covered --junitxml=test-results/junit.xml
+      - store_test_results:
+          path: test-results
+
+  licences:
+    executor: python
+    steps:
+      - checkout
+      - run:
+          name: Licences des dépendances livrées (environnement neuf)
+          command: |
+            python -m venv /tmp/prod
+            /tmp/prod/bin/pip install --quiet -r requirements.txt
+            /tmp/prod/bin/python scripts/check_licenses.py --list
+
+  docker:
+    machine:
+      image: ubuntu-2404:current
+    steps:
+      - checkout
+      - run:
+          name: Construction de l'image
+          command: docker build --pull -t gotcha:ci .
+      - run:
+          name: Démarrage en mode production
+          command: |
+            docker run -d --name gotcha -p 8000:8000 \
+              -e GOTCHA_ENV=prod -e GOTCHA_STORE=memory -e GOTCHA_INGEST_LIVE=false \
+              -e GOTCHA_SITE_URL=http://localhost:8000 \
+              gotcha:ci
+            for i in $(seq 1 30); do
+              if curl -fsS http://localhost:8000/healthz > /dev/null 2>&1; then
+                echo "Conteneur prêt après ${i} s"
+                exit 0
+              fi
+              sleep 1
+            done
+            echo "ÉCHEC : le conteneur ne répond pas après 30 s"
+            exit 1
+      - run:
+          name: Vérifications en mode production
+          command: |
+            set -eu
+            code() { curl -s -o /dev/null -w '%{http_code}' "http://localhost:8000$1"; }
+            test "$(code /)" = 200 || { echo "ÉCHEC : l'accueil ne répond pas 200"; exit 1; }
+            test "$(code /styleguide)" = 404 || { echo "ÉCHEC : /styleguide doit être caché"; exit 1; }
+            test "$(code /relecture)" = 404 || { echo "ÉCHEC : /relecture doit être fermée"; exit 1; }
+            headers="$(curl -sI http://localhost:8000/)"
+            for header in content-security-policy strict-transport-security x-content-type-options x-frame-options; do
+              printf '%s' "$headers" | grep -qi "^$header:" || { echo "ÉCHEC : en-tête $header absent"; exit 1; }
+            done
+            curl -fsS -X POST http://localhost:8000/mcp \
+              -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
+              -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | grep -q '"get_fiche"' \
+              || { echo "ÉCHEC : le serveur MCP ne répond pas"; exit 1; }
+            echo "Accueil, pages cachées, en-têtes de sécurité et serveur MCP : OK"
+      - run:
+          name: Journaux du conteneur
+          when: always
+          command: docker logs gotcha || true
+
+  audit:
+    executor: python
+    steps:
+      - checkout
+      - run:
+          name: Failles connues (pip-audit, environnement isolé)
+          command: |
+            python -m venv /tmp/audit
+            /tmp/audit/bin/pip install --quiet pip-audit==2.10.1
+            /tmp/audit/bin/pip-audit -r requirements.txt --progress-spinner off --desc
+
+workflows:
+  qualite:
+    jobs:
+      - pr-rules
+      - lint
+      - tests:
+          name: tests-py<< matrix.python >>
+          matrix:
+            parameters:
+              python: ["3.11", "3.12", "3.13"]
+      - licences
+      - docker
+      - audit

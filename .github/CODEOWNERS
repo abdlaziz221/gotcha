@@ -1,23 +1,31 @@
-# Responsables par dossier (voir le README de chaque dossier).
-# Remplacer LOUM_GITHUB et KHALIFA_GITHUB par leurs identifiants GitHub, puis décommenter.
-# Sur un dépôt privé avec un compte GitHub gratuit, ce fichier sert de documentation :
-# la règle de relecture est appliquée par convention (voir CONTRIBUTING.md).
+# Responsables par dossier : GitHub leur demande automatiquement une relecture.
+# La dernière règle qui correspond à un fichier l'emporte.
+# Une approbation suffit pour fusionner ; les contrats se relisent à trois (CONTRIBUTING.md).
 
-*                          @abdlaziz221
+# Par défaut : Abdoul Aziz, relu par Khalifa.
+*                            @abdlaziz221 @TechwithXalifa
 
-# Contrats : les trois membres relisent.
-# /app/domain/             @abdlaziz221 @LOUM_GITHUB @KHALIFA_GITHUB
-# /app/web/viewmodels.py   @abdlaziz221 @LOUM_GITHUB
-# /app/mcp/schemas.py      @abdlaziz221 @KHALIFA_GITHUB
-# /docs/CONTRACTS.md       @abdlaziz221 @LOUM_GITHUB @KHALIFA_GITHUB
+# Interface : Loum, relu par Abdoul Aziz.
+/app/web/templates/          @AliouLoum @abdlaziz221
+/app/web/static/             @AliouLoum @abdlaziz221
 
-# Interface : Loum.
-# /app/web/templates/      @LOUM_GITHUB
-# /app/web/static/         @LOUM_GITHUB
+# MCP, pannes, détection des secrets : Khalifa, relu par Abdoul Aziz.
+/app/mcp/                    @TechwithXalifa @abdlaziz221
+/app/ingest/                 @TechwithXalifa @abdlaziz221
+/app/services/status.py      @TechwithXalifa @abdlaziz221
+/app/services/incidents.py   @TechwithXalifa @abdlaziz221
+/app/security/secrets.py     @TechwithXalifa @abdlaziz221
 
-# MCP, pannes, détection des secrets : Khalifa.
-# /app/mcp/                @KHALIFA_GITHUB
-# /app/ingest/             @KHALIFA_GITHUB
-# /app/services/status.py  @KHALIFA_GITHUB
-# /app/services/incidents.py @KHALIFA_GITHUB
-# /app/security/secrets.py @KHALIFA_GITHUB
+# Contenu : les trois.
+/content/                    @abdlaziz221 @AliouLoum @TechwithXalifa
+
+# Contrats : les trois.
+/app/domain/                 @abdlaziz221 @AliouLoum @TechwithXalifa
+/app/web/viewmodels.py       @abdlaziz221 @AliouLoum @TechwithXalifa
+/app/mcp/schemas.py          @abdlaziz221 @AliouLoum @TechwithXalifa
+/docs/CONTRACTS.md           @abdlaziz221 @AliouLoum @TechwithXalifa
+
+# CI et règles du dépôt.
+/.github/                    @abdlaziz221 @TechwithXalifa
+/pyproject.toml              @abdlaziz221 @TechwithXalifa
+/requirements*.txt           @abdlaziz221 @TechwithXalifa

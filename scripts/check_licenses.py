@@ -31,11 +31,21 @@ OVERRIDES: dict[str, str] = {}
 IGNORED = {"pip", "setuptools", "wheel"}
 
 
+def _field(dist: Distribution, key: str) -> list[str]:
+    """Valeur(s) d'un champ de métadonnées (clés de PackageMetadata.json : license, classifier…)."""
+    value = dist.metadata.json.get(key, [])
+    return [value] if isinstance(value, str) else list(value)
+
+
+def dist_name(dist: Distribution) -> str:
+    names = _field(dist, "name")
+    return names[0].lower() if names else ""
+
+
 def license_text(dist: Distribution) -> str:
-    meta = dist.metadata
-    parts = [meta.get("License-Expression") or "", (meta.get("License") or "")[:300]]
-    parts += [c for c in meta.get_all("Classifier") or [] if c.startswith("License ::")]
-    return " | ".join(p.strip() for p in parts if p and p.strip())
+    parts = _field(dist, "license_expression") + [v[:300] for v in _field(dist, "license")]
+    parts += [c for c in _field(dist, "classifier") if c.startswith("License ::")]
+    return " | ".join(p.strip() for p in parts if p.strip())
 
 
 def verdict(name: str, text: str) -> str:
@@ -50,8 +60,8 @@ def verdict(name: str, text: str) -> str:
 
 def main(argv: list[str]) -> int:
     problems = []
-    for dist in sorted(distributions(), key=lambda d: (d.metadata["Name"] or "").lower()):
-        name = (dist.metadata["Name"] or "").lower()
+    for dist in sorted(distributions(), key=dist_name):
+        name = dist_name(dist)
         if not name or name in IGNORED:
             continue
         text = license_text(dist)

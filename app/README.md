@@ -28,6 +28,7 @@ web, mcp, ingest  ──►  services  ──►  domain  ◄──  stores
 
 - `domain` n'importe rien d'autre de `app/`.
 - `web`, `mcp` et `ingest` n'importent **jamais** `stores` : ils passent par les services.
+- Cette règle est **vérifiée par la CI** (`tests/unit/test_architecture.py`) : un import interdit fait échouer la PR.
 - Besoin d'une donnée nouvelle ? On l'ajoute au contrat (`domain/`), puis au stockage, puis au service. Voir [docs/CONTRACTS.md](../docs/CONTRACTS.md).
 
 ## Conventions de code

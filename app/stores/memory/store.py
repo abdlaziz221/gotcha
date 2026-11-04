@@ -134,18 +134,18 @@ class MemoryStore:
                     )
                 )
             hits.extend(self._gotcha_hits(fiche, tokens))
-            for error in fiche.error_codes:
-                if _norm(error.code) in tokens:
-                    hits.append(
-                        SearchHit(
-                            kind=SearchHitKind.ERROR_CODE,
-                            fiche_slug=fiche.slug,
-                            title=f"{fiche.title} : erreur {error.code}",
-                            snippet=plain_snippet(f"{error.meaning} {error.action}"),
-                            anchor="codes-erreur",
-                            score=5,
-                        )
-                    )
+            hits.extend(
+                SearchHit(
+                    kind=SearchHitKind.ERROR_CODE,
+                    fiche_slug=fiche.slug,
+                    title=f"{fiche.title} : erreur {error.code}",
+                    snippet=plain_snippet(f"{error.meaning} {error.action}"),
+                    anchor="codes-erreur",
+                    score=5,
+                )
+                for error in fiche.error_codes
+                if _norm(error.code) in tokens
+            )
         hits.sort(key=lambda h: h.score, reverse=True)
         return hits[: query.limit]
 

@@ -14,8 +14,12 @@ Une ligne par décision qui engage l'équipe : la date, le choix, la raison. On 
 | D8 | 2 nov. | **Serveur MCP sans état, réponses JSON**, monté dans la même application sur `/mcp` | Compatible avec le Serverless, aucune connexion longue |
 | D9 | 2 nov. | **Une contribution approuvée est intégrée au contenu par une PR** sur `content/` | Garde une trace et une relecture ; à automatiser plus tard si le temps le permet (A7) |
 | D10 | 2 nov. | **Les brouillons ne sont jamais affichés en production** ; un piège publié exige `verified_by` | Exigence d'exactitude : rien n'est publié sans relecture humaine |
-| D11 | 2 nov. | **Dépôt privé jusqu'à la soumission**, code sous droits réservés en attendant la réponse sur les droits du lauréat (A1) | Un concurrent direct publie déjà des recettes Mobile Money |
+| D11 | 2 nov. | ~~Dépôt privé jusqu'à la soumission~~ (remplacée par D13) | Un concurrent direct publie déjà des recettes Mobile Money |
 | D12 | 2 nov. | **Contributions publiées sous licence CC BY 4.0**, données personnelles limitées au pseudo et à l'e-mail | Réutilisation libre en citant la source ; loi sénégalaise 2008-12 |
+| D13 | 2 nov. | **Dépôt public**, code toujours sous droits réservés (aucun fichier de licence) | Sur un compte gratuit, les règles de `main` ne sont disponibles que pour un dépôt public, et GitHub Actions y est gratuit et illimité (le blocage du compte, découvert ensuite, touche aussi le public : voir D16). Le plagiat reste une fraude au sens du règlement (article 10) |
+| D14 | 2 nov. | **Outils de qualité** : ruff (22 familles de règles), pyright pour les types, pytest avec 85 % de couverture minimale, tests d'architecture, scanner de secrets maison, pip-audit, pre-commit | Tous sous licence permissive. mypy écarté : il dépend de pathspec (MPL). pip-audit dépend de certifi : il ne tourne qu'en CI, isolé, et n'est jamais livré |
+| D15 | 2 nov. | **Règles imposées sur `main`** : PR obligatoire, une approbation, CI verte sur une branche à jour, squash uniquement, pas de push forcé | `main` est déployée telle quelle sur Datacloud : elle doit toujours marcher |
+| D16 | 2 nov. | **CI sur CircleCI (plan gratuit)** tant que GitHub Actions est bloqué ; workflows GitHub Actions retirés (ils échouaient sans tourner et envoyaient des notifications ; récupérables dans l'historique git, commit 3fc9c27) ; Dependabot retiré | Le compte propriétaire est verrouillé « pour un problème de facturation » sans aucun usage ni paiement : seul le support GitHub peut le lever. CircleCI tourne sur ses propres serveurs et publie ses résultats sur les PR. Même contrôles dans les deux configurations |
 
 ## À trancher
 

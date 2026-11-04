@@ -1,5 +1,7 @@
 # Gotcha
 
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/abdlaziz221/gotcha/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/abdlaziz221/gotcha/tree/main)
+
 > Les pièges du paiement et du déploiement en Afrique que personne ne documente.
 
 Gotcha est le carnet de terrain partagé des intégrations **Wave, Orange Money, MTN MoMo, M-Pesa** et du déploiement sur **Datacloud** : ce que la documentation ne dit pas, confirmé par les devs qui l'ont vécu, et lisible par leurs agents IA grâce à un serveur MCP.
@@ -16,26 +18,28 @@ Prérequis : Python 3.11 ou plus récent, et Git.
 python -m venv .venv
 ```
 
-```bash
-source .venv/bin/activate        # Linux, macOS, Git Bash : .venv/Scripts/activate
-```
+Activer l'environnement : `source .venv/bin/activate` (Linux, macOS), `source .venv/Scripts/activate` (Git Bash), `.venv\Scripts\Activate.ps1` (PowerShell).
 
 ```bash
 pip install -r requirements-dev.txt
 ```
 
 ```bash
-uvicorn app.main:app --reload
+python -m pre_commit install --hook-type pre-commit --hook-type pre-push
+```
+
+```bash
+python -m uvicorn app.main:app --reload
 ```
 
 Ouvrir <http://localhost:8000>. **Aucune base de données à installer** : en développement, l'application lit les fiches dans `content/` et les fausses données dans `fixtures/` (stockage « memory »).
 
 Pages utiles en développement : `/styleguide` (tous les composants), `/relecture` (file de relecture), `/healthz` (santé).
 
-Avant chaque PR :
+Avant chaque PR, lancer les mêmes contrôles que la CI (lint, types, secrets, licences, tests et couverture) :
 
 ```bash
-ruff format . && ruff check . && pytest
+python scripts/check.py
 ```
 
 ---

@@ -1,3 +1,7 @@
 -r requirements.txt
-pytest==9.2.0  # MIT
-ruff==0.17.3   # MIT
+# Outils de développement et de CI (jamais livrés). Licences permissives aussi.
+pytest==9.2.0       # MIT
+pytest-cov==7.1.0   # MIT (coverage : Apache-2.0)
+ruff==0.17.3        # MIT
+pyright==1.1.414    # MIT (mypy écarté : il dépend de pathspec, sous MPL)
+pre-commit==4.7.0   # MIT

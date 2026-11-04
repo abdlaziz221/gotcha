@@ -64,15 +64,17 @@ async def contribute_submit(request: Request, services: ServicesDep) -> Response
         errors["licence"] = FIELD_ERRORS["licence"]
     data = None
     try:
-        data = ContributionInput(
-            kind=values["kind"],
-            fiche_slug=values["fiche_slug"],
-            title=values["title"],
-            body_md=values["body_md"],
-            source_url=values["source_url"] or None,
-            api_version=values["api_version"] or None,
-            pseudo=values["pseudo"],
-            email=values["email"],
+        data = ContributionInput.model_validate(
+            {
+                "kind": values["kind"],
+                "fiche_slug": values["fiche_slug"],
+                "title": values["title"],
+                "body_md": values["body_md"],
+                "source_url": values["source_url"] or None,
+                "api_version": values["api_version"] or None,
+                "pseudo": values["pseudo"],
+                "email": values["email"],
+            }
         )
     except ValidationError as exc:
         errors.update(field_errors(exc))

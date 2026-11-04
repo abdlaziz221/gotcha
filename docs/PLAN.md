@@ -52,7 +52,7 @@ Chaque tâche a son issue sur GitHub (même identifiant dans le titre). Le READM
 
 | Id | Tâche | Échéance |
 | --- | --- | --- |
-| T1 | Lire le README, CONTRIBUTING et CONTRACTS ; valider ou amender les contrats | lun. 2 |
+| T1 | Accepter l'invitation GitHub ; installer son poste (CONTRIBUTING, « Installer son poste ») ; lire le README, CONTRIBUTING et CONTRACTS ; valider ou amender les contrats | lun. 2 |
 | T2 | Recruter 5 à 10 devs testeurs (Galsen DEV, CADEV), dont 2 débutants | jeu. 5 |
 | T3 | Vérifier le nom (domaine, compte GitHub) et le confirmer | mar. 3 |
 | T4 | Vote des pairs : les trois votent, sinon le projet est exclu | 15 nov. 18 h – 16 nov. 23 h 59 |
