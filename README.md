@@ -18,7 +18,7 @@ Le positionnement et l'architecture ne changent plus ([D29](docs/DECISIONS.md)).
 
 | Ordre | Priorité | Ce qu'il faut faire | Niveau |
 | --- | --- | --- | --- |
-| 1 | Relectures et fusion des PR | Commencer par la PR 42, qui bloque toute la pile | Bloquant |
+| 1 | Relectures et fusion des PR | Dans l'ordre : 43, 45, 47, 49 à 54, puis 44, 46 et 48 | Bloquant |
 | 2 | Recevabilité | Droits, origine du code, licences, comptes Datacloud, inscription de l'équipe | Bloquant |
 | 3 | Déploiement | HTTPS, PostgreSQL, persistance, accès public | Bloquant |
 | 4 | Contenu | Au moins 15 pièges relus et publiés, avec leur vrai niveau de confiance | Important |

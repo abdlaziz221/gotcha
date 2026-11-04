@@ -16,7 +16,7 @@ On ne change plus le positionnement ni l'architecture (D29). Quand deux travaux 
 
 | Ordre | Niveau | Priorité | Ce qui doit être vrai |
 | --- | --- | --- | --- |
-| 1 | Bloquant | **Relectures et fusion des PR** | Loum et Khalifa relisent, à commencer par la PR 42 qui bloque la pile. Conflits résolus, intégration dans l'ordre |
+| 1 | Bloquant | **Relectures et fusion des PR** | Loum et Khalifa relisent dans l'ordre : 43, 45, 47, 49 à 54, puis 44, 46 et 48. Conflits résolus, intégration dans l'ordre |
 | 2 | Bloquant | **Recevabilité** | Droits, origine du code, licences, comptes Datacloud et inscription de l'équipe vérifiés ([SUBMISSION.md](SUBMISSION.md)) |
 | 3 | Bloquant | **Déploiement** | HTTPS, PostgreSQL, persistance après redémarrage, accès public qui marche |
 | 4 | Important | **Contenu** | Au moins 15 pièges relus et publiés, sans gonfler leur niveau de confiance |
@@ -73,7 +73,7 @@ Chaque tâche a son issue sur GitHub (même identifiant dans le titre). Le READM
 | T3 | Vérifier le nom (domaine, compte GitHub) et le confirmer | mar. 3 |
 | T4 | Vote des pairs : les trois votent, sinon le projet est exclu | 15 nov. 18 h – 16 nov. 23 h 59 |
 | T5 | Campagne du vote du public (message prêt, réseaux, écoles) | 17 – 20 nov. |
-| T6 | Relire et fusionner les PR dans l'ordre, à commencer par la 42 | dès maintenant |
+| T6 | Relire et fusionner les PR dans l'ordre : 43, 45, 47, 49 à 54, puis 44, 46 et 48 | dès maintenant |
 | T7 | Recevabilité : comptes Datacloud, inscription de l'équipe, représentant, clé de répartition, pays, titularité ; chacun vérifie qu'aucun élément ne vient d'un prototype ou d'un projet antérieur, ou le déclare (article 6). Rôles écrits d'après le travail réel, preuves gardées (D28) | ven. 13 |
 | T8 | Inventaire précis des outils d'IA : outils, fonctions concernées, validation humaine. Il se remplit dans le formulaire (article 6) | ven. 13 |
 | T9 | Copier le libellé exact du sujet depuis l'interface du concours et vérifier notre alignement | dès que possible |
@@ -142,7 +142,7 @@ Chaque tâche a son issue sur GitHub (même identifiant dans le titre). Le READM
 
 ## Chemin critique
 
-1. **Relectures (T6)** : aucune PR ne peut arriver sur `main` tant que la PR 42 n'est pas approuvée. Le dépôt public montre `main` aux votants et au jury.
+1. **Relectures (T6)** : chaque PR a besoin d'une approbation pour arriver sur `main`, et la pile avance une PR à la fois. Le dépôt public montre `main` aux votants et au jury.
 2. **Datacloud (A2)** : c'est le premier risque, pas le code. Sans réponse mercredi soir, on bascule sur un VPS à Dakar sans débattre. Il faut aussi un produit Datacloud acheté avec la remise de 40 %, sans quoi le projet est irrecevable.
 3. **Contenu (A9, A10, L11, K10)** : un carnet vide ne vaut rien. On écrit tous les jours.
 4. **Bacs à sable (K1, K3)** : ils ne servent plus à la démo (D25), mais ils font passer des pièges de « sourcé » à « reproduit », à commencer par M-Pesa.
