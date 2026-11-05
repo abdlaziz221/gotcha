@@ -92,8 +92,10 @@ class ContributionService:
                     "Indiquez une preuve : versions, configuration sans secret, étapes et résultat."
                 )
             since = now - RECONFIRM_AFTER
-            if await self._store.has_recent_confirmation(account_id, target_id, since):
-                raise InvalidInputError("Vous avez déjà confirmé ce contenu récemment.")
+            if await self._store.has_recent_confirmation(
+                account_id, target_id, since, still_works=still_works
+            ):
+                raise InvalidInputError("Vous avez déjà donné cette réponse récemment.")
         try:
             confirmation = Confirmation(
                 target_kind=target_kind,

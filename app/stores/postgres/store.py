@@ -394,14 +394,15 @@ class PostgresStore:
             await conn.execute(table_update, c.target_id, c.created_at.date())
 
     async def has_recent_confirmation(
-        self, account_id: str, target_id: str, since: datetime
+        self, account_id: str, target_id: str, since: datetime, *, still_works: bool
     ) -> bool:
         return await self._pool.fetchval(
-            "SELECT EXISTS (SELECT 1 FROM confirmations"
-            " WHERE account_id = $1 AND target_id = $2 AND created_at >= $3)",
+            "SELECT EXISTS (SELECT 1 FROM confirmations WHERE account_id = $1"
+            " AND target_id = $2 AND created_at >= $3 AND still_works = $4)",
             account_id,
             target_id,
             since,
+            still_works,
         )
 
     async def list_confirmations(self, *, limit: int = 50) -> list[Confirmation]:

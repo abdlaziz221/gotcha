@@ -5,6 +5,7 @@ from __future__ import annotations
 import html
 import re
 from collections.abc import Iterator
+from dataclasses import replace
 from urllib.parse import parse_qs, urlparse
 
 import pytest
@@ -223,8 +224,14 @@ async def test_confirmation_needs_a_proof_and_counts_once(
 
     again = site.post(url, data=form)
     assert again.status_code == 400
-    assert "déjà confirmé" in again.text
+    assert "déjà donné cette réponse" in again.text
     assert (await _fiche(store, LOCKED)).confirmations == 1
+
+    # « Ça ne marche plus » reste possible juste après « ça marche » : c'est l'information
+    # la plus utile pour la relecture.
+    broken = {**form, "still_works": "0", "proof": "API v1, refusé le 10 novembre."}
+    assert site.post(url, data=broken, follow_redirects=False).status_code == 303
+    assert any(not c.still_works for c in await store.list_confirmations())
 
 
 def test_secret_in_a_proof_is_refused(site: TestClient) -> None:
@@ -376,3 +383,82 @@ def test_data_page_explains_the_connection(site: TestClient) -> None:
     page = site.get("/ou-sont-vos-donnees").text
     assert "GitHub" in page
     assert "Pas de compte" not in page
+
+
+def test_a_login_link_sent_to_a_victim_connects_nobody(site: TestClient) -> None:
+    """CSRF de connexion : l'attaquant lance la connexion, la victime finit le retour."""
+    start = site.get("/connexion/github", follow_redirects=False)
+    state = parse_qs(urlparse(start.headers["location"]).query)["state"][0]
+    site.cookies.clear()  # le navigateur de la victime n'a pas lancé cette connexion
+    back = site.get(
+        "/github/callback", params={"state": state, "code": "bon"}, follow_redirects=False
+    )
+    assert back.status_code == 400
+    assert "gotcha_session" not in back.headers.get("set-cookie", "")
+
+
+def test_a_jury_code_with_an_accent_is_compared_safely(
+    store: MemoryStore, clock: FixedClock
+) -> None:
+    settings = replace(SITE_SETTINGS, jury_code="Téranga-2026")
+    with make_client(settings, clock, identity=FakeIdentity(), store=store) as client:
+        token = csrf_token(client, "/connexion")
+        wrong = client.post(
+            "/connexion/jury", data={"csrf_token": token, "code": "Téranga", "retour": "/"}
+        )
+        assert wrong.status_code == 422
+        right = client.post(
+            "/connexion/jury",
+            data={"csrf_token": token, "code": "Téranga-2026", "retour": "/"},
+            follow_redirects=False,
+        )
+        assert right.status_code == 303
+
+
+def test_an_expired_session_on_a_form_comes_back_to_its_page(site: TestClient) -> None:
+    token = csrf_token(site, "/connexion")
+    form = {"csrf_token": token, "target_kind": "fiche", "target_id": LOCKED, "proof": "API v1"}
+    sent_from = f"http://testserver/fiches/{LOCKED}?mode=pas-a-pas"
+    response = site.post(
+        f"/fiches/{LOCKED}/confirmer",
+        data=form,
+        headers={"Referer": sent_from},
+        follow_redirects=False,
+    )
+    retour = parse_qs(urlparse(response.headers["location"]).query)["retour"]
+    assert retour == [f"/fiches/{LOCKED}?mode=pas-a-pas"]
+    # Sans Referer : la page parente, jamais l'adresse du POST (405 au retour).
+    response = site.post(f"/fiches/{LOCKED}/confirmer", data=form, follow_redirects=False)
+    assert parse_qs(urlparse(response.headers["location"]).query)["retour"] == [f"/fiches/{LOCKED}"]
+
+
+def test_pages_that_depend_on_the_visitor_are_never_cached(site: TestClient) -> None:
+    for path in ("/", "/recherche?q=jeton", f"/fiches/{LOCKED}"):
+        response = site.get(path)
+        assert response.headers["cache-control"] == "private, no-store"
+        assert "Cookie" in response.headers["vary"]
+
+
+@pytest.mark.anyio
+async def test_a_failing_usage_counter_never_breaks_a_contribution(
+    site: TestClient, store: MemoryStore
+) -> None:
+    async def broken(*_args: object) -> None:
+        raise RuntimeError("base en panne")
+
+    store.add_usage = broken  # type: ignore[method-assign]
+    log_in(site)
+    response = site.post(
+        "/contribuer",
+        data={
+            "csrf_token": csrf_token(site, "/contribuer"),
+            "kind": "gotcha",
+            "fiche_slug": LOCKED,
+            "title": "Le callback exige une URL en HTTPS",
+            "body_md": GOOD_BODY,
+            "licence": "oui",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 303, response.text
+    assert len(await store.list_contributions()) >= 1

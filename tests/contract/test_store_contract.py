@@ -9,7 +9,7 @@ import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -426,11 +426,16 @@ async def test_recent_confirmations_are_found_by_account(store: Store) -> None:
         created_at=T0,
     )
     await store.add_confirmation(confirmation)
-    has = store.has_recent_confirmation
+
+    def has(account: str, target: str, since: datetime, *, still_works: bool = True) -> Any:
+        return store.has_recent_confirmation(account, target, since, still_works=still_works)
+
     assert await has("github:1", "demo-pay-sn", T0 - timedelta(days=1))
     assert not await has("github:1", "demo-pay-sn", T0 + timedelta(days=1))
     assert not await has("github:2", "demo-pay-sn", T0 - timedelta(days=1))
     assert not await has("github:1", "autre", T0 - timedelta(days=1))
+    # « Ça ne marche plus » après « ça marche » : une autre réponse, jamais bloquée.
+    assert not await has("github:1", "demo-pay-sn", T0 - timedelta(days=1), still_works=False)
     later = confirmation.model_copy(update={"created_at": T0 + timedelta(hours=1)})
     await store.add_confirmation(later)
     listed = await store.list_confirmations(limit=1)
