@@ -43,6 +43,7 @@ En production, chaque appel demande une connexion GitHub (D20). L'utilisateur aj
 | K6 | `report_outage` : quotas, abus, messages | ven. 6 |
 | K8 | Scénario de démo et test automatisé reproductible (voir `docs/DEMO.md`) | ven. 6 |
 | K9 | Serveur en ligne sur Datacloud, testé depuis un vrai agent | sam. 7 |
+| K12 | Si l'audio en wolof est retenu : interroger un agent en wolof (5 essais), un locuteur juge le résultat. `get_fiche` n'envoie ni l'audio ni la transcription (D26) | lun. 9 |
 
 ## Comment faire
 
