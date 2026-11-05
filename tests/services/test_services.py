@@ -74,6 +74,14 @@ async def test_find_falls_back_to_the_fiche_valid_everywhere() -> None:
         await services.fiches.find("demo-pay", "KE")
 
 
+async def test_search_with_a_nul_byte_finds_nothing_without_error() -> None:
+    services = await _services()
+    assert await services.fiches.search("jeton")
+    assert await services.fiches.search("jeton\x00") == []
+    assert await services.fiches.search("jeton", service="demo-pay\x00") == []
+    assert await services.fiches.search("jeton", country="SN\x00") == []
+
+
 async def test_submit_stores_a_pending_contribution() -> None:
     services = await _services()
     contribution = await services.contributions.submit(_input())
