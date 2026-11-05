@@ -54,6 +54,14 @@ def test_a_confirmation_date_in_the_future_is_refused(tmp_path: Path) -> None:
         load_fiches(content)
 
 
+@pytest.mark.parametrize("text", ["terme:\n  - slug: x\n", "termes: []\n", "termes: oui\n"])
+def test_a_glossary_without_terms_stops_the_loading(tmp_path: Path, text: str) -> None:
+    """Sinon le chargement remplacerait le glossaire en ligne par une liste vide."""
+    (tmp_path / "glossaire.yml").write_text(text, encoding="utf-8")
+    with pytest.raises(ContentError, match="« termes » est absente ou vide"):
+        load_glossary(tmp_path)
+
+
 def test_glossary_links_point_to_existing_terms() -> None:
     known = {t.slug for t in load_glossary(CONTENT_DIR)}
     for fiche in load_fiches(CONTENT_DIR):

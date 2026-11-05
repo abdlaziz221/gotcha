@@ -29,6 +29,9 @@ async def main() -> None:
         # Sinon retire_fiches dépublierait tout le site.
         sys.exit(f"Aucune fiche dans {content_dir / 'fiches'} : chargement annulé.")
     glossary = load_glossary(content_dir)
+    if not glossary:
+        # upsert_glossary remplace tout : une liste vide effacerait le glossaire en ligne.
+        sys.exit(f"Aucun terme dans {content_dir / 'glossaire.yml'} : chargement annulé.")
     store = await PostgresStore.connect(url)
     try:
         for fiche in fiches:

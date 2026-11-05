@@ -34,6 +34,8 @@ class FicheService:
     async def find(self, service_slug: str, country: str | None = None) -> Fiche:
         """La fiche d'un service dans un pays ; à défaut, sa fiche valable dans tous les pays."""
         country = country.upper() if country else None
+        if not is_storable(service_slug) or (country and not is_storable(country)):
+            raise NotFoundError(f"Aucune fiche pour le service {service_slug!r}")
         same_service = [f for f in await self.list() if f.service.slug == service_slug]
         for fiche in same_service:
             if fiche.country == country:
