@@ -38,10 +38,12 @@ INSTRUCTIONS = (
     "Gotcha is a field notebook of undocumented pitfalls (gotchas) for African payment APIs "
     "(Wave, Orange Money, MTN MoMo, M-Pesa) and for deploying on the Datacloud platform. "
     "Before writing integration or deployment code: call get_fiche for the service and "
-    "country, apply every gotcha it lists, then call get_service_status and warn the user "
-    "if the service is degraded or down. Gotchas are written and verified by developers; "
-    "cite their URL when you rely on one. Each gotcha has a confidence level: sourced (read "
-    "in sources, not tested), reproduced (in a sandbox) or production (seen in production)."
+    "country, take its gotchas into account, then call get_service_status and warn the user "
+    "if the service is degraded or down. Each gotcha has a confidence level: sourced (read "
+    "in cited sources, not tested by us), reproduced (in a sandbox) or production (seen in "
+    "production). Apply reproduced and production gotchas; for a sourced one, or a draft, "
+    "tell the developer and check it before changing payment code. Cite the gotcha URL "
+    "when you rely on one."
 )
 REPORT_INSTRUCTIONS = " If you hit an outage, report it with report_outage."
 

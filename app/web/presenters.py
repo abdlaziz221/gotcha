@@ -146,7 +146,9 @@ def gotcha_view(
         ),
         proof_html=render_markdown(gotcha.proof_md, glossary) if gotcha.proof_md else None,
         confidence=gotcha.confidence,
-        confidence_label=CONFIDENCE_LABELS[gotcha.confidence],
+        # Un brouillon n'a pas encore été recoupé par un relecteur : son niveau reste à confirmer.
+        confidence_label=CONFIDENCE_LABELS[gotcha.confidence]
+        + ("" if gotcha.publication is Publication.PUBLISHED else ", à confirmer à la relecture"),
         sources=[source_view(s) for s in gotcha.sources],
         last_confirmed_on=gotcha.last_confirmed_on,
         confirmations=gotcha.confirmations,

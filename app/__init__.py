@@ -1,1 +1,1 @@
-"""Gotcha : les pièges du paiement et du déploiement en Afrique que personne ne documente."""
+"""Gotcha : la mémoire opérationnelle du paiement mobile et du déploiement en Afrique."""

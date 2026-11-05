@@ -30,9 +30,10 @@ from app.domain.models import (
     Status,
 )
 
+# D21 : mémoire opérationnelle ; D22 : niveau de confiance affiché, rien de plus promis.
 DEFAULT_DESCRIPTION = (
-    "Les pièges du paiement et du déploiement en Afrique que personne ne documente, "
-    "confirmés par les devs qui les ont vécus."
+    "La mémoire opérationnelle du paiement mobile et du déploiement en Afrique : "
+    "chaque piège cite ses sources et affiche son niveau de confiance."
 )
 
 

@@ -53,7 +53,12 @@ def test_view_shows_level_attempts_and_proof() -> None:
         {},
         needs_review=False,
     )
-    assert view.confidence_label == "Reproduit"
+    # Brouillon : le niveau n'a pas encore été confirmé par un relecteur.
+    assert view.confidence_label == "Reproduit, à confirmer à la relecture"
+    published = _gotcha(
+        confidence="reproduced", proof_md="API v1", publication="published", verified_by="loum"
+    )
+    assert gotcha_view(published, {}, needs_review=False).confidence_label == "Reproduit"
     assert view.proof_html is not None
     assert "résultat obtenu" in view.proof_html
     assert view.failed_attempts_html is not None
