@@ -7,7 +7,9 @@ from __future__ import annotations
 
 import os
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -28,6 +30,11 @@ from app.domain.ports import Store
 from app.stores.content_files import load_fiches, load_glossary
 from app.stores.memory.store import MemoryStore
 from tests.conftest import TEST_CONTENT_DIR
+
+if TYPE_CHECKING:
+    import asyncpg
+
+    from app.stores.postgres.store import PostgresStore
 
 pytestmark = pytest.mark.anyio
 
@@ -57,6 +64,27 @@ async def _postgres_store() -> Store:
         await store.upsert_fiche(fiche)
     await store.upsert_glossary(load_glossary(TEST_CONTENT_DIR))
     return store
+
+
+async def _postgres_only() -> PostgresStore:
+    """Pour les tests propres à PostgreSQL (accès concurrents, documents JSONB)."""
+    from app.stores.postgres.store import PostgresStore
+
+    store = await _postgres_store()
+    assert isinstance(store, PostgresStore)
+    return store
+
+
+@asynccontextmanager
+async def _sql() -> AsyncIterator[asyncpg.Connection]:
+    """Une connexion à part, comme une autre instance du site ou un relecteur."""
+    import asyncpg
+
+    conn = await asyncpg.connect(os.environ["GOTCHA_TEST_DATABASE_URL"])
+    try:
+        yield conn
+    finally:
+        await conn.close()
 
 
 @pytest.fixture(params=["memory", pytest.param("postgres", marks=pytest.mark.postgres)])
@@ -294,3 +322,115 @@ async def test_reseeding_removes_gotchas_deleted_from_content(store: Store) -> N
     updated = await store.get_fiche("demo-pay-sn", include_drafts=True)
     assert updated is not None
     assert [g.id for g in updated.gotchas] == ["demo-pay-sn.jeton-expire"]
+
+
+async def test_fiche_deleted_from_content_leaves_production(store: Store) -> None:
+    assert await store.retire_fiches(["demo-host"]) == ["demo-pay-sn"]
+    assert await store.get_fiche("demo-pay-sn", include_drafts=False) is None
+    assert await store.search(SearchQuery(text="jeton"), include_drafts=False) == []
+    assert await store.get_fiche("demo-pay-sn", include_drafts=True) is not None
+    assert await store.retire_fiches(["demo-host"]) == []
+
+    back = next(f for f in load_fiches(TEST_CONTENT_DIR) if f.slug == "demo-pay-sn")
+    await store.upsert_fiche(back)
+    assert await store.get_fiche("demo-pay-sn", include_drafts=False) is not None
+
+
+async def test_reseeding_replaces_the_whole_glossary(store: Store) -> None:
+    webhook = next(t for t in load_glossary(TEST_CONTENT_DIR) if t.slug == "webhook")
+    await store.upsert_glossary([webhook])
+    assert [t.slug for t in await store.list_glossary()] == ["webhook"]
+
+
+# --- Entrées hostiles et accès simultanés ---------------------------------------
+
+
+async def test_text_with_a_nul_byte_is_never_found(store: Store) -> None:
+    assert await store.get_fiche("demo-pay-sn\x00", include_drafts=True) is None
+    assert await store.get_contribution("c1\x00") is None
+    assert await store.list_incidents(service_slug="demo-pay\x00") == []
+    assert await store.list_incidents(country="S\x00") == []
+
+
+async def test_a_contribution_is_reviewed_only_once(store: Store) -> None:
+    await store.add_contribution(_contribution(1))
+    pending = await store.get_contribution("c1")
+    assert pending is not None
+    approved = pending.model_copy(update={"status": ContributionStatus.APPROVED})
+    rejected = pending.model_copy(update={"status": ContributionStatus.REJECTED})
+    assert await store.update_contribution(approved) is True
+    assert await store.update_contribution(rejected) is False
+    saved = await store.get_contribution("c1")
+    assert saved is not None
+    assert saved.status is ContributionStatus.APPROVED
+    unknown = approved.model_copy(update={"id": "absente"})
+    assert await store.update_contribution(unknown) is False
+    assert await store.get_contribution("absente") is None
+
+
+# --- PostgreSQL seulement -------------------------------------------------------
+
+
+@pytest.mark.postgres
+async def test_postgres_reseeding_keeps_a_confirmation_received_meanwhile() -> None:
+    import asyncio
+
+    store = await _postgres_only()
+    try:
+        async with _sql() as other:
+            # Un clic « ça marche encore » est en cours quand le contenu est rechargé.
+            transaction = other.transaction()
+            await transaction.start()
+            await other.execute(
+                "UPDATE fiches SET confirmations = confirmations + 1 WHERE slug = 'demo-pay-sn'"
+            )
+            reloaded = next(f for f in load_fiches(TEST_CONTENT_DIR) if f.slug == "demo-pay-sn")
+            reseed = asyncio.create_task(store.upsert_fiche(reloaded))
+            await asyncio.sleep(0.3)
+            await transaction.commit()
+            await reseed
+        fiche = await store.get_fiche("demo-pay-sn", include_drafts=True)
+        assert fiche is not None
+        assert fiche.confirmations == 1
+    finally:
+        await store.close()
+
+
+@pytest.mark.postgres
+async def test_postgres_documents_with_an_unknown_field_stay_readable_and_reseedable() -> None:
+    store = await _postgres_only()
+    try:
+        async with _sql() as conn:
+            await conn.execute(
+                "UPDATE fiches SET data = data || '{\"champ_retire\": 1}'"
+                " WHERE slug = 'demo-pay-sn'"
+            )
+            await conn.execute(
+                "UPDATE gotchas SET data = data || '{\"champ_retire\": 1}'"
+                " WHERE fiche_slug = 'demo-pay-sn'"
+            )
+        assert await store.get_fiche("demo-pay-sn", include_drafts=True) is not None
+        reloaded = next(f for f in load_fiches(TEST_CONTENT_DIR) if f.slug == "demo-pay-sn")
+        await store.upsert_fiche(reloaded)
+        async with _sql() as conn:
+            stale = await conn.fetchval(
+                "SELECT (SELECT count(*) FROM fiches WHERE data ? 'champ_retire')"
+                " + (SELECT count(*) FROM gotchas WHERE data ? 'champ_retire')"
+            )
+        assert stale == 0
+    finally:
+        await store.close()
+
+
+@pytest.mark.postgres
+async def test_postgres_retired_fiche_keeps_its_history() -> None:
+    store = await _postgres_only()
+    try:
+        await store.retire_fiches(["demo-host"])
+        async with _sql() as conn:
+            kept = await conn.fetchval(
+                "SELECT count(*) > 0 FROM fiche_revisions WHERE fiche_slug = 'demo-pay-sn'"
+            )
+        assert kept is True
+    finally:
+        await store.close()
