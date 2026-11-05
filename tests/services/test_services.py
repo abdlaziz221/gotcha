@@ -72,6 +72,12 @@ async def test_find_falls_back_to_the_fiche_valid_everywhere() -> None:
     assert (await services.fiches.find("demo-host", "CI")).slug == "demo-host"
     with pytest.raises(NotFoundError):
         await services.fiches.find("demo-pay", "KE")
+    # Sans ce garde-fou, le repli sur la fiche sans pays construisait un état
+    # de service avec ce pays, que le modèle refuse : erreur brute pour l'agent.
+    with pytest.raises(NotFoundError):
+        await services.fiches.find("demo-host", "SN\x00")
+    with pytest.raises(NotFoundError):
+        await services.fiches.find("demo-host\x00")
 
 
 async def test_search_with_a_nul_byte_finds_nothing_without_error() -> None:
@@ -111,6 +117,16 @@ async def test_review_once_only() -> None:
     assert reviewed.status is ContributionStatus.APPROVED
     with pytest.raises(InvalidInputError):
         await services.contributions.review(contribution.id, approve=False, reviewer="aziz")
+
+
+async def test_review_note_with_a_nul_byte_is_refused_and_nothing_changes() -> None:
+    services = await _services()
+    contribution = await services.contributions.submit(_input())
+    with pytest.raises(InvalidInputError, match="Note de relecture"):
+        await services.contributions.review(
+            contribution.id, approve=True, reviewer="aziz", note="a\x00b"
+        )
+    assert [c.id for c in await services.contributions.pending()] == [contribution.id]
 
 
 class RacingStore(MemoryStore):

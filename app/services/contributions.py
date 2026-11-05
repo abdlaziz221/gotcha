@@ -105,14 +105,21 @@ class ContributionService:
             raise NotFoundError(f"Contribution introuvable : {contribution_id}")
         if contribution.status is not ContributionStatus.PENDING:
             raise InvalidInputError("Cette contribution a déjà été relue.")
-        reviewed = contribution.model_copy(
-            update={
-                "status": ContributionStatus.APPROVED if approve else ContributionStatus.REJECTED,
-                "reviewed_at": self._clock.now(),
-                "reviewer": reviewer,
-                "review_note": note or None,
-            }
-        )
+        try:
+            # model_validate et non model_copy : la note est vérifiée comme tout texte saisi.
+            reviewed = Contribution.model_validate(
+                {
+                    **contribution.model_dump(),
+                    "status": ContributionStatus.APPROVED
+                    if approve
+                    else ContributionStatus.REJECTED,
+                    "reviewed_at": self._clock.now(),
+                    "reviewer": reviewer,
+                    "review_note": note or None,
+                }
+            )
+        except ValidationError as exc:
+            raise InvalidInputError("Note de relecture invalide.") from exc
         if not await self._store.update_contribution(reviewed):
             # Un autre relecteur a décidé entre la lecture et l'écriture.
             raise InvalidInputError("Cette contribution a déjà été relue.")

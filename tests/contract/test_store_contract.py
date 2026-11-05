@@ -23,6 +23,7 @@ from app.domain.models import (
     Incident,
     IncidentSource,
     OAuthGrantKind,
+    Publication,
     SearchHitKind,
     SearchQuery,
     Status,
@@ -395,7 +396,9 @@ async def test_fiche_deleted_from_content_leaves_production(store: Store) -> Non
     assert await store.retire_fiches(["demo-host"]) == ["demo-pay-sn"]
     assert await store.get_fiche("demo-pay-sn", include_drafts=False) is None
     assert await store.search(SearchQuery(text="jeton"), include_drafts=False) == []
-    assert await store.get_fiche("demo-pay-sn", include_drafts=True) is not None
+    retired = await store.get_fiche("demo-pay-sn", include_drafts=True)
+    assert retired is not None
+    assert retired.publication is Publication.DRAFT
     assert await store.retire_fiches(["demo-host"]) == []
 
     back = next(f for f in load_fiches(TEST_CONTENT_DIR) if f.slug == "demo-pay-sn")
