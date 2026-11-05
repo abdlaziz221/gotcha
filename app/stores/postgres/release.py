@@ -13,7 +13,7 @@ from pathlib import Path
 import asyncpg
 
 from app.domain.ports import Store
-from app.stores.content_files import load_fiches, load_glossary
+from app.stores.content_files import ContentError, load_fiches, load_glossary
 from app.stores.postgres.migrate import apply_migrations
 from app.stores.postgres.store import PostgresStore
 
@@ -26,6 +26,7 @@ class SeedReport:
     fiches: int
     gotchas: int
     terms: int
+    retired: tuple[str, ...] = ()  # fiches absentes de content/, repassées en brouillon
 
 
 @dataclass(frozen=True)
@@ -35,14 +36,24 @@ class ReleaseReport:
 
 
 async def seed_content(store: Store, content_dir: Path) -> SeedReport:
-    """Charge les fiches et le glossaire ; garde les confirmations reçues sur le site."""
+    """Charge les fiches et le glossaire ; garde les confirmations reçues sur le site.
+
+    Les fiches retirées de content/ repassent en brouillon, et le glossaire est remplacé.
+    """
     fiches = load_fiches(content_dir)
+    if not fiches:
+        # Sinon retire_fiches dépublierait tout le site.
+        raise ContentError(f"{content_dir / 'fiches'} : aucune fiche, chargement annulé")
     glossary = load_glossary(content_dir)
     for fiche in fiches:
         await store.upsert_fiche(fiche)
+    retired = await store.retire_fiches([f.slug for f in fiches])
     await store.upsert_glossary(glossary)
     return SeedReport(
-        fiches=len(fiches), gotchas=sum(len(f.gotchas) for f in fiches), terms=len(glossary)
+        fiches=len(fiches),
+        gotchas=sum(len(f.gotchas) for f in fiches),
+        terms=len(glossary),
+        retired=tuple(retired),
     )
 
 

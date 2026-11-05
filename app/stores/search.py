@@ -53,6 +53,8 @@ def keep_confirmations(new: Fiche, old: Fiche | None) -> Fiche:
 
     Les fichiers de content/ ne connaissent pas les compteurs : on garde ceux déjà
     enregistrés, et la date de dernière confirmation la plus récente des deux.
+    Une date future ne se corrigerait donc jamais : content_files.py la refuse au
+    chargement. PostgresStore fait le même calcul en SQL (GREATEST).
     """
     if old is None:
         return new

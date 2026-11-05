@@ -28,7 +28,10 @@ Deux implémentations des mêmes ports (`app/domain/ports.py`), choisies au dém
 
 - Fiches et pièges en **JSONB** (le modèle Pydantic sérialisé, D6) ; les compteurs de confirmation sont dans des colonnes à part, que `add_confirmation` incrémente **dans la même transaction** que l'insertion de la confirmation.
 - Sans brouillons : `WHERE publication = 'published'` sur les fiches **et** sur les pièges.
-- `upsert_fiche` historise chaque changement de contenu dans `fiche_revisions` (jamais les simples compteurs).
+- `upsert_fiche` historise chaque changement de contenu dans `fiche_revisions` (jamais les simples compteurs). Il ne relit pas l'ancienne fiche : les compteurs ne sont pas dans le `DO UPDATE` et la date passe par `GREATEST`, donc une confirmation reçue pendant le rechargement n'est jamais écrasée.
+- Les champs que le modèle ne connaît plus sont ignorés à la lecture du JSONB, puis effacés par le prochain chargement.
+- `retire_fiches` repasse en brouillon les fiches retirées de `content/` (l'historique reste) ; `upsert_glossary` remplace tout le glossaire.
+- `update_contribution` ne touche qu'une contribution encore `pending` (`WHERE status = 'pending'`) : de deux relecteurs simultanés, seul le premier l'emporte.
 - Toujours des requêtes paramétrées (`$1`, `$2`) : jamais de f-string dans du SQL.
 
 ## Lancer les tests PostgreSQL en local

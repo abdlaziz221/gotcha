@@ -16,7 +16,7 @@ from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from app.domain.errors import IdentityError, InvalidInputError
-from app.domain.models import Account, ExternalIdentity, OAuthGrantKind
+from app.domain.models import Account, ExternalIdentity, OAuthGrantKind, is_storable
 from app.domain.ports import AccountStore, Clock, IdentityProvider
 
 LOGIN_TTL = timedelta(minutes=10)
@@ -29,6 +29,17 @@ JURY_ACCOUNT = ExternalIdentity(id="jury:code", pseudo="jury")
 
 def _digest(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
+
+
+def _storable(value: object) -> bool:
+    """Faux si un texte de la description d'un outil ne peut pas être enregistré (octet nul)."""
+    if isinstance(value, str):
+        return is_storable(value)
+    if isinstance(value, dict):
+        return all(_storable(k) and _storable(v) for k, v in value.items())
+    if isinstance(value, list | tuple):
+        return all(_storable(v) for v in value)
+    return True
 
 
 def _with_query(url: str, **params: str | None) -> str:
@@ -90,6 +101,8 @@ class OAuthService:
         return await self._store.get_oauth_client(client_id)
 
     async def register_client(self, client_id: str, data: dict[str, Any]) -> None:
+        if not _storable(data):
+            raise InvalidInputError("Description de l'outil invalide (caractère interdit).")
         await self._store.save_oauth_client(client_id, data)
 
     # --- Connexion du développeur ----------------------------------------------
