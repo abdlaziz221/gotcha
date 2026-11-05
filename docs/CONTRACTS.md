@@ -62,7 +62,7 @@ Règles garanties par le modèle :
 | `add_contribution`, `get_contribution` | Classiques |
 | `update_contribution(contribution)` | Enregistre une relecture ; renvoie `False` sans rien changer si la contribution n'existe pas ou n'est plus en attente (deux relecteurs simultanés : le premier gagne) |
 | `list_contributions(status)` | De la plus ancienne à la plus récente (file de relecture) |
-| `add_confirmation(c)` | Si `still_works` : le compteur de la cible augmente de 1 et sa date de dernière confirmation devient celle du jour |
+| `add_confirmation(c)` | Si `still_works` : le compteur de la cible augmente de 1 et sa date de dernière confirmation devient celle du jour, sans jamais reculer |
 | `has_recent_confirmation(account_id, target_id, since)` / `list_confirmations(limit)` | Évite qu'un compte recompte la même cible ; dernières confirmations d'abord |
 | `add_usage(day, event, account_id)` / `usage_totals(since)` | Compteurs par jour, événement et compte ; aucun texte de recherche n'est conservé |
 | `save_account(account)` / `get_account(id)` | Création ou remplacement ; un blocage déjà posé est conservé |
