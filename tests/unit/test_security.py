@@ -122,6 +122,14 @@ def test_real_world_leaks_are_detected(text: str) -> None:
     assert scan_text(text) != []
 
 
+def test_long_unquoted_secret_is_still_detected() -> None:
+    assert scan_text("api_key=" + "Ab1" * 200 + " fin") != []
+
+
+def test_value_followed_by_code_is_not_a_secret() -> None:
+    assert scan_text("password = abcdefgh12345678x.method()") == []
+
+
 def test_finding_starts_on_the_line_of_the_secret() -> None:
     text = "A=1\n\n\nCONSUMER_SECRET=" + FAKE + "\n"
     finding = scan_text(text)[0]
@@ -130,7 +138,19 @@ def test_finding_starts_on_the_line_of_the_secret() -> None:
 
 @pytest.mark.parametrize(
     "text",
-    ["\n" * 100_000, " " * 100_000, "API_KEY" * 15_000, "password " * 12_000, "a=" * 50_000],
+    [
+        "\n" * 100_000,
+        " " * 100_000,
+        "API_KEY" * 15_000,
+        "password " * 12_000,
+        "a=" * 50_000,
+        # Trouvés en relecture : chaque occurrence relisait toute la suite.
+        "password=" * 5_000,
+        "passkey=" * 5_000 + "(",
+        'password = "' * 4_000,
+        "merchant_key=a1" * 3_000,
+        "Authorization: Bearer " * 2_000,
+    ],
 )
 def test_scan_stays_fast_on_hostile_text(text: str) -> None:
     started = time.perf_counter()

@@ -6,7 +6,8 @@ tests/unit/test_security.py, avec un vrai format de clé (fictive) et un faux po
 à éviter. Ne jamais journaliser le secret trouvé.
 
 Ce texte vient du public : pas de « \\s* » en début de motif, qui se rejoue sur chaque
-ligne vide et bloque le serveur. On borne les répétitions et on reste sur la ligne.
+ligne vide et bloque le serveur. Toute répétition qui suit un motif court et répétable
+est bornée (512), sinon chaque occurrence relit toute la suite du texte : coût quadratique.
 """
 
 from __future__ import annotations
@@ -71,7 +72,7 @@ RULES: list[tuple[str, re.Pattern[str]]] = [
         re.compile(
             r"(?i)" + _FIELD_START + r"merchant[_-]?key" + _ASSIGN + r"[\"']?"
             + _NOT_PLACEHOLDER
-            + r"(?=[A-Za-z]*[0-9])[A-Za-z0-9]{8,}\b"
+            + r"(?=[A-Za-z]{0,512}[0-9])[A-Za-z0-9]{8,512}\b"
         ),
     ),
     (
@@ -86,7 +87,7 @@ RULES: list[tuple[str, re.Pattern[str]]] = [
             r"(?i)\bauthorization[\"']?\s*[:=]\s*[\"']?(?:bearer|basic)\s+"
             + _NOT_PLACEHOLDER
             # Une valeur tronquée (« wave_sn_prod_YhUNb9d...i4bA6 ») a déjà été masquée.
-            + r"(?!\S*\.\.\.)[A-Za-z0-9+/=._-]{16,}"
+            + r"(?!\S{0,512}\.\.\.)[A-Za-z0-9+/=._-]{16,512}"
         ),
     ),
     # Affectations. Une expression comme « password = base64.b64decode(...) » ou
@@ -96,7 +97,7 @@ RULES: list[tuple[str, re.Pattern[str]]] = [
         re.compile(
             r"(?i)" + _FIELD_START + _SENSITIVE_FIELDS + r"\b" + _ASSIGN + r"[\"']"
             + _NOT_PLACEHOLDER
-            + r"[^\s\"'`]{16,}[\"']"
+            + r"[^\s\"'`]{16,512}+[\"']"
         ),
     ),
     # Sans guillemets, en plein texte : URL, curl, phrase. Un chiffre et une lettre, sans
@@ -106,7 +107,10 @@ RULES: list[tuple[str, re.Pattern[str]]] = [
         re.compile(
             r"(?i)" + _FIELD_START + _SENSITIVE_FIELDS + r"\b" + _ASSIGN
             + _NOT_PLACEHOLDER
-            + r"(?=[A-Za-z/+=-]*[0-9])(?=[0-9/+=-]*[A-Za-z])[A-Za-z0-9/+=-]{16,}(?=$|[\s&\"',;#)])"
+            + r"(?=[A-Za-z/+=-]{0,512}[0-9])(?=[0-9/+=-]{0,512}[A-Za-z])"
+            # Possessif : on ne revient pas en arrière, donc une valeur plus longue que la borne
+            # est lue jusqu'à 512 caractères puis acceptée, sans se rejouer sur toute la suite.
+            + r"[A-Za-z0-9/+=-]{16,512}+(?=$|[\s&\"',;#)]|[A-Za-z0-9/+=-])"
         ),
     ),
     (
@@ -116,7 +120,7 @@ RULES: list[tuple[str, re.Pattern[str]]] = [
             r"(?:API_KEY|SECRET|PASSKEY|PASSWORD|PASSWD|ACCESS_TOKEN|CONSUMER_KEY"
             r"|SUBSCRIPTION_KEY)[A-Z0-9_]{0,64}=[\"']?"
             + _NOT_PLACEHOLDER
-            + r"[^\s\"'#()]{16,}"
+            + r"[^\s\"'#()]{16,512}"
         ),
     ),
     (
@@ -124,7 +128,7 @@ RULES: list[tuple[str, re.Pattern[str]]] = [
         re.compile(
             r"(?im)^[ \t]*(?:-[ \t]+)?" + _SENSITIVE_FIELDS + r"[ \t]*:[ \t]*"
             + _NOT_PLACEHOLDER
-            + r"[A-Za-z0-9/+_.=-]{16,}[ \t]*(?:#.*)?$"
+            + r"[A-Za-z0-9/+_.=-]{16,512}[ \t]*(?:#.*)?$"
         ),
     ),
 ]  # fmt: skip
