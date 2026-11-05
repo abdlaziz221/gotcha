@@ -7,8 +7,6 @@ Tout ce qui est écrit pendant l'exécution est perdu au redémarrage.
 from __future__ import annotations
 
 import json
-import re
-import unicodedata
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -23,33 +21,17 @@ from app.domain.models import (
     IncidentSource,
     Publication,
     SearchHit,
-    SearchHitKind,
     SearchQuery,
     TargetKind,
 )
-from app.domain.text import plain_snippet
 from app.stores.content_files import load_fiches, load_glossary
-
-_TOKEN_RE = re.compile(r"[\w-]+")
-
-
-def _norm(text: str) -> str:
-    decomposed = unicodedata.normalize("NFKD", text)
-    return "".join(c for c in decomposed if not unicodedata.combining(c)).lower()
-
-
-def _visible(fiche: Fiche, include_drafts: bool) -> Fiche | None:
-    if include_drafts:
-        return fiche
-    if fiche.publication is not Publication.PUBLISHED:
-        return None
-    published = [g for g in fiche.gotchas if g.publication is Publication.PUBLISHED]
-    return fiche.model_copy(update={"gotchas": published})
-
-
-def _score(tokens: list[str], text: str, weight: float) -> float:
-    haystack = _norm(text)
-    return sum(weight for t in tokens if t in haystack)
+from app.stores.search import (
+    keep_confirmations,
+    search_fiches,
+    sort_fiches,
+    sort_glossary,
+    visible,
+)
 
 
 def _fixture_incident(item: dict[str, object], now: datetime) -> Incident:
@@ -97,89 +79,36 @@ class MemoryStore:
     # --- FicheStore ----------------------------------------------------------
 
     async def list_fiches(self, *, include_drafts: bool = False) -> list[Fiche]:
-        visible = [_visible(f, include_drafts) for f in self._fiches.values()]
-        return sorted((f for f in visible if f), key=lambda f: _norm(f.title))
+        shown = [visible(f, include_drafts=include_drafts) for f in self._fiches.values()]
+        return sort_fiches(f for f in shown if f)
 
     async def get_fiche(self, slug: str, *, include_drafts: bool = False) -> Fiche | None:
         fiche = self._fiches.get(slug)
-        return _visible(fiche, include_drafts) if fiche else None
+        return visible(fiche, include_drafts=include_drafts) if fiche else None
 
     async def search(self, query: SearchQuery, *, include_drafts: bool = False) -> list[SearchHit]:
-        tokens = [t for t in _TOKEN_RE.findall(_norm(query.text)) if len(t) > 1]
-        hits: list[SearchHit] = []
-        for fiche in await self.list_fiches(include_drafts=include_drafts):
-            if query.service and fiche.service.slug != query.service:
-                continue
-            if query.country and fiche.country not in (None, query.country):
-                continue
-            if not tokens:
-                hits.append(
-                    SearchHit(
-                        kind=SearchHitKind.FICHE,
-                        fiche_slug=fiche.slug,
-                        title=fiche.title,
-                        snippet=plain_snippet(fiche.summary),
-                    )
-                )
-                continue
-            fiche_score = _score(tokens, fiche.title, 3) + _score(tokens, fiche.summary, 1)
-            if fiche_score:
-                hits.append(
-                    SearchHit(
-                        kind=SearchHitKind.FICHE,
-                        fiche_slug=fiche.slug,
-                        title=fiche.title,
-                        snippet=plain_snippet(fiche.summary),
-                        score=fiche_score,
-                    )
-                )
-            hits.extend(self._gotcha_hits(fiche, tokens))
-            hits.extend(
-                SearchHit(
-                    kind=SearchHitKind.ERROR_CODE,
-                    fiche_slug=fiche.slug,
-                    title=f"{fiche.title} : erreur {error.code}",
-                    snippet=plain_snippet(f"{error.meaning} {error.action}"),
-                    anchor="codes-erreur",
-                    score=5,
-                )
-                for error in fiche.error_codes
-                if _norm(error.code) in tokens
-            )
-        hits.sort(key=lambda h: h.score, reverse=True)
-        return hits[: query.limit]
-
-    @staticmethod
-    def _gotcha_hits(fiche: Fiche, tokens: list[str]) -> list[SearchHit]:
-        hits = []
-        for gotcha in fiche.gotchas:
-            score = (
-                _score(tokens, gotcha.title, 3)
-                + _score(tokens, f"{gotcha.symptom_md} {gotcha.cause_md} {gotcha.fix_md}", 1)
-                + 5 * sum(1 for code in gotcha.error_codes if _norm(code) in tokens)
-            )
-            if score:
-                hits.append(
-                    SearchHit(
-                        kind=SearchHitKind.GOTCHA,
-                        fiche_slug=fiche.slug,
-                        title=gotcha.title,
-                        snippet=plain_snippet(gotcha.symptom_md),
-                        anchor=gotcha.anchor,
-                        score=score,
-                    )
-                )
-        return hits
+        return search_fiches(await self.list_fiches(include_drafts=include_drafts), query)
 
     async def list_glossary(self) -> list[GlossaryTerm]:
-        return sorted(self._glossary.values(), key=lambda t: _norm(t.term))
+        return sort_glossary(self._glossary.values())
 
     async def upsert_fiche(self, fiche: Fiche) -> None:
-        self._fiches[fiche.slug] = fiche
+        self._fiches[fiche.slug] = keep_confirmations(fiche, self._fiches.get(fiche.slug))
+
+    async def retire_fiches(self, keep: list[str]) -> list[str]:
+        retired = sorted(
+            slug
+            for slug, fiche in self._fiches.items()
+            if slug not in keep and fiche.publication is Publication.PUBLISHED
+        )
+        for slug in retired:
+            self._fiches[slug] = self._fiches[slug].model_copy(
+                update={"publication": Publication.DRAFT}
+            )
+        return retired
 
     async def upsert_glossary(self, terms: list[GlossaryTerm]) -> None:
-        for term in terms:
-            self._glossary[term.slug] = term
+        self._glossary = {term.slug: term for term in terms}
 
     # --- IncidentStore -------------------------------------------------------
 
@@ -224,8 +153,12 @@ class MemoryStore:
         selected = [c for c in self._contributions.values() if status is None or c.status is status]
         return sorted(selected, key=lambda c: c.created_at)
 
-    async def update_contribution(self, contribution: Contribution) -> None:
+    async def update_contribution(self, contribution: Contribution) -> bool:
+        current = self._contributions.get(contribution.id)
+        if current is None or current.status is not ContributionStatus.PENDING:
+            return False
         self._contributions[contribution.id] = contribution
+        return True
 
     async def add_confirmation(self, confirmation: Confirmation) -> None:
         self._confirmations.append(confirmation)
@@ -238,11 +171,19 @@ class MemoryStore:
             return
         if confirmation.target_kind is TargetKind.FICHE:
             self._fiches[fiche_slug] = fiche.model_copy(
-                update={"confirmations": fiche.confirmations + 1, "last_confirmed_on": day}
+                update={
+                    "confirmations": fiche.confirmations + 1,
+                    "last_confirmed_on": max(fiche.last_confirmed_on, day),
+                }
             )
             return
         gotchas: list[Gotcha] = [
-            g.model_copy(update={"confirmations": g.confirmations + 1, "last_confirmed_on": day})
+            g.model_copy(
+                update={
+                    "confirmations": g.confirmations + 1,
+                    "last_confirmed_on": max(g.last_confirmed_on, day),
+                }
+            )
             if g.id == confirmation.target_id
             else g
             for g in fiche.gotchas

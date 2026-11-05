@@ -25,16 +25,25 @@ async def main() -> None:
         sys.exit("DATABASE_URL n'est pas défini.")
     content_dir = ROOT / "content"
     fiches = load_fiches(content_dir)
+    if not fiches:
+        # Sinon retire_fiches dépublierait tout le site.
+        sys.exit(f"Aucune fiche dans {content_dir / 'fiches'} : chargement annulé.")
     glossary = load_glossary(content_dir)
+    if not glossary:
+        # upsert_glossary remplace tout : une liste vide effacerait le glossaire en ligne.
+        sys.exit(f"Aucun terme dans {content_dir / 'glossaire.yml'} : chargement annulé.")
     store = await PostgresStore.connect(url)
     try:
         for fiche in fiches:
             await store.upsert_fiche(fiche)
+        retired = await store.retire_fiches([f.slug for f in fiches])
         await store.upsert_glossary(glossary)
     finally:
         await store.close()
     gotchas = sum(len(f.gotchas) for f in fiches)
     print(f"{len(fiches)} fiche(s), {gotchas} piège(s), {len(glossary)} terme(s) chargés.")
+    if retired:
+        print("Repassées en brouillon (absentes de content/) : " + ", ".join(retired))
 
 
 if __name__ == "__main__":

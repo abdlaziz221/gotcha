@@ -16,6 +16,23 @@ executors:
     docker:
       - image: cimg/python:3.12-node
     resource_class: small
+  # Tests : une base PostgreSQL jetable par job, pour les tests de contrat de PostgresStore.
+  python-postgres:
+    parameters:
+      version:
+        type: string
+    docker:
+      - image: cimg/python:<< parameters.version >>
+      # Base jetable, joignable seulement depuis le job : connexion sans mot de passe
+      # (trust), pour qu'aucun mot de passe n'apparaisse dans le dépôt (GitGuardian).
+      - image: cimg/postgres:17.9
+        environment:
+          POSTGRES_USER: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: gotcha_test
+    resource_class: small
+    environment:
+      GOTCHA_TEST_DATABASE_URL: postgresql://postgres@localhost:5432/gotcha_test
 
 commands:
   install:
@@ -64,13 +81,22 @@ jobs:
       python:
         type: string
     executor:
-      name: python
+      name: python-postgres
       version: << parameters.python >>
     steps:
       - checkout
       - install
       - run:
-          name: Tests et couverture (85 % minimum)
+          name: Attendre PostgreSQL
+          command: |
+            for i in $(seq 1 30); do
+              python -c "import socket; socket.create_connection(('localhost', 5432), 1)" 2>/dev/null && exit 0
+              sleep 1
+            done
+            echo "ÉCHEC : PostgreSQL ne répond pas après 30 s"
+            exit 1
+      - run:
+          name: Tests et couverture (85 % minimum), PostgreSQL compris
           command: |
             mkdir -p test-results
             python -m pytest --cov --cov-report=term-missing:skip-covered --junitxml=test-results/junit.xml

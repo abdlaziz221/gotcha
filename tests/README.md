@@ -29,7 +29,7 @@ pytest --cov                # avec la couverture (85 % minimum, comme la CI)
 
 ## PostgreSQL
 
-Les tests de contrat PostgreSQL sont ignorés sans base de test. Pour les lancer, sur une base **jetable** (elle est vidée) :
+Les tests de contrat PostgreSQL tournent **à chaque PR** dans la CI, sur sa propre base. En local, ils sont ignorés sans base de test ; pour les lancer, sur une base **jetable** (elle est vidée, voir `app/stores/README.md`) :
 
 ```bash
 GOTCHA_TEST_DATABASE_URL=postgresql://utilisateur:motdepasse@hote:5432/gotcha_test pytest tests/contract -m postgres
