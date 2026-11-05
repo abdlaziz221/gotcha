@@ -20,8 +20,10 @@ from app.security.ratelimit import RateLimiter, client_ip
 
 _N, _R, _P = 2**14, 8, 1
 
-# Essais ratés par adresse IP avant blocage : freine la recherche du mot de passe, et
-# chaque essai coûte un calcul scrypt au processeur.
+# Essais ratés par adresse IP et par pseudo avant blocage : freine la recherche du mot de
+# passe, et chaque essai coûte un calcul scrypt au processeur. Par pseudo : un visiteur qui
+# rate ses essais ne bloque pas les autres relecteurs. Un bon mot de passe reste refusé
+# pendant le blocage, sinon le blocage n'empêcherait plus de deviner.
 MAX_FAILURES = 10
 FAILURE_WINDOW_SECONDS = 15 * 60
 
@@ -82,18 +84,22 @@ def require_reviewer(request: Request) -> str:
     if scheme.lower() != "basic" or not credentials:
         raise HTTPException(status_code=401, headers=challenge)
 
-    limiter: RateLimiter = request.app.state.rate_limiter
-    peer = request.client.host if request.client else None
-    key = "relecture-echec:" + client_ip(request.headers, peer, proxy_hops=settings.proxy_hops)
-    if limiter.exceeded(key, limit=MAX_FAILURES, window_seconds=FAILURE_WINDOW_SECONDS):
-        raise HTTPException(status_code=429, detail="Trop d'essais : réessayez dans 15 minutes.")
     try:
         pseudo, _, password = base64.b64decode(credentials).decode().partition(":")
     except (ValueError, binascii.Error):
         pseudo, password = "", ""
+    limiter: RateLimiter = request.app.state.rate_limiter
+    peer = request.client.host if request.client else None
+    ip = client_ip(request.headers, peer, proxy_hops=settings.proxy_hops)
+    key = f"relecture-echec:{ip}:{pseudo[:64]}"
+    # L'essai est réservé avant le calcul scrypt : des essais simultanés ne peuvent pas
+    # tous passer le contrôle avant que le premier échec soit compté.
+    if not limiter.hit(key, limit=MAX_FAILURES, window_seconds=FAILURE_WINDOW_SECONDS):
+        raise HTTPException(status_code=429, detail="Trop d'essais : réessayez dans 15 minutes.")
     encoded = reviewers.get(pseudo)
     valid = verify_password(password, encoded or _unknown_reviewer_hash())
     if encoded is None or not valid:
-        limiter.hit(key, limit=MAX_FAILURES, window_seconds=FAILURE_WINDOW_SECONDS)
         raise HTTPException(status_code=401, headers=challenge)
+    # HTTP Basic renvoie le mot de passe à chaque page : un succès ne consomme pas d'essai.
+    limiter.release(key)
     return pseudo

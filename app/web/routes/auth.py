@@ -1,12 +1,21 @@
-"""Connexion : retour de GitHub, connexion sur le site, code du jury, déconnexion."""
+"""Connexion : site, outil MCP (écran de consentement), retour de GitHub, jury, déconnexion.
+
+Voir app/services/oauth.py. Toute connexion par GitHub, sur le site comme pour un outil
+MCP, pose un cookie lié à sa demande : le retour de GitHub n'est accepté que dans le
+navigateur qui l'a lancée. Sans lui, un lien de retour envoyé à quelqu'un d'autre
+connecterait la victime au compte de l'attaquant (site) ou donnerait un code à
+l'attaquant (outil MCP, « confused deputy »).
+"""
 
 from __future__ import annotations
 
+import hmac
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from starlette.responses import RedirectResponse, Response
 
+from app.domain.errors import InvalidInputError
 from app.security.csrf import verify_csrf
 from app.security.ratelimit import rate_limit
 from app.services.oauth import SESSION_TTL, safe_next_url
@@ -19,7 +28,7 @@ from app.web.session import (
     set_session_cookie,
 )
 from app.web.templating import render
-from app.web.viewmodels import FormState, LoginPage, PageMeta
+from app.web.viewmodels import FormState, LoginPage, PageMeta, ToolConsentPage
 
 router = APIRouter()
 
@@ -28,6 +37,28 @@ LOGIN_ERRORS = {
     "refus": "La connexion n'a pas abouti. Vous pouvez réessayer.",
     "bloque": "Ce compte est bloqué.",
 }
+CONSENT_PATH = "/connexion/outil"
+# __Host- en production : un sous-domaine voisin ne peut ni poser ni écraser ce cookie.
+LOGIN_COOKIE = "gotcha_connexion"
+SECURE_LOGIN_COOKIE = "__Host-gotcha_connexion"
+LOGIN_COOKIE_SECONDS = 10 * 60  # durée de vie d'une demande de connexion (LOGIN_TTL)
+EXPIRED = "Demande de connexion inconnue ou expirée : relancez la connexion."
+
+
+def _cookie_name(request: Request) -> str:
+    return SECURE_LOGIN_COOKIE if request.app.state.settings.is_prod else LOGIN_COOKIE
+
+
+def _bind_to_browser(request: Request, response: Response, state: str) -> None:
+    response.set_cookie(
+        _cookie_name(request),
+        state,
+        max_age=LOGIN_COOKIE_SECONDS,
+        path="/",
+        secure=request.app.state.settings.is_prod,
+        httponly=True,
+        samesite="lax",  # le retour de GitHub est une navigation : le cookie est envoyé
+    )
 
 
 def _login_page(services: ServicesDep, retour: str, *, error: str | None = None) -> LoginPage:
@@ -57,10 +88,54 @@ async def login(
     "/connexion/github",
     dependencies=[Depends(rate_limit("connexion-site", limit=60, window_seconds=3600))],
 )
-async def login_with_github(services: ServicesDep, retour: str = "/") -> RedirectResponse:
+async def login_with_github(
+    request: Request, services: ServicesDep, retour: str = "/"
+) -> RedirectResponse:
     if not services.settings.site_auth:
         raise HTTPException(status_code=404)
-    return RedirectResponse(await services.oauth.begin_web_login(retour), status_code=302)
+    state, github_url = await services.oauth.begin_web_login(retour)
+    response = RedirectResponse(github_url, status_code=302)
+    _bind_to_browser(request, response, state)
+    return response
+
+
+@router.get(
+    CONSENT_PATH,
+    dependencies=[Depends(rate_limit("connexion", limit=60, window_seconds=3600))],
+)
+async def tool_consent(request: Request, services: ServicesDep, demande: str = "") -> Response:
+    if not services.settings.mcp_auth:
+        raise HTTPException(status_code=404)
+    login = await services.oauth.describe_login(demande)
+    if login is None:
+        raise InvalidInputError(EXPIRED)
+    page = ToolConsentPage(
+        meta=PageMeta(title="Autoriser un outil", path=CONSENT_PATH, noindex=True),
+        client_name=login.client_name,
+        redirect_uri=login.redirect_uri,
+        request_id=demande,
+    )
+    return render(request, "pages/tool_consent.html", page)
+
+
+@router.post(
+    CONSENT_PATH,
+    dependencies=[
+        Depends(verify_csrf),
+        Depends(rate_limit("connexion", limit=60, window_seconds=3600)),
+    ],
+)
+async def tool_consent_answer(request: Request, services: ServicesDep) -> Response:
+    if not services.settings.mcp_auth:
+        raise HTTPException(status_code=404)
+    form = await request.form()
+    demande = form.get("demande")
+    state = demande if isinstance(demande, str) else ""
+    if form.get("decision") != "autoriser":
+        return RedirectResponse(await services.oauth.refuse_login(state), status_code=303)
+    response = RedirectResponse(await services.oauth.approve_login(state), status_code=303)
+    _bind_to_browser(request, response, state)
+    return response
 
 
 @router.post(
@@ -100,13 +175,24 @@ async def logout(request: Request, services: ServicesDep) -> RedirectResponse:
     dependencies=[Depends(rate_limit("connexion", limit=60, window_seconds=3600))],
 )
 async def github_callback(
-    services: ServicesDep, state: str = "", code: str | None = None, error: str | None = None
+    request: Request,
+    services: ServicesDep,
+    state: str = "",
+    code: str | None = None,
+    error: str | None = None,
 ) -> RedirectResponse:
     settings = services.settings
     if not (settings.mcp_auth or settings.site_auth):
         raise HTTPException(status_code=404)
+    accepted = request.cookies.get(_cookie_name(request), "")
+    # Comparaison en octets : compare_digest refuse les chaînes non ASCII.
+    if not accepted or not hmac.compare_digest(accepted.encode(), state.encode()):
+        raise InvalidInputError(
+            "Cette connexion n'a pas été lancée dans ce navigateur : relancez la connexion."
+        )
     result = await services.oauth.finish_login(state, code, error)
     response = RedirectResponse(result.redirect_url, status_code=302)
     if result.session_token:
         set_session_cookie(response, settings, result.session_token, SESSION_MAX_AGE)
+    response.delete_cookie(_cookie_name(request), path="/")  # la demande est consommée
     return response

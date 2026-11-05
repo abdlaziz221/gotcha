@@ -60,8 +60,12 @@ def load_glossary(content_dir: Path) -> list[GlossaryTerm]:
     if not path.exists():
         return []
     data = _read_yaml(path)
+    terms = data.get("termes")
+    if not isinstance(terms, list) or not terms:
+        # Sinon le chargement remplacerait tout le glossaire par une liste vide.
+        raise ContentError(f"{path} : la liste « termes » est absente ou vide")
     try:
-        return [GlossaryTerm(**item) for item in data.get("termes", [])]
+        return [GlossaryTerm(**item) for item in terms]
     except (ValidationError, TypeError) as exc:
         raise ContentError(f"{path} : {exc}") from exc
 

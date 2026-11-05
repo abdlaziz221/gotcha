@@ -190,7 +190,7 @@ class PostgresStore:
         slug: str | None = None,
     ) -> list[Fiche]:
         fiche_rows = await conn.fetch(
-            "SELECT slug, data, last_confirmed_on, confirmations FROM fiches"
+            "SELECT slug, publication, data, last_confirmed_on, confirmations FROM fiches"
             " WHERE ($1::text IS NULL OR slug = $1) AND ($2 OR publication = 'published')",
             slug,
             include_drafts,
@@ -198,7 +198,7 @@ class PostgresStore:
         if not fiche_rows:
             return []
         gotcha_rows = await conn.fetch(
-            "SELECT fiche_slug, data, last_confirmed_on, confirmations FROM gotchas"
+            "SELECT fiche_slug, publication, data, last_confirmed_on, confirmations FROM gotchas"
             " WHERE fiche_slug = ANY($1::text[]) AND ($2 OR publication = 'published')"
             " ORDER BY fiche_slug, position",
             [row["slug"] for row in fiche_rows],
@@ -210,6 +210,7 @@ class PostgresStore:
                 Gotcha.model_validate(
                     {
                         **_known_fields(Gotcha, row["data"]),
+                        "publication": row["publication"],
                         "last_confirmed_on": row["last_confirmed_on"],
                         "confirmations": row["confirmations"],
                     }
@@ -219,6 +220,8 @@ class PostgresStore:
             Fiche.model_validate(
                 {
                     **_known_fields(Fiche, row["data"]),
+                    # La colonne fait foi : retire_fiches ne modifie qu'elle.
+                    "publication": row["publication"],
                     "gotchas": gotchas[row["slug"]],
                     "last_confirmed_on": row["last_confirmed_on"],
                     "confirmations": row["confirmations"],

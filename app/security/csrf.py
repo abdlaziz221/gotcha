@@ -12,10 +12,10 @@ double soumission. Ce préfixe exige Secure, donc il n'est pas utilisé en HTTP 
 from __future__ import annotations
 
 import secrets
-from http.cookies import SimpleCookie
 
 from fastapi import HTTPException, Request
 from starlette.datastructures import MutableHeaders
+from starlette.requests import cookie_parser
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 COOKIE_NAME = "gotcha_csrf"
@@ -24,12 +24,14 @@ FIELD_NAME = "csrf_token"
 
 
 def _cookie_value(scope: Scope, cookie_name: str) -> str | None:
+    # cookie_parser (Starlette) ignore un cookie mal formé au lieu de rejeter tout l'en-tête :
+    # SimpleCookie levait CookieError (erreur 500) ou perdait notre jeton (403) dès qu'un
+    # sous-domaine voisin posait un cookie comme « a/b=1 » ou « foo=bar baz ».
     for name, value in scope.get("headers", []):
         if name == b"cookie":
-            cookie = SimpleCookie()
-            cookie.load(value.decode("latin-1"))
-            if cookie_name in cookie:
-                return cookie[cookie_name].value
+            cookies = cookie_parser(value.decode("latin-1"))
+            if cookie_name in cookies:
+                return cookies[cookie_name]
     return None
 
 
@@ -70,5 +72,10 @@ async def verify_csrf(request: Request) -> None:
     form = await request.form()
     sent = form.get(FIELD_NAME)
     expected = getattr(request.state, "csrf_token", None)
-    if not isinstance(sent, str) or not expected or not secrets.compare_digest(sent, expected):
+    # Comparaison en octets : compare_digest lève TypeError sur une chaîne non ASCII.
+    if (
+        not isinstance(sent, str)
+        or not expected
+        or not secrets.compare_digest(sent.encode(), expected.encode())
+    ):
         raise HTTPException(status_code=403, detail="Formulaire expiré : rechargez la page.")
