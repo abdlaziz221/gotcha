@@ -18,6 +18,7 @@ from app.domain.models import (
     Status,
     TargetKind,
 )
+from app.domain.ports import IncidentFeed
 from app.services.clock import FixedClock
 from app.stores.content_files import load_fiches, load_glossary
 from app.stores.memory.store import MemoryStore
@@ -137,3 +138,43 @@ async def test_refresh_respects_min_interval_and_survives_failures() -> None:
 
     failing = await _services(FakeFeed(fail=True))
     assert await failing.incidents.refresh_if_stale() == 0
+
+
+def _feed_incident() -> Incident:
+    return Incident(
+        id="flutterwave:x:SN:wave",
+        source=IncidentSource.FLUTTERWAVE,
+        service_slug="wave",
+        country="SN",
+        status=Status.DEGRADED,
+        title="Panne",
+        started_at=NOW,
+    )
+
+
+async def _services_with_store(store: MemoryStore, feeds: list[IncidentFeed]) -> Services:
+    return await build_services(
+        Settings(env="test"), clock=FixedClock(NOW), store=store, feeds=feeds
+    )
+
+
+async def _database_down(*_args: object, **_kwargs: object) -> None:
+    raise ConnectionError("base injoignable")
+
+
+@pytest.mark.parametrize("method", ["get_last_ingest", "upsert_incident", "set_last_ingest"])
+async def test_refresh_survives_store_failures(
+    method: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = MemoryStore(load_fiches(TEST_CONTENT_DIR), load_glossary(TEST_CONTENT_DIR))
+    monkeypatch.setattr(store, method, _database_down)
+    services = await _services_with_store(store, [FakeFeed([_feed_incident()])])
+    assert await services.incidents.refresh_if_stale() == 0
+
+
+async def test_failed_feed_does_not_stop_the_next_one() -> None:
+    store = MemoryStore(load_fiches(TEST_CONTENT_DIR), load_glossary(TEST_CONTENT_DIR))
+    working = FakeFeed([_feed_incident()])
+    services = await _services_with_store(store, [FakeFeed(fail=True), working])
+    assert await services.incidents.refresh_if_stale() == 1
+    assert working.calls == 1
