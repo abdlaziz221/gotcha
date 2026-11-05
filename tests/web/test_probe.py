@@ -50,7 +50,9 @@ def test_probe_needs_the_shared_token(probe_settings: Settings, clock: FixedCloc
         assert reply.status_code == 404
         # Octets non ASCII : compare_digest sur des str lèverait TypeError (erreur 500).
         accented = ("é" * len(TOKEN)).encode("latin-1")
-        assert client.get("/_sonde/requete", headers={"X-Sonde-Jeton": accented}).status_code == 404
+        assert (
+            client.get("/_sonde/requete", headers={b"X-Sonde-Jeton": accented}).status_code == 404
+        )
         reply = client.get("/_sonde/requete", headers={"X-Sonde-Jeton": TOKEN})
         assert reply.status_code == 200
 
