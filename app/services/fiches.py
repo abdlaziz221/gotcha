@@ -36,6 +36,13 @@ class FicheService:
             if fiche.country is None:
                 return fiche
         where = f" ({country})" if country else ""
+        countries = sorted(f.country for f in same_service if f.country)
+        if countries:
+            # Un agent qui ne donne pas le pays apprend lesquels existent, au lieu d'un refus nu.
+            raise NotFoundError(
+                f"Aucune fiche pour le service {service_slug}{where} : précisez le pays,"
+                f" fiches disponibles pour {', '.join(countries)}"
+            )
         raise NotFoundError(f"Aucune fiche pour le service {service_slug}{where}")
 
     async def services(self) -> list[Service]:

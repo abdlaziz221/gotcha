@@ -38,9 +38,18 @@ Gardez les trois valeurs dans trois [[variable-environnement|variables d'environ
 
 ```python
 auth = base64.b64encode(f"{CONSUMER_KEY}:{CONSUMER_SECRET}".encode()).decode()
-jeton = post("https://api.orange.com/oauth/v3/token",
-             headers={"Authorization": f"Basic {auth}"},
-             data={"grant_type": "client_credentials"})["access_token"]
-paiement = post(f"{base}/webpayment", headers={"Authorization": f"Bearer {jeton}"},
-                json={"merchant_key": MERCHANT_KEY, "order_id": "<VOTRE_COMMANDE>", ...})
+jeton = post(
+    "https://api.orange.com/oauth/v3/token",
+    headers={"Authorization": f"Basic {auth}"},
+    data={"grant_type": "client_credentials"},
+)["access_token"]
+paiement = post(
+    f"{base}/webpayment",
+    headers={"Authorization": f"Bearer {jeton}"},
+    json={
+        "merchant_key": MERCHANT_KEY,
+        "order_id": "<VOTRE_TENTATIVE>",
+        # puis les autres champs du paiement : montant, devise, adresses de retour
+    },
+)
 ```

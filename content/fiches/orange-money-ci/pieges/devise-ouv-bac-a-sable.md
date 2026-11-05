@@ -17,9 +17,6 @@ sources:
   - title: "Intégration open source en Côte d'Ivoire : paiement en XOF"
     url: https://github.com/ouattaraibd/moncaisson/blob/master/location/payments/orange_money_ci.py
     accessed_on: 2026-11-03
-  - title: "Intégration open source en Côte d'Ivoire : paiement en OUV"
-    url: https://github.com/refontiq-dotcom/Sejoura/blob/main/src/lib/payments/orange-money.ts
-    accessed_on: 2026-11-03
 ---
 
 ## Symptôme
@@ -28,7 +25,7 @@ La création du paiement est refusée dans le [[bac-a-sable]] alors que la devis
 
 ## Cause
 
-Dans le bac à sable (adresse `…/orange-money-webpay/dev/v1/…`), les bibliothèques consultées envoient par défaut la devise fictive `OUV`, y compris une passerelle écrite pour la Côte d'Ivoire. Une intégration ivoirienne open source envoie `XOF` à l'adresse de production `…/ci/v1/…`, mais une autre garde `OUV` à cette même adresse. La référence officielle n'est lisible qu'avec un compte connecté : la devise de production reste à confirmer.
+Dans le bac à sable (adresse `…/orange-money-webpay/dev/v1/…`), les bibliothèques consultées envoient par défaut la devise fictive `OUV`, y compris une passerelle écrite pour la Côte d'Ivoire. Une intégration ivoirienne open source envoie `XOF` à l'adresse de production `…/ci/v1/…`. La référence officielle n'est lisible qu'avec un compte connecté : la devise de production reste à confirmer.
 
 ## Solution
 

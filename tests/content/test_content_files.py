@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import re
+import textwrap
+
 from app.config import ROOT_DIR
 from app.domain.models import Publication
 from app.domain.text import TERM_LINK_RE
@@ -35,3 +38,11 @@ def test_glossary_links_point_to_existing_terms() -> None:
             for match in TERM_LINK_RE.finditer(text):
                 term = match.group(1).strip()
                 assert term in known, f"{fiche.slug} : terme [[{term}]] absent de glossaire.yml"
+
+
+def test_python_examples_in_the_content_compile() -> None:
+    """Un agent peut recopier un exemple tel quel : il doit au moins être du Python valide."""
+    for path in sorted((CONTENT_DIR / "fiches").glob("*/pieges/*.md")):
+        for block in re.findall(r"```python\n(.*?)```", path.read_text("utf-8"), re.S):
+            code = textwrap.dedent(block)
+            compile(code, str(path), "exec")  # SyntaxError : l'exemple est à corriger

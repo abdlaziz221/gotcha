@@ -34,15 +34,20 @@ Cette lecture (`…/v1/transactionstatus`) demande **trois** valeurs : l'`order_
 
 ## Solution
 
-1. À la création du paiement, enregistrez l'`order_id`, le montant et le `pay_token`.
+1. Chaque paiement est une **tentative** rattachée à la commande, avec son propre `order_id` (voir le piège sur les statuts). À sa création, enregistrez cet `order_id`, le montant et le `pay_token`, et mettez l'`order_id` dans `return_url` (par exemple `…/paiement/retour?tentative=<order_id>`) : au retour du client, vous savez quelle tentative vérifier.
 2. Au retour du client, et à chaque notification reçue, demandez le statut :
 
    ```python
    statut = post(
        f"{base}/transactionstatus",
        headers=auth,
-       json={"order_id": commande.id, "amount": commande.montant, "pay_token": commande.pay_token},
-   )
+       json={
+           "order_id": tentative.order_id,
+           "amount": tentative.montant,
+           "pay_token": tentative.pay_token,
+       },
+   )["status"]
    ```
 
-3. Ne livrez que si le statut vaut `SUCCESS`.
+3. Ne livrez que si le statut vaut `SUCCESS`. `INITIATED` et `PENDING` ne sont pas des échecs : la tentative est encore ouverte, revérifiez plus tard.
+4. Si le client ferme son navigateur et que la notification n'arrive pas, rien ne déclenche la vérification. Une tâche de rattrapage doit donc relire régulièrement le statut des tentatives encore ouvertes, jusqu'à `SUCCESS`, `FAILED` ou `EXPIRED`.

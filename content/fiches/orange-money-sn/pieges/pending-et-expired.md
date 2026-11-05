@@ -34,6 +34,6 @@ Le statut d'un paiement prend l'une de ces valeurs :
 
 ## Solution
 
-- `PENDING` : revérifiez le statut un peu plus tard ; ne proposez pas de repayer.
-- `EXPIRED` ou `FAILED` : créez un nouveau paiement.
+- `INITIATED` ou `PENDING` : revérifiez le statut un peu plus tard ; ne proposez pas de repayer.
+- `EXPIRED` ou `FAILED` : créez une **nouvelle tentative**, avec un nouvel `order_id` et son propre `pay_token`, rattachée à la même commande. Ne réutilisez pas l'`order_id` de la tentative précédente, et gardez son `pay_token` : il sert encore à vérifier cette tentative-là.
 - Rendez la livraison [[idempotence|idempotente]] : un même paiement réussi ne doit livrer qu'une fois, même s'il est vérifié plusieurs fois.
