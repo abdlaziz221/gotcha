@@ -39,11 +39,11 @@ Deux implémentations des mêmes ports (`app/domain/ports.py`), choisies au dém
 Il faut une base **jetable** : les tests vident les tables. Le plus simple, avec Docker :
 
 ```bash
-docker run -d --name gotcha-pg -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=gotcha_test -p 55432:5432 postgres:17-alpine
+docker run -d --name gotcha-pg -e POSTGRES_HOST_AUTH_METHOD=trust -e POSTGRES_DB=gotcha_test -p 127.0.0.1:55432:5432 postgres:17-alpine
 ```
 
 ```bash
-GOTCHA_TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:55432/gotcha_test pytest tests/contract
+GOTCHA_TEST_DATABASE_URL=postgresql://postgres@localhost:55432/gotcha_test pytest tests/contract
 ```
 
 Sans Docker, avec un PostgreSQL installé : créer une instance de test à part (`initdb` dans un dossier temporaire, puis `pg_ctl start -o "-p 55432"`), jamais la base d'un vrai projet. La CI (CircleCI) lance ces tests à chaque PR, sur sa propre base.
