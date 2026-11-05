@@ -18,6 +18,8 @@ COPY content ./content
 COPY fixtures ./fixtures
 COPY migrations ./migrations
 COPY scripts ./scripts
+# Date de construction : une image plus ancienne qui redémarre ne recharge pas son contenu.
+RUN date -u +%s > BUILD_TIME
 
 RUN useradd --create-home --uid 10001 gotcha
 USER gotcha

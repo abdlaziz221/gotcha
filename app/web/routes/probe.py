@@ -9,6 +9,7 @@ Chaque réponse indique l'instance qui a répondu (nom de machine et processus).
 from __future__ import annotations
 
 import asyncio
+import hmac
 import os
 import socket
 import time
@@ -17,13 +18,33 @@ from datetime import UTC, datetime
 from typing import Annotated, Any
 
 import asyncpg
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from starlette.responses import JSONResponse
 
-from app.security.ratelimit import client_ip
+from app.security.ratelimit import client_ip, rate_limit
 from app.web.deps import ServicesDep
 
-router = APIRouter(prefix="/_sonde")
+TOKEN_HEADER = "x-sonde-jeton"  # noqa: S105 (nom d'en-tête, pas un secret)
+
+
+def require_token(request: Request) -> None:
+    """Sans le jeton partagé (GOTCHA_PROBE_TOKEN), la sonde n'existe pas : 404."""
+    expected = request.app.state.settings.probe_token
+    sent = request.headers.get(TOKEN_HEADER, "")
+    # Comparaison en octets : compare_digest refuse les chaînes non ASCII.
+    if not expected or not hmac.compare_digest(sent.encode(), expected.encode()):
+        raise HTTPException(status_code=404)
+
+
+# Quota d'abord : les essais de jeton comptent aussi. Une mesure complète fait ~20 appels,
+# et /base ouvre une connexion par appel : le quota protège une petite base managée.
+router = APIRouter(
+    prefix="/_sonde",
+    dependencies=[
+        Depends(rate_limit("sonde", limit=60, window_seconds=3600)),
+        Depends(require_token),
+    ],
+)
 
 MAX_WAIT_SECONDS = 300
 Seconds = Annotated[float, Query(ge=0, le=MAX_WAIT_SECONDS)]

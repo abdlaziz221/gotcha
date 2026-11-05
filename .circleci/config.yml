@@ -54,7 +54,10 @@ commands:
           name: Attente du site (/healthz?db=1)
           command: |
             for i in $(seq 1 60); do
-              if curl -fsS 'http://localhost:8000/healthz?db=1' 2>/dev/null | grep -q '"database":"ok"'; then
+              # Sortie capturée, puis grep sans tube : avec pipefail, « … | grep -q » peut
+              # échouer quand grep s'arrête au premier résultat (SIGPIPE pour l'émetteur).
+              health="$(curl -fsS 'http://localhost:8000/healthz?db=1' 2>/dev/null || true)"
+              if grep -q '"database":"ok"' <<<"$health"; then
                 echo "Site prêt après ${i} s"
                 exit 0
               fi
@@ -175,15 +178,18 @@ jobs:
             test "$(code /styleguide)" = 404 || { echo "ÉCHEC : /styleguide doit être caché"; exit 1; }
             test "$(code /relecture)" = 404 || { echo "ÉCHEC : /relecture doit être fermée"; exit 1; }
             test "$(code /_sonde/requete)" = 404 || { echo "ÉCHEC : la sonde doit être éteinte"; exit 1; }
-            docker logs gotcha 2>&1 | grep -q "la base est à jour" \
+            # Sorties capturées, puis grep sans tube (voir wait-ready : pipefail et SIGPIPE).
+            logs="$(docker logs gotcha 2>&1)"
+            grep -q "la base est à jour" <<<"$logs" \
               || { echo "ÉCHEC : le redémarrage aurait dû trouver la base à jour"; exit 1; }
             headers="$(curl -sI http://localhost:8000/)"
             for header in content-security-policy strict-transport-security x-content-type-options x-frame-options; do
-              printf '%s' "$headers" | grep -qi "^$header:" || { echo "ÉCHEC : en-tête $header absent"; exit 1; }
+              grep -qi "^$header:" <<<"$headers" || { echo "ÉCHEC : en-tête $header absent"; exit 1; }
             done
-            curl -fsS -X POST http://localhost:8000/mcp \
+            tools="$(curl -fsS -X POST http://localhost:8000/mcp \
               -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
-              -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | grep -q '"get_fiche"' \
+              -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' || true)"
+            grep -q '"get_fiche"' <<<"$tools" \
               || { echo "ÉCHEC : le serveur MCP ne répond pas"; exit 1; }
             echo "Accueil, pages cachées, en-têtes de sécurité et serveur MCP : OK"
       - run:
