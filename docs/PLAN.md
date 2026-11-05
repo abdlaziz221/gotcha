@@ -42,17 +42,17 @@ Sur GitHub, chaque jalon (sauf J5, qui est une date et non un lot de tâches) es
 
 | Jour | Abdoul Aziz | Loum | Khalifa |
 | --- | --- | --- | --- |
-| **lun. 2** | T1, A1, compte Datacloud | T1, L1 (début) | T1, K1 |
+| **lun. 2** | T1, compte Datacloud | T1, L1 (début) | T1, K1 |
 | **mar. 3** | A2 (déploiement du squelette) | L1 | K2 |
 | **mer. 4** | A2 (fin, décision), A6 | L2, L3 | K3, K7 |
 | **jeu. 5** | A3, A4 | L4, L5 | K4, K5 |
 | **ven. 6** | A5, A7 | L6, L7, L8 | K6, K8 |
 | **sam. 7** | A8 | L9 | K9 |
-| **dim. 8** | A9, A10 · **point de décision sur le wolof** | L10, L11 | K10 |
-| **lun. 9** | Marge, corrections d'intégration | Marge | Marge |
+| **dim. 8** | A9, A10, A13 à A15, A18 · **point de décision sur le wolof** | L10, L11 | K10 |
+| **lun. 9** | A16, A19 (si l'audio est retenu), corrections d'intégration | L14, L15 | K12 |
 | **mar. 10** | **Gel des fonctions** | | |
 | **mer. 11 – jeu. 12** | A11 | L12 | K11 |
-| **ven. 13** | A12 · rôles et déclarations relus à trois (T7, T8) | L13 | Script du pitch |
+| **ven. 13** | A12, A1 (réponse écrite avant la soumission) · rôles et déclarations relus à trois (T7, T8) | L13 | Script du pitch |
 | **sam. 14** | **Soumission** | | |
 | **dim. 15** | Date limite à 17 h · **vote des pairs dès 18 h : les trois votent** | | |
 
@@ -121,7 +121,7 @@ Chaque tâche a son issue sur GitHub (même identifiant dans le titre). Le READM
 | L12 | Test avec 2 étudiants débutants, puis corrections. Leur demander ce qu'ils préfèrent : audio en wolof, transcription en wolof ou explication en français | — | jeu. 12 |
 | L13 | Visuels de soumission et de campagne | — | ven. 13 |
 | L14 | Lecteur audio et transcription sur la fiche, sur mobile, si le socle est en ligne (D26) | `templates/components/cards.html` | lun. 9 |
-| L15 | Afficher près de chaque piège qui l'a apporté et qui l'a relu : l'échange entre développeurs doit se voir | `templates/components/cards.html` | lun. 9 |
+| L15 | Afficher près de chaque piège « Relu par » à partir de `verified_by`. Le modèle n'a aucun champ pour l'auteur : l'ajouter changerait `app/domain/` (accord des trois) la veille du gel, donc pas d'auteur affiché, et jamais d'attribution inventée | `templates/components/cards.html` | lun. 9 |
 
 ### Khalifa : IA, MCP, pannes (K)
 
