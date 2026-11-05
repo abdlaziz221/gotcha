@@ -6,21 +6,42 @@ champ demande l'accord des trois membres (voir app/domain/README.md).
 
 from __future__ import annotations
 
+import re
 from datetime import date, datetime
 from enum import StrEnum
 from typing import Self
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
 
 SLUG_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
 GOTCHA_ID_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*\.[a-z0-9]+(?:-[a-z0-9]+)*$"
 COUNTRY_PATTERN = r"^[A-Z]{2}$"
 
+# PostgreSQL refuse l'octet nul, et une demi-paire de substitution n'existe pas en UTF-8.
+_UNSTORABLE_RE = re.compile("[\x00\ud800-\udfff]")
+
+
+def is_storable(text: str) -> bool:
+    """Faux si le texte contient un caractère qu'aucun stockage ne peut enregistrer."""
+    return _UNSTORABLE_RE.search(text) is None
+
 
 class Model(BaseModel):
-    """Base commune : objets immuables, champs inconnus refusés."""
+    """Base commune : objets immuables, champs inconnus refusés.
+
+    Les textes contenant un octet nul sont refusés partout : sinon un formulaire ou un
+    agent pourrait provoquer une erreur 500 avec PostgreSQL, et pas avec le stockage mémoire.
+    """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
+
+    @field_validator("*", mode="after")
+    @classmethod
+    def _storable_text(cls, value: object) -> object:
+        for item in value if isinstance(value, list) else (value,):
+            if isinstance(item, str) and not is_storable(item):
+                raise ValueError("le texte contient un caractère interdit (octet nul)")
+        return value
 
 
 # --- Énumérations ------------------------------------------------------------

@@ -29,6 +29,8 @@ async def main() -> None:
     finally:
         await store.close()
     print(f"{report.fiches} fiche(s), {report.gotchas} piège(s), {report.terms} terme(s) chargés.")
+    if report.retired:
+        print("Repassées en brouillon (absentes de content/) : " + ", ".join(report.retired))
 
 
 if __name__ == "__main__":

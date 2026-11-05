@@ -7,7 +7,15 @@ from datetime import UTC, date, datetime, timedelta
 import pytest
 from pydantic import ValidationError
 
-from app.domain.models import Gotcha, Incident, IncidentSource, Publication, Source, Status
+from app.domain.models import (
+    Gotcha,
+    Incident,
+    IncidentSource,
+    Publication,
+    Source,
+    Status,
+    is_storable,
+)
 from app.domain.text import plain_snippet, strip_term_links
 from app.services.freshness import needs_review
 from app.services.status import REPORT_TTL, compute_status
@@ -55,6 +63,17 @@ def test_published_gotcha_requires_a_verifier() -> None:
 def test_gotcha_id_must_start_with_its_fiche() -> None:
     with pytest.raises(ValidationError):
         _gotcha(id="autre.piege")
+
+
+def test_text_that_no_database_can_store_is_refused() -> None:
+    with pytest.raises(ValidationError, match="caractère interdit"):
+        _gotcha(title="Un\x00piège")
+    with pytest.raises(ValidationError, match="caractère interdit"):
+        _gotcha(error_codes=["E\x0042"])
+    with pytest.raises(ValidationError, match="caractère interdit"):
+        _incident(description="demi-paire \ud800")
+    assert is_storable("Sénégal, Côte d'Ivoire ✓")
+    assert not is_storable("a\x00b")
 
 
 def test_source_needs_url_or_author() -> None:
