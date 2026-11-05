@@ -9,7 +9,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from starlette.responses import RedirectResponse, Response
 
 from app.domain.countries import country_name
-from app.domain.models import Account, Publication, TargetKind
+from app.domain.models import Account, Publication, TargetKind, UsageEvent
 from app.security.csrf import verify_csrf
 from app.security.ratelimit import rate_limit
 from app.web.deps import ServicesDep, flash_from, glossary_map
@@ -90,6 +90,9 @@ async def fiche_detail(
         locked=locked,
         login_url=f"/connexion?{urlencode({'retour': fiche_url(slug)})}",
     )
+    account = current_account(request)
+    if account is not None:
+        background.add_task(services.usage.record, UsageEvent.READ_FICHE, account.id)
     response = render(request, "pages/fiche.html", page)
     if settings.site_auth:
         # La page dépend du visiteur : un cache ne doit jamais servir la vue d'un membre.
@@ -132,5 +135,6 @@ async def confirm(
         account_id=account.id if account is not None else None,
         proof=values["proof"][:4000] or None,
     )
+    await services.usage.record(UsageEvent.CONFIRM, account.id if account is not None else None)
     anchor = "piege-" + target_id.split(".", 1)[1] if kind is TargetKind.GOTCHA else "confirmer"
     return RedirectResponse(f"{fiche_url(slug)}?ok=confirmation#{anchor}", status_code=303)

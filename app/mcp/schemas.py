@@ -113,3 +113,15 @@ class OutageReportOut(BaseModel):
     incident_id: str
     status: str
     message: str
+
+
+class ProposalOut(BaseModel):
+    contribution_id: str
+    status: str
+    message: str
+
+
+class ConfirmationOut(BaseModel):
+    gotcha_id: str
+    still_works: bool
+    message: str

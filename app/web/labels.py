@@ -11,6 +11,7 @@ from app.domain.models import (
     ServiceKind,
     Severity,
     Status,
+    UsageEvent,
 )
 
 STATUS_LABELS = {
@@ -97,4 +98,14 @@ CONFIDENCE_LABELS = {
     ConfidenceLevel.SOURCED: "Sourcé",
     ConfidenceLevel.REPRODUCED: "Reproduit",
     ConfidenceLevel.PRODUCTION: "Confirmé en production",
+}
+
+USAGE_LABELS = {
+    UsageEvent.READ_FICHE: "Fiches consultées",
+    UsageEvent.SEARCH_HIT: "Recherches avec résultat",
+    UsageEvent.SEARCH_MISS: "Recherches sans résultat",
+    UsageEvent.READ_STATUS: "États de service consultés",
+    UsageEvent.REPORT_OUTAGE: "Pannes signalées",
+    UsageEvent.PROPOSE: "Contributions reçues",
+    UsageEvent.CONFIRM: "Confirmations reçues",
 }

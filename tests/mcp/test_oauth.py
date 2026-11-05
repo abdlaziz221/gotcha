@@ -364,3 +364,216 @@ async def test_github_failure_hides_the_secret(monkeypatch: pytest.MonkeyPatch) 
         await GitHubIdentity("identifiant", "secret-a-cacher").fetch_identity("code", "https://x")
     assert "secret-a-cacher" not in str(caught.value)
     assert caught.value.__cause__ is None
+
+
+# --- Proposer et confirmer ---------------------------------------------------------
+
+
+def call_tool(client: TestClient, token: str, name: str, **arguments: Any) -> dict[str, Any]:
+    body = {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "method": "tools/call",
+        "params": {"name": name, "arguments": arguments},
+    }
+    response = post_mcp(client, token, body)
+    assert response.status_code == 200, response.text
+    return response.json()["result"]
+
+
+PROPOSAL = {
+    "service": "mtn-momo",
+    "title": "Le callback exige une URL en HTTPS",
+    "symptom": "Aucun callback n'arrive en bac à sable.",
+    "cause": "Le service refuse les adresses en HTTP.",
+    "fix": "Exposer une adresse en HTTPS.",
+    "failed_attempts": "Changer de clé n'a rien changé.",
+    "proof": "API v1, appel avec HTTPS réussi, sans HTTPS aucun appel reçu.",
+}
+
+
+def test_contributing_tools_only_exist_with_the_connection(
+    auth_client: TestClient, client: TestClient
+) -> None:
+    _, tokens = connect(auth_client)
+    names = {
+        tool["name"]
+        for tool in post_mcp(auth_client, tokens["access_token"]).json()["result"]["tools"]
+    }
+    assert {"propose_gotcha", "confirm_gotcha"} <= names
+    anonymous = {tool["name"] for tool in post_mcp(client, None).json()["result"]["tools"]}
+    assert not {"propose_gotcha", "confirm_gotcha"} & anonymous
+
+
+@pytest.mark.anyio
+async def test_proposal_needs_the_approval_of_the_developer(
+    auth_client: TestClient, store: MemoryStore
+) -> None:
+    _, tokens = connect(auth_client)
+    result = call_tool(
+        auth_client, tokens["access_token"], "propose_gotcha", **PROPOSAL, developer_approved=False
+    )
+    assert result["isError"] is True
+    assert "developer" in result["content"][0]["text"]
+    assert await store.list_contributions() == []
+
+
+@pytest.mark.anyio
+async def test_proposal_waits_for_a_human_under_the_account(
+    auth_client: TestClient, store: MemoryStore
+) -> None:
+    _, tokens = connect(auth_client)
+    result = call_tool(
+        auth_client, tokens["access_token"], "propose_gotcha", **PROPOSAL, developer_approved=True
+    )
+    assert result["structuredContent"]["status"] == "pending"
+    saved = (await store.list_contributions())[0]
+    assert saved.pseudo == "aminata"
+    assert saved.account_id == "github:42"
+    assert saved.email is None
+    for heading in (
+        "## Symptôme",
+        "## Cause",
+        "## Solution",
+        "## Pistes qui ont échoué",
+        "## Preuve",
+    ):
+        assert heading in saved.body_md
+    fiche = await store.get_fiche("mtn-momo", include_drafts=True)
+    assert fiche is not None
+    assert PROPOSAL["title"] not in [gotcha.title for gotcha in fiche.gotchas]
+
+
+@pytest.mark.anyio
+async def test_proposal_with_a_secret_is_refused(
+    auth_client: TestClient, store: MemoryStore
+) -> None:
+    _, tokens = connect(auth_client)
+    result = call_tool(
+        auth_client,
+        tokens["access_token"],
+        "propose_gotcha",
+        **{**PROPOSAL, "proof": "-----BEGIN " + "PRIVATE KEY-----"},
+        developer_approved=True,
+    )
+    assert result["isError"] is True
+    assert "PRIVATE KEY" not in result["content"][0]["text"]
+    assert await store.list_contributions() == []
+
+
+@pytest.mark.parametrize(
+    ("change", "expected"),
+    [({"title": "x"}, "title"), ({"source_url": "pas une adresse"}, "source_url")],
+)
+def test_invalid_proposal_is_a_readable_error(
+    auth_client: TestClient, change: dict[str, str], expected: str
+) -> None:
+    _, tokens = connect(auth_client)
+    result = call_tool(
+        auth_client,
+        tokens["access_token"],
+        "propose_gotcha",
+        **{**PROPOSAL, **change},
+        developer_approved=True,
+    )
+    assert result["isError"] is True
+    assert expected in result["content"][0]["text"]
+
+
+def test_proposal_for_an_unknown_service_is_refused(auth_client: TestClient) -> None:
+    _, tokens = connect(auth_client)
+    result = call_tool(
+        auth_client,
+        tokens["access_token"],
+        "propose_gotcha",
+        **{**PROPOSAL, "service": "inconnu"},
+        developer_approved=True,
+    )
+    assert result["isError"] is True
+
+
+def test_proposals_have_a_quota(auth_client: TestClient) -> None:
+    _, tokens = connect(auth_client)
+    results = [
+        call_tool(
+            auth_client,
+            tokens["access_token"],
+            "propose_gotcha",
+            **PROPOSAL,
+            developer_approved=True,
+        )
+        for _ in range(11)
+    ]
+    assert not results[9].get("isError")
+    assert results[10]["isError"] is True
+
+
+@pytest.mark.anyio
+async def test_confirmation_needs_a_proof_and_counts_once(
+    auth_client: TestClient, store: MemoryStore
+) -> None:
+    _, tokens = connect(auth_client)
+    token = tokens["access_token"]
+    gotcha_id = "mtn-momo.x-target-environment"
+    empty = call_tool(
+        auth_client, token, "confirm_gotcha", gotcha_id=gotcha_id, still_works=True, proof=""
+    )
+    assert empty["isError"] is True
+    proof = "API v1, en-tête absent : erreur 400. En-tête présent : appel réussi."
+    good = call_tool(
+        auth_client, token, "confirm_gotcha", gotcha_id=gotcha_id, still_works=True, proof=proof
+    )
+    assert good["structuredContent"]["still_works"] is True
+    fiche = await store.get_fiche("mtn-momo", include_drafts=True)
+    assert fiche is not None
+    gotcha = fiche.find_gotcha(gotcha_id)
+    assert gotcha is not None
+    assert gotcha.confirmations == 1
+    again = call_tool(
+        auth_client, token, "confirm_gotcha", gotcha_id=gotcha_id, still_works=True, proof=proof
+    )
+    assert again["isError"] is True
+
+
+def test_confirming_an_unknown_gotcha_is_refused(auth_client: TestClient) -> None:
+    _, tokens = connect(auth_client)
+    result = call_tool(
+        auth_client,
+        tokens["access_token"],
+        "confirm_gotcha",
+        gotcha_id="mtn-momo.inconnu",
+        still_works=True,
+        proof="API v1, appel réussi.",
+    )
+    assert result["isError"] is True
+
+
+@pytest.mark.anyio
+async def test_usage_is_counted_without_keeping_the_search_text(
+    auth_client: TestClient, store: MemoryStore, clock: FixedClock
+) -> None:
+    _, tokens = connect(auth_client)
+    token = tokens["access_token"]
+    call_tool(auth_client, token, "get_fiche", service="mtn-momo")
+    call_tool(auth_client, token, "search_gotchas", query="X-Target-Environment")
+    call_tool(auth_client, token, "search_gotchas", query="rien-de-tel-ici")
+    call_tool(auth_client, token, "get_service_status", service="mtn-momo")
+    totals = await store.usage_totals(clock.today())
+    counted = {total.event.value: (total.count, total.accounts) for total in totals}
+    assert counted["read_fiche"] == (1, 1)
+    assert counted["search_hit"] == (1, 1)
+    assert counted["search_miss"] == (1, 1)
+    assert counted["read_status"] == (1, 1)
+
+
+def test_reading_has_a_quota_per_account(
+    auth_client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("app.mcp.server.READ_LIMIT", 1)
+    _, tokens = connect(auth_client)
+    token = tokens["access_token"]
+    # Le quota est lu à chaque appel : le deuxième appel est refusé.
+    assert not call_tool(auth_client, token, "list_services").get("isError")
+    result = call_tool(auth_client, token, "list_services")
+    assert result["isError"] is True
+    assert "retry later" in result["content"][0]["text"]

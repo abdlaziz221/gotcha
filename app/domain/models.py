@@ -364,3 +364,22 @@ class Account(Model):
     created_at: datetime
     last_login_at: datetime
     blocked: bool = False
+
+
+# --- Usage -------------------------------------------------------------------
+
+
+class UsageEvent(StrEnum):
+    READ_FICHE = "read_fiche"
+    SEARCH_HIT = "search_hit"
+    SEARCH_MISS = "search_miss"
+    READ_STATUS = "read_status"
+    REPORT_OUTAGE = "report_outage"
+    PROPOSE = "propose"
+    CONFIRM = "confirm"
+
+
+class UsageTotal(Model):
+    event: UsageEvent
+    count: int = Field(ge=0)
+    accounts: int = Field(ge=0)  # comptes différents

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import copy
 import json
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +26,8 @@ from app.domain.models import (
     SearchHit,
     SearchQuery,
     TargetKind,
+    UsageEvent,
+    UsageTotal,
 )
 from app.stores.content_files import load_fiches, load_glossary
 from app.stores.search import (
@@ -61,6 +63,7 @@ class MemoryStore:
         self._confirmations: list[Confirmation] = []
         self._last_ingest: dict[IncidentSource, datetime] = {}
         self._accounts: dict[str, Account] = {}
+        self._usage: dict[tuple[date, UsageEvent, str], int] = {}
         self._oauth_clients: dict[str, dict[str, Any]] = {}
         self._oauth_grants: dict[tuple[str, str], tuple[dict[str, Any], datetime]] = {}
 
@@ -228,6 +231,25 @@ class MemoryStore:
 
     async def delete_expired_oauth_grants(self, now: datetime) -> None:
         self._oauth_grants = {k: g for k, g in self._oauth_grants.items() if g[1] > now}
+
+    # --- UsageStore -----------------------------------------------------------
+
+    async def add_usage(self, day: date, event: UsageEvent, account_id: str | None) -> None:
+        key = (day, event, account_id or "")
+        self._usage[key] = self._usage.get(key, 0) + 1
+
+    async def usage_totals(self, since: date) -> list[UsageTotal]:
+        counts: dict[UsageEvent, int] = {}
+        accounts: dict[UsageEvent, set[str]] = {}
+        for (day, event, account_id), count in self._usage.items():
+            if day >= since:
+                counts[event] = counts.get(event, 0) + count
+                if account_id:
+                    accounts.setdefault(event, set()).add(account_id)
+        return [
+            UsageTotal(event=event, count=counts[event], accounts=len(accounts.get(event, set())))
+            for event in sorted(counts, key=lambda e: e.value)
+        ]
 
     async def close(self) -> None:
         return None
