@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -43,9 +44,11 @@ def load_fiche(fiche_dir: Path) -> Fiche:
         else []
     )
     try:
-        return Fiche(slug=slug, steps=steps, gotchas=gotchas, **meta)
+        fiche = Fiche(slug=slug, steps=steps, gotchas=gotchas, **meta)
     except (ValidationError, TypeError) as exc:
         raise ContentError(f"{fiche_dir / 'fiche.yml'} : {exc}") from exc
+    _refuse_future_date(fiche_dir / "fiche.yml", fiche.last_confirmed_on)
+    return fiche
 
 
 def load_glossary(content_dir: Path) -> list[GlossaryTerm]:
@@ -77,9 +80,17 @@ def _load_gotcha(fiche_slug: str, path: Path) -> Gotcha:
     if missing:
         raise ContentError(f"{path} : sections manquantes : {', '.join(missing)}")
     try:
-        return Gotcha(id=f"{fiche_slug}.{path.stem}", fiche_slug=fiche_slug, **meta, **fields)
+        gotcha = Gotcha(id=f"{fiche_slug}.{path.stem}", fiche_slug=fiche_slug, **meta, **fields)
     except (ValidationError, TypeError) as exc:
         raise ContentError(f"{path} : {exc}") from exc
+    _refuse_future_date(path, gotcha.last_confirmed_on)
+    return gotcha
+
+
+def _refuse_future_date(path: Path, day: date) -> None:
+    """Une date future ne se corrigerait plus en base : le stockage garde la plus récente."""
+    if day > datetime.now(UTC).date():
+        raise ContentError(f"{path} : last_confirmed_on {day} est dans le futur")
 
 
 def _parse_steps(markdown: str) -> list[Step]:

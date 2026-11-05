@@ -10,6 +10,7 @@ from app.config import Settings
 from app.container import Services, build_services
 from app.domain.errors import InvalidInputError, NotFoundError, SecretDetectedError
 from app.domain.models import (
+    Contribution,
     ContributionInput,
     ContributionStatus,
     Incident,
@@ -103,11 +104,40 @@ async def test_review_once_only() -> None:
         await services.contributions.review(contribution.id, approve=False, reviewer="aziz")
 
 
+class RacingStore(MemoryStore):
+    """Un autre relecteur refuse la contribution juste après notre lecture."""
+
+    async def get_contribution(self, contribution_id: str) -> Contribution | None:
+        current = await super().get_contribution(contribution_id)
+        if current is not None and current.status is ContributionStatus.PENDING:
+            await self.update_contribution(
+                current.model_copy(update={"status": ContributionStatus.REJECTED})
+            )
+        return current
+
+
+async def test_review_loses_against_a_simultaneous_reviewer() -> None:
+    store = RacingStore(load_fiches(TEST_CONTENT_DIR), load_glossary(TEST_CONTENT_DIR))
+    services = await build_services(
+        Settings(env="test"), clock=FixedClock(NOW), store=store, feeds=[FakeFeed()]
+    )
+    contribution = await services.contributions.submit(_input())
+    with pytest.raises(InvalidInputError):
+        await services.contributions.review(contribution.id, approve=True, reviewer="aziz")
+    saved = await MemoryStore.get_contribution(store, contribution.id)
+    assert saved is not None
+    assert saved.status is ContributionStatus.REJECTED
+
+
 async def test_confirm_checks_the_target() -> None:
     services = await _services()
     await services.contributions.confirm(TargetKind.GOTCHA, "demo-pay-sn.jeton-expire")
     with pytest.raises(NotFoundError):
         await services.contributions.confirm(TargetKind.GOTCHA, "demo-pay-sn.absent")
+    with pytest.raises(NotFoundError):
+        await services.contributions.confirm(TargetKind.FICHE, "demo-pay-sn\x00")
+    with pytest.raises(InvalidInputError):
+        await services.contributions.confirm(TargetKind.FICHE, "demo-pay-sn", pseudo="a\x00b")
 
 
 async def test_report_makes_the_service_degraded() -> None:

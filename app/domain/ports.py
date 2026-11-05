@@ -62,12 +62,23 @@ class FicheStore(Protocol):
 
         Les pièges absents de la nouvelle version sont supprimés, l'ordre des pièges
         est conservé. Les compteurs de confirmation déjà enregistrés sont gardés
-        (les fichiers de content/ ne les connaissent pas), et last_confirmed_on garde
-        la date la plus récente.
+        (les fichiers de content/ ne les connaissent pas), même si une confirmation
+        arrive pendant le rechargement, et last_confirmed_on garde la date la plus récente.
         """
         ...
 
-    async def upsert_glossary(self, terms: list[GlossaryTerm]) -> None: ...
+    async def retire_fiches(self, keep: list[str]) -> list[str]:
+        """Repasse en brouillon les fiches publiées dont le slug n'est pas dans keep.
+
+        Utilisé après le chargement de content/ : une fiche retirée des fichiers
+        disparaît de la production, son historique est gardé. Renvoie les slugs
+        retirés, triés.
+        """
+        ...
+
+    async def upsert_glossary(self, terms: list[GlossaryTerm]) -> None:
+        """Remplace tout le glossaire : les termes absents de terms sont supprimés."""
+        ...
 
 
 class IncidentStore(Protocol):
@@ -104,7 +115,13 @@ class ContributionStore(Protocol):
         """Contributions triées de la plus ancienne à la plus récente (file de relecture)."""
         ...
 
-    async def update_contribution(self, contribution: Contribution) -> None: ...
+    async def update_contribution(self, contribution: Contribution) -> bool:
+        """Enregistre la relecture d'une contribution encore en attente.
+
+        Renvoie False, sans rien changer, si la contribution n'existe pas ou a déjà
+        été relue : de deux relecteurs simultanés, seul le premier l'emporte.
+        """
+        ...
 
     async def add_confirmation(self, confirmation: Confirmation) -> None:
         """Enregistre une confirmation.
