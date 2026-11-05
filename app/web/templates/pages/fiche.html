@@ -1,26 +1,27 @@
 {% extends "base.html" %}
-{% from "components/status.html" import status_badge, incident_item %}
+{% from "components/status.html" import status_text, incident_item %}
 {% from "components/cards.html" import gotcha_card, source_list with context %}
+{% from "components/icons.html" import icon %}
 
 {% block content %}
 <article class="fiche">
   <header class="fiche__header">
     <p class="fiche__meta">{{ page.service_name }} · {{ page.country_name }}{% if page.api_version %} · API {{ page.api_version }}{% endif %}</p>
     <h1>{{ page.title }}</h1>
-    <p>{{ status_badge(page.status) }}</p>
+    <p>{{ status_text(page.status) }}</p>
     {% if page.status.incidents %}
     <ul class="incidents incidents--compact">
       {% for incident in page.status.incidents %}{{ incident_item(incident) }}{% endfor %}
     </ul>
     {% endif %}
     {% if page.is_draft %}
-    <p class="notice notice--draft">Brouillon : cette fiche n'est pas encore vérifiée par un relecteur.</p>
+    <p class="notice notice--draft">{{ icon("file-pen") }}<span>Brouillon : cette fiche n'est pas encore vérifiée par un relecteur.</span></p>
     {% endif %}
     {% if page.locked %}
     <p class="notice">Aperçu public. Les étapes et les solutions sont réservées aux membres. Compte gratuit, <a href="{{ page.login_url }}">connexion avec GitHub</a>.</p>
     {% endif %}
     {% if page.needs_review %}
-    <p class="notice notice--review">À revérifier : personne n'a confirmé cette fiche depuis plus de 90 jours.</p>
+    <p class="notice notice--review">{{ icon("clock") }}<span>À revérifier : personne n'a confirmé cette fiche depuis plus de 90 jours.</span></p>
     {% endif %}
   </header>
 
@@ -39,7 +40,7 @@
   {% else %}
 
   <p class="fiche__summary">{{ page.summary }}</p>
-  {% if page.service_docs_url %}<p><a href="{{ page.service_docs_url }}" rel="noopener noreferrer nofollow">Documentation officielle</a></p>{% endif %}
+  {% if page.service_docs_url %}<p><a href="{{ page.service_docs_url }}" rel="noopener noreferrer nofollow">Documentation officielle{{ icon("external-link", label="(lien externe)", size=16) }}</a></p>{% endif %}
 
   {% if page.prerequisites %}
   <section aria-labelledby="prerequis">

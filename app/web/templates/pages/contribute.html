@@ -1,11 +1,13 @@
 {% extends "base.html" %}
 {% from "components/forms.html" import text_field, textarea_field, select_field, field_error %}
 
+{% from "components/icons.html" import icon %}
+
 {% block content %}
 <h1>{{ page.meta.title }}</h1>
 <p>Chaque contribution est relue avant publication. Ne collez jamais de clé, de jeton ni de mot de passe : ils sont détectés et refusés.</p>
 
-{% if page.form.errors.get("form") %}<p class="flash flash--error" role="alert">{{ page.form.errors["form"] }}</p>{% endif %}
+{% if page.form.errors.get("form") %}<p class="flash flash--error" role="alert">{{ icon("circle-x") }}<span>{{ page.form.errors["form"] }}</span></p>{% endif %}
 
 <form class="form" method="post" action="/contribuer" novalidate>
   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
