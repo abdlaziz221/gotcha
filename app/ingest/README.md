@@ -19,7 +19,9 @@ Lit le flux public d'incidents de Flutterwave (format Statuspage v2, `https://st
 4. Incident Mobile Money sans opérateur cité : une panne « sans service » par pays, qui concerne tous les services de paiement du pays.
 5. Une panne par couple (service, pays), avec un identifiant stable : `flutterwave:<id>:<pays>:<service>`.
 6. Message qui détaille les canaux par pays (`Senegal: Orange, Wave`) : on garde exactement ces couples, sans croiser tous les opérateurs avec tous les pays.
-7. Sans opérateur cité, le Mobile Money doit être décrit comme touché : une phrase qui dit qu'il est rétabli ou qu'il marche ne compte pas.
+7. Sans opérateur cité, le Mobile Money doit être décrit comme touché : une phrase qui dit qu'il est rétabli ou qu'il marche ne compte pas, sauf si elle contient une négation (« not working »).
+8. Pays : les noms longs passent d'abord (« Equatorial Guinea » ne compte pas aussi pour « Guinea »).
+9. Un incident illisible (date absente, texte refusé par le modèle) est ignoré seul et journalisé ; l'octet nul est retiré des textes.
 
 **Limites :**
 

@@ -13,6 +13,7 @@ from __future__ import annotations
 import asyncio
 import html
 import json
+import logging
 import re
 import unicodedata
 import urllib.request
@@ -20,7 +21,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from pydantic import ValidationError
+
 from app.domain.models import Incident, IncidentSource, Status
+
+log = logging.getLogger(__name__)
 
 # Mots repérés dans le texte -> service suivi. None : opérateur connu mais non suivi.
 OPERATORS: dict[str, str | None] = {
@@ -59,6 +64,12 @@ COUNTRY_WORDS: dict[str, str] = {
     "zambia": "ZM",
     # Sans ces pays, une panne « Orange Guinée » s'afficherait sur Orange Sénégal.
     "guinea": "GN",
+    # Noms plus longs que « guinea » : lus en premier, voir _countries_in.
+    "equatorial guinea": "GQ",
+    "guinee equatoriale": "GQ",
+    "guinea-bissau": "GW",
+    "guinea bissau": "GW",
+    "guinee-bissau": "GW",
     "guinee": "GN",
     "gabon": "GA",
     "drc": "CD",
@@ -103,12 +114,22 @@ WORKING_WORDS = (
     "returned to normal",
 )
 
+# « not working », « have not been restored », « aren't working » : la négation qui
+# précède le mot, à deux mots au plus, dit le contraire. Une négation ailleurs dans la
+# phrase porte sur autre chose (« confirmed working …, not yet available: … »).
+_NEGATED = r"(?:\bnot|n't|\bno longer|\bnever)\s+(?:[a-z]+\s+){0,2}"
+
 # « Senegal: Orange, Wave » : un élément de liste, dans un message qui détaille les canaux.
 _CHANNEL_LIST_ITEM = re.compile(r"(?:^|\n|\*\*)[ \t]*([a-z' -]{3,40}?)[ \t]*:[ \t]*([^*\n]+)")
 
 
+def _clean(text: str) -> str:
+    """Retire l'octet nul et les demi-caractères isolés, que PostgreSQL refuse."""
+    return re.sub("[\x00\ud800-\udfff]", "", html.unescape(text))
+
+
 def _norm(text: str) -> str:
-    decomposed = unicodedata.normalize("NFKD", html.unescape(text)).replace("’", "'")
+    decomposed = unicodedata.normalize("NFKD", _clean(text)).replace("’", "'")
     return "".join(c for c in decomposed if not unicodedata.combining(c)).lower()
 
 
@@ -127,13 +148,34 @@ def _listed_channels(text: str) -> set[tuple[str, str]]:
     }
 
 
+def _says_working(sentence: str) -> bool:
+    """Un mot comme « restored » ou « working », non nié juste avant : ça remarche."""
+    return any(
+        not re.search(_NEGATED + "$", sentence[max(0, m.start() - 60) : m.start()])
+        for word in WORKING_WORDS
+        for m in re.finditer(rf"\b{re.escape(word)}\b", sentence)
+    )
+
+
 def _reports_mobile_money_outage(text: str) -> bool:
     """Le texte dit-il que le Mobile Money est touché, et pas seulement qu'il remarche ?"""
     return any(
-        _contains_word(sentence, word) and not any(working in sentence for working in WORKING_WORDS)
+        _contains_word(sentence, word) and not _says_working(sentence)
         for sentence in re.split(r"[.!?]+", text)
         for word in MOBILE_MONEY_WORDS
     )
+
+
+def _countries_in(text: str) -> set[str]:
+    """Pays cités ; les noms longs d'abord, pour que « Equatorial Guinea » ne compte pas
+    aussi comme « Guinea »."""
+    found: set[str] = set()
+    for word in sorted(COUNTRY_WORDS, key=len, reverse=True):
+        pattern = rf"\b{re.escape(word)}\b"
+        if re.search(pattern, text):
+            found.add(COUNTRY_WORDS[word])
+            text = re.sub(pattern, " ", text)
+    return found
 
 
 def _parse_dt(value: str) -> datetime:
@@ -156,7 +198,7 @@ def map_incident(raw: dict[str, Any]) -> list[Incident]:
     if not operators and not _reports_mobile_money_outage(text):
         return []
 
-    countries = sorted({c for w, c in COUNTRY_WORDS.items() if _contains_word(text, w)})
+    countries = sorted(_countries_in(text))
     if not countries:
         countries = sorted(
             {c for cur, c in CURRENCY_COUNTRIES.items() if _contains_word(text, cur.lower())}
@@ -168,7 +210,7 @@ def map_incident(raw: dict[str, Any]) -> list[Incident]:
     resolved_at = _parse_dt(raw["resolved_at"]) if raw.get("resolved_at") else None
     if resolved_at is None and raw.get("status") in ("resolved", "postmortem"):
         resolved_at = _parse_dt(raw["updated_at"])
-    latest = html.unescape(updates[0]["body"]).strip() if updates else None
+    latest = _clean(updates[0]["body"]).strip() if updates else None
 
     return [
         Incident(
@@ -178,7 +220,7 @@ def map_incident(raw: dict[str, Any]) -> list[Incident]:
             service_slug=service,
             country=country,
             status=Status.DOWN if raw.get("impact") == "critical" else Status.DEGRADED,
-            title=html.unescape(raw.get("name", "")).strip(),
+            title=_clean(raw.get("name", "")).strip(),
             description=latest[:600] if latest else None,
             url=raw.get("shortlink") or None,
             started_at=_parse_dt(raw.get("started_at") or raw["created_at"]),
@@ -189,7 +231,14 @@ def map_incident(raw: dict[str, Any]) -> list[Incident]:
 
 
 def parse_incidents(payload: dict[str, Any]) -> list[Incident]:
-    return [incident for raw in payload.get("incidents", []) for incident in map_incident(raw)]
+    """Un incident illisible est ignoré seul : il ne doit pas masquer les autres pannes."""
+    incidents: list[Incident] = []
+    for raw in payload.get("incidents", []):
+        try:
+            incidents.extend(map_incident(raw))
+        except (ValidationError, KeyError, ValueError, TypeError, AttributeError):
+            log.warning("incident Flutterwave ignoré : %s", str(raw.get("id"))[:40])
+    return incidents
 
 
 class FlutterwaveFeed:

@@ -110,6 +110,48 @@ def test_country_is_recognised(name: str, expected: list[tuple[str | None, str]]
     assert [(i.service_slug, i.country) for i in map_incident(raw)] == expected
 
 
+@pytest.mark.parametrize(
+    ("name", "expected"),
+    [
+        # Trouvés en relecture : « not working » dit que ça ne marche pas.
+        ("[GHS] Mobile Money payments not working", [(None, "GH")]),
+        ("Mobile Money collections not working in Ghana", [(None, "GH")]),
+        ("Mobile money payouts have not been restored in Kenya", [(None, "KE")]),
+        ("Mobile money payments aren't working in Uganda", [(None, "UG")]),
+    ],
+)
+def test_negated_working_words_are_outages(name: str, expected: list[tuple[None, str]]) -> None:
+    raw = {"id": "x", "name": name, "created_at": "2026-11-04T10:00:00Z"}
+    assert [(i.service_slug, i.country) for i in map_incident(raw)] == expected
+
+
+@pytest.mark.parametrize(
+    ("name", "country"),
+    [
+        ("Orange Money disruption in Equatorial Guinea", "GQ"),
+        ("Orange Guinea-Bissau collections disruption", "GW"),
+        ("Orange Guinea collections disruption", "GN"),
+    ],
+)
+def test_longer_country_names_win(name: str, country: str) -> None:
+    raw = {"id": "x", "name": name, "created_at": "2026-11-04T10:00:00Z"}
+    assert [i.country for i in map_incident(raw)] == [country]
+
+
+def test_unreadable_incident_is_skipped_alone() -> None:
+    good = _raw("zt52rsf4m8n8")
+    broken = {"id": "casse", "name": "Orange Cameroon disruption"}  # sans date
+    incidents = parse_incidents({"incidents": [broken, good]})
+    assert [(i.service_slug, i.country) for i in incidents] == [("orange-money", "CM")]
+
+
+def test_nul_and_lone_surrogates_are_removed() -> None:
+    raw = dict(_raw("zt52rsf4m8n8"), name="Orange\x00 Cameroon\ud800 disruption")
+    (incident,) = map_incident(raw)
+    assert "\x00" not in incident.title
+    assert "\ud800" not in incident.title
+
+
 def test_ids_are_stable_and_unique() -> None:
     payload = json.loads(FIXTURE.read_text(encoding="utf-8"))
     ids = [i.id for i in parse_incidents(payload)]
