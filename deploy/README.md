@@ -22,6 +22,7 @@ Offre Starter : 7,35 $ par mois avant remise, 512 Mo de mémoire, 0,5 processeur
    | `GOTCHA_REVIEWERS` | voir `scripts/hash_password.py` |
    | `GOTCHA_PROXY_HOPS` | `1` (valeur par défaut en production), à confirmer avec la sonde |
    | `GOTCHA_PROBE` | `1` le temps des mesures ci-dessous, puis à retirer |
+   | `GOTCHA_PROBE_TOKEN` | avec `GOTCHA_PROBE` : un jeton aléatoire de 24 caractères au moins (`python -c "import secrets; print(secrets.token_urlsafe(24))"`), à retirer ensuite |
    | `PORT` | celui qu'attend la plateforme, si elle l'impose |
 
 5. Déployer. **Rien à lancer à la main** : à chaque démarrage, le conteneur applique les migrations puis charge `content/` en base (`scripts/release.py`, décision D18). Les journaux affichent :
@@ -32,15 +33,22 @@ Offre Starter : 7,35 $ par mois avant remise, 512 Mo de mémoire, 0,5 processeur
    ```
 
    Si le conteneur s'arrête aussitôt, la cause (base injoignable, mot de passe refusé) est juste au-dessus dans les journaux.
+
+   Garde-fous de cette étape :
+   - le contenu est lu et vérifié **avant** de toucher à la base : un fichier invalide arrête le démarrage sans migration ni écriture ;
+   - si une autre session garde le verrou de mise en service plus de 2 minutes, le démarrage s'arrête avec un message qui dit comment la retrouver (`pg_locks`) ;
+   - une image plus ancienne que celle déjà en service (fichier `BUILD_TIME` de l'image) ne recharge pas son contenu : les journaux affichent « Contenu non rechargé ».
 6. Vérifier : `https://<domaine>/healthz?db=1` doit répondre `{"status": "ok", …, "database": "ok"}`.
 
 ### Mesurer les limites du Serverless (A2)
 
-Le site tourne avec `GOTCHA_PROBE=1`. Depuis un poste :
+Le site tourne avec `GOTCHA_PROBE=1` et un `GOTCHA_PROBE_TOKEN`. Sans ce jeton, la sonde répond 404 ; elle est aussi limitée à 60 appels par heure et par adresse. Depuis un poste, avec le même jeton :
 
 ```bash
-python scripts/probe_platform.py https://<domaine>
+GOTCHA_PROBE_TOKEN=<jeton> python scripts/probe_platform.py https://<domaine>
 ```
+
+Une requête qui échoue (502 passager, délai dépassé) donne « mesure impossible » : relancer le script plutôt que recopier ce résultat.
 
 En une dizaine de minutes, le script répond aux questions ci-dessous et imprime un tableau en Markdown. On le recopie dans `docs/DECISIONS.md` (choix entre Serverless et VPS) et dans la fiche Datacloud (A10).
 
@@ -57,7 +65,7 @@ En une dizaine de minutes, le script répond aux questions ci-dessous et imprime
 - [ ] Nombre d'instances, mise en veille sans visite
 - [ ] Port imposé (`PORT`)
 
-Ensuite, retirer `GOTCHA_PROBE` et redéployer : `/_sonde/requete` doit répondre 404.
+Ensuite, retirer `GOTCHA_PROBE` et `GOTCHA_PROBE_TOKEN`, puis redéployer : `/_sonde/requete` doit répondre 404.
 
 **Sans réponse satisfaisante mercredi 4 au soir : passer à l'option 2.**
 

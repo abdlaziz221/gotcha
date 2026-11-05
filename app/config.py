@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Literal, cast
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
+PROBE_TOKEN_MIN_LENGTH = 24
 
 Env = Literal["dev", "test", "prod"]
 StoreKind = Literal["memory", "postgres"]
@@ -45,6 +46,8 @@ class Settings:
     site_url: str = "http://localhost:8000"
     # Sonde des limites de l'hébergeur (/_sonde/…), le temps du test A2 seulement.
     probe: bool = False
+    # Jeton partagé qu'envoie scripts/probe_platform.py (en-tête X-Sonde-Jeton).
+    probe_token: str = ""
 
     @property
     def is_prod(self) -> bool:
@@ -82,6 +85,7 @@ class Settings:
             proxy_hops=int(e.get("GOTCHA_PROXY_HOPS", "1" if prod else "0")),
             site_url=e.get("GOTCHA_SITE_URL", cls.site_url).rstrip("/"),
             probe=_bool(e.get("GOTCHA_PROBE"), default=False),
+            probe_token=e.get("GOTCHA_PROBE_TOKEN", ""),
         )
         settings.validate()
         return settings
@@ -93,3 +97,8 @@ class Settings:
             raise ValueError("GOTCHA_PROXY_HOPS doit être positif ou nul")
         if self.is_prod and self.show_drafts:
             raise ValueError("les brouillons ne doivent jamais être affichés en production")
+        if self.probe and len(self.probe_token) < PROBE_TOKEN_MIN_LENGTH:
+            raise ValueError(
+                f"GOTCHA_PROBE demande GOTCHA_PROBE_TOKEN ({PROBE_TOKEN_MIN_LENGTH} caractères"
+                " au moins) : la sonde n'est jamais ouverte à tous"
+            )
