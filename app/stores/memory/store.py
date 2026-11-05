@@ -23,6 +23,7 @@ from app.domain.models import (
     Incident,
     IncidentSource,
     OAuthGrantKind,
+    Publication,
     SearchHit,
     SearchQuery,
     TargetKind,
@@ -101,9 +102,20 @@ class MemoryStore:
     async def upsert_fiche(self, fiche: Fiche) -> None:
         self._fiches[fiche.slug] = keep_confirmations(fiche, self._fiches.get(fiche.slug))
 
+    async def retire_fiches(self, keep: list[str]) -> list[str]:
+        retired = sorted(
+            slug
+            for slug, fiche in self._fiches.items()
+            if slug not in keep and fiche.publication is Publication.PUBLISHED
+        )
+        for slug in retired:
+            self._fiches[slug] = self._fiches[slug].model_copy(
+                update={"publication": Publication.DRAFT}
+            )
+        return retired
+
     async def upsert_glossary(self, terms: list[GlossaryTerm]) -> None:
-        for term in terms:
-            self._glossary[term.slug] = term
+        self._glossary = {term.slug: term for term in terms}
 
     # --- IncidentStore -------------------------------------------------------
 
@@ -148,8 +160,12 @@ class MemoryStore:
         selected = [c for c in self._contributions.values() if status is None or c.status is status]
         return sorted(selected, key=lambda c: c.created_at)
 
-    async def update_contribution(self, contribution: Contribution) -> None:
+    async def update_contribution(self, contribution: Contribution) -> bool:
+        current = self._contributions.get(contribution.id)
+        if current is None or current.status is not ContributionStatus.PENDING:
+            return False
         self._contributions[contribution.id] = contribution
+        return True
 
     async def add_confirmation(self, confirmation: Confirmation) -> None:
         self._confirmations.append(confirmation)

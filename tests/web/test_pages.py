@@ -67,6 +67,7 @@ def test_unknown_fiche_is_a_friendly_404(client: TestClient) -> None:
     response = client.get("/fiches/inconnue")
     assert response.status_code == 404
     assert "Page introuvable" in response.text
+    assert client.get("/fiches/%00").status_code == 404
 
 
 def test_step_by_step_mode(client: TestClient) -> None:

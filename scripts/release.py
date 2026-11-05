@@ -30,6 +30,8 @@ async def main() -> None:
     seed = report.seed
     print(f"Migrations appliquées : {migrations}")
     print(f"{seed.fiches} fiche(s), {seed.gotchas} piège(s), {seed.terms} terme(s) chargés.")
+    if seed.retired:
+        print("Repassées en brouillon (absentes de content/) : " + ", ".join(seed.retired))
 
 
 if __name__ == "__main__":

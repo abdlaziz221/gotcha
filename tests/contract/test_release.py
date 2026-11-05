@@ -7,11 +7,14 @@ from __future__ import annotations
 
 import asyncio
 import os
+import shutil
+from pathlib import Path
 
 import asyncpg
 import pytest
 
 from app.config import ROOT_DIR
+from app.stores.content_files import ContentError
 from app.stores.postgres.release import ReleaseReport, SeedReport, release
 from tests.conftest import TEST_CONTENT_DIR
 
@@ -61,3 +64,21 @@ async def test_instances_starting_together_do_not_collide(empty_database: str) -
         assert await conn.fetchval("SELECT count(*) FROM fiche_revisions") == 2
     finally:
         await conn.close()
+
+
+async def test_release_retires_fiches_deleted_from_content(
+    empty_database: str, tmp_path: Path
+) -> None:
+    await _release(empty_database)
+    content = tmp_path / "content"
+    shutil.copytree(TEST_CONTENT_DIR, content)
+    shutil.rmtree(content / "fiches" / "demo-pay-sn")
+    report = await release(
+        empty_database, migrations_dir=ROOT_DIR / "migrations", content_dir=content
+    )
+    assert report.seed.retired == ("demo-pay-sn",)
+
+    shutil.rmtree(content / "fiches")
+    (content / "fiches").mkdir()
+    with pytest.raises(ContentError, match="aucune fiche"):
+        await release(empty_database, migrations_dir=ROOT_DIR / "migrations", content_dir=content)
