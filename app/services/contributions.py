@@ -7,6 +7,8 @@ import uuid
 from collections.abc import Callable, Sequence
 from datetime import timedelta
 
+from pydantic import ValidationError
+
 from app.domain.errors import InvalidInputError, NotFoundError, SecretDetectedError
 from app.domain.models import (
     Confirmation,
@@ -92,16 +94,19 @@ class ContributionService:
             since = now - RECONFIRM_AFTER
             if await self._store.has_recent_confirmation(account_id, target_id, since):
                 raise InvalidInputError("Vous avez déjà confirmé ce contenu récemment.")
-        confirmation = Confirmation(
-            target_kind=target_kind,
-            target_id=target_id,
-            still_works=still_works,
-            api_version=api_version or None,
-            pseudo=pseudo or None,
-            account_id=account_id,
-            proof=proof or None,
-            created_at=now,
-        )
+        try:
+            confirmation = Confirmation(
+                target_kind=target_kind,
+                target_id=target_id,
+                still_works=still_works,
+                api_version=api_version or None,
+                pseudo=pseudo or None,
+                account_id=account_id,
+                proof=proof or None,
+                created_at=now,
+            )
+        except ValidationError as exc:
+            raise InvalidInputError("Pseudo, version ou preuve invalide.") from exc
         await self._store.add_confirmation(confirmation)
         return confirmation
 
@@ -132,5 +137,7 @@ class ContributionService:
                 "review_note": note or None,
             }
         )
-        await self._store.update_contribution(reviewed)
+        if not await self._store.update_contribution(reviewed):
+            # Un autre relecteur a décidé entre la lecture et l'écriture.
+            raise InvalidInputError("Cette contribution a déjà été relue.")
         return reviewed

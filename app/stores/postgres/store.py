@@ -31,8 +31,9 @@ from app.domain.models import (
     TargetKind,
     UsageEvent,
     UsageTotal,
+    is_storable,
 )
-from app.stores.search import keep_confirmations, search_fiches, sort_fiches, sort_glossary
+from app.stores.search import search_fiches, sort_fiches, sort_glossary
 
 _COUNTERS = ("confirmations", "last_confirmed_on")
 
@@ -40,6 +41,15 @@ _COUNTERS = ("confirmations", "last_confirmed_on")
 async def _init_connection(conn: asyncpg.Connection) -> None:
     """Les colonnes JSONB se lisent et s'écrivent directement en objets Python."""
     await conn.set_type_codec("jsonb", encoder=json.dumps, decoder=json.loads, schema="pg_catalog")
+
+
+def _known_fields(model: type[Fiche] | type[Gotcha], data: dict[str, Any]) -> dict[str, Any]:
+    """Ignore les champs que le modèle ne connaît plus (ou pas encore).
+
+    Un document écrit avant le retrait d'un champ, ou par une version plus récente
+    pendant un déploiement, reste lisible au lieu de faire échouer toutes les pages.
+    """
+    return {key: value for key, value in data.items() if key in model.model_fields}
 
 
 def _content_snapshot(fiche: Fiche) -> dict[str, Any]:
@@ -76,6 +86,8 @@ class PostgresStore:
             return sort_fiches(await self._load_fiches(conn, include_drafts=include_drafts))
 
     async def get_fiche(self, slug: str, *, include_drafts: bool = False) -> Fiche | None:
+        if not is_storable(slug):
+            return None
         async with self._pool.acquire() as conn:
             fiches = await self._load_fiches(conn, include_drafts=include_drafts, slug=slug)
         return fiches[0] if fiches else None
@@ -88,9 +100,11 @@ class PostgresStore:
         return sort_glossary(GlossaryTerm(**dict(row)) for row in rows)
 
     async def upsert_fiche(self, fiche: Fiche) -> None:
+        # Même résultat que keep_confirmations (stockage mémoire), mais calculé par
+        # PostgreSQL sur la ligne verrouillée : on ne relit pas l'ancienne fiche, donc
+        # une confirmation reçue pendant le rechargement n'est pas écrasée, et un ancien
+        # document devenu invalide (champ retiré du modèle) ne bloque pas le chargement.
         async with self._pool.acquire() as conn, conn.transaction():
-            existing = await self._load_fiches(conn, include_drafts=True, slug=fiche.slug)
-            merged = keep_confirmations(fiche, existing[0] if existing else None)
             await conn.execute(
                 "INSERT INTO fiches (slug, service_slug, country, publication, title, data,"
                 " last_confirmed_on, confirmations)"
@@ -98,21 +112,21 @@ class PostgresStore:
                 " ON CONFLICT (slug) DO UPDATE SET service_slug = EXCLUDED.service_slug,"
                 " country = EXCLUDED.country, publication = EXCLUDED.publication,"
                 " title = EXCLUDED.title, data = EXCLUDED.data,"
-                " last_confirmed_on = EXCLUDED.last_confirmed_on,"
-                " confirmations = EXCLUDED.confirmations, updated_at = now()",
-                merged.slug,
-                merged.service.slug,
-                merged.country,
-                merged.publication.value,
-                merged.title,
-                merged.model_dump(mode="json", exclude={"gotchas"}),
-                merged.last_confirmed_on,
-                merged.confirmations,
+                " last_confirmed_on = GREATEST(fiches.last_confirmed_on,"
+                " EXCLUDED.last_confirmed_on), updated_at = now()",
+                fiche.slug,
+                fiche.service.slug,
+                fiche.country,
+                fiche.publication.value,
+                fiche.title,
+                fiche.model_dump(mode="json", exclude={"gotchas", *_COUNTERS}),
+                fiche.last_confirmed_on,
+                fiche.confirmations,
             )
             await conn.execute(
                 "DELETE FROM gotchas WHERE fiche_slug = $1 AND NOT (id = ANY($2::text[]))",
-                merged.slug,
-                [g.id for g in merged.gotchas],
+                fiche.slug,
+                [g.id for g in fiche.gotchas],
             )
             await conn.executemany(
                 "INSERT INTO gotchas (id, fiche_slug, position, publication, data,"
@@ -120,40 +134,53 @@ class PostgresStore:
                 " VALUES ($1, $2, $3, $4, $5, $6, $7)"
                 " ON CONFLICT (id) DO UPDATE SET position = EXCLUDED.position,"
                 " publication = EXCLUDED.publication, data = EXCLUDED.data,"
-                " last_confirmed_on = EXCLUDED.last_confirmed_on,"
-                " confirmations = EXCLUDED.confirmations, updated_at = now()",
+                " last_confirmed_on = GREATEST(gotchas.last_confirmed_on,"
+                " EXCLUDED.last_confirmed_on), updated_at = now()",
                 [
                     (
                         g.id,
-                        merged.slug,
+                        fiche.slug,
                         position,
                         g.publication.value,
-                        g.model_dump(mode="json"),
+                        g.model_dump(mode="json", exclude=set(_COUNTERS)),
                         g.last_confirmed_on,
                         g.confirmations,
                     )
-                    for position, g in enumerate(merged.gotchas)
+                    for position, g in enumerate(fiche.gotchas)
                 ],
             )
-            snapshot = _content_snapshot(merged)
+            snapshot = _content_snapshot(fiche)
             last = await conn.fetchval(
                 "SELECT data FROM fiche_revisions WHERE fiche_slug = $1 ORDER BY id DESC LIMIT 1",
-                merged.slug,
+                fiche.slug,
             )
             if last != snapshot:
                 await conn.execute(
                     "INSERT INTO fiche_revisions (fiche_slug, data) VALUES ($1, $2)",
-                    merged.slug,
+                    fiche.slug,
                     snapshot,
                 )
 
-    async def upsert_glossary(self, terms: list[GlossaryTerm]) -> None:
-        await self._pool.executemany(
-            "INSERT INTO glossary_terms (slug, term, definition) VALUES ($1, $2, $3)"
-            " ON CONFLICT (slug) DO UPDATE SET term = EXCLUDED.term,"
-            " definition = EXCLUDED.definition",
-            [(t.slug, t.term, t.definition) for t in terms],
+    async def retire_fiches(self, keep: list[str]) -> list[str]:
+        rows = await self._pool.fetch(
+            "UPDATE fiches SET publication = 'draft', updated_at = now()"
+            " WHERE publication = 'published' AND NOT (slug = ANY($1::text[])) RETURNING slug",
+            keep,
         )
+        return sorted(row["slug"] for row in rows)
+
+    async def upsert_glossary(self, terms: list[GlossaryTerm]) -> None:
+        async with self._pool.acquire() as conn, conn.transaction():
+            await conn.execute(
+                "DELETE FROM glossary_terms WHERE NOT (slug = ANY($1::text[]))",
+                [t.slug for t in terms],
+            )
+            await conn.executemany(
+                "INSERT INTO glossary_terms (slug, term, definition) VALUES ($1, $2, $3)"
+                " ON CONFLICT (slug) DO UPDATE SET term = EXCLUDED.term,"
+                " definition = EXCLUDED.definition",
+                [(t.slug, t.term, t.definition) for t in terms],
+            )
 
     @staticmethod
     async def _load_fiches(
@@ -182,7 +209,7 @@ class PostgresStore:
             gotchas[row["fiche_slug"]].append(
                 Gotcha.model_validate(
                     {
-                        **row["data"],
+                        **_known_fields(Gotcha, row["data"]),
                         "last_confirmed_on": row["last_confirmed_on"],
                         "confirmations": row["confirmations"],
                     }
@@ -191,7 +218,7 @@ class PostgresStore:
         return [
             Fiche.model_validate(
                 {
-                    **row["data"],
+                    **_known_fields(Fiche, row["data"]),
                     "gotchas": gotchas[row["slug"]],
                     "last_confirmed_on": row["last_confirmed_on"],
                     "confirmations": row["confirmations"],
@@ -210,6 +237,8 @@ class PostgresStore:
         active_only: bool = False,
         limit: int = 100,
     ) -> list[Incident]:
+        if not all(is_storable(text) for text in (service_slug or "", country or "")):
+            return []
         rows = await self._pool.fetch(
             "SELECT id, source, external_id, service_slug, country, status, title, description,"
             " url, started_at, resolved_at, reported_by FROM incidents"
@@ -289,6 +318,8 @@ class PostgresStore:
         )
 
     async def get_contribution(self, contribution_id: str) -> Contribution | None:
+        if not is_storable(contribution_id):
+            return None
         row = await self._pool.fetchrow(
             "SELECT id, kind, fiche_slug, title, body_md, source_url, api_version, pseudo, email,"
             " status, created_at, reviewed_at, reviewer, review_note, account_id"
@@ -308,12 +339,15 @@ class PostgresStore:
         )
         return [Contribution.model_validate(dict(row)) for row in rows]
 
-    async def update_contribution(self, contribution: Contribution) -> None:
+    async def update_contribution(self, contribution: Contribution) -> bool:
         c = contribution
-        await self._pool.execute(
+        # La condition sur l'état rend la relecture atomique : de deux relecteurs
+        # simultanés, le second ne touche aucune ligne et reçoit False.
+        result = await self._pool.execute(
             "UPDATE contributions SET kind = $2, fiche_slug = $3, title = $4, body_md = $5,"
             " source_url = $6, api_version = $7, pseudo = $8, email = $9, status = $10,"
-            " reviewed_at = $11, reviewer = $12, review_note = $13 WHERE id = $1",
+            " reviewed_at = $11, reviewer = $12, review_note = $13"
+            " WHERE id = $1 AND status = 'pending'",
             c.id,
             c.kind.value,
             c.fiche_slug,
@@ -328,6 +362,7 @@ class PostgresStore:
             c.reviewer,
             c.review_note,
         )
+        return result == "UPDATE 1"
 
     async def add_confirmation(self, confirmation: Confirmation) -> None:
         c = confirmation
@@ -395,6 +430,8 @@ class PostgresStore:
             )
 
     async def get_account(self, account_id: str) -> Account | None:
+        if not is_storable(account_id):
+            return None
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
                 "SELECT id, pseudo, created_at, last_login_at, blocked FROM accounts WHERE id = $1",
@@ -414,6 +451,8 @@ class PostgresStore:
             )
 
     async def get_oauth_client(self, client_id: str) -> dict[str, Any] | None:
+        if not is_storable(client_id):
+            return None
         async with self._pool.acquire() as conn:
             return await conn.fetchval(
                 "SELECT data FROM oauth_clients WHERE client_id = $1", client_id

@@ -40,6 +40,7 @@ Règles garanties par le modèle :
 - l'`id` d'un piège commence par le slug de sa fiche ;
 - les étapes sont numérotées 1, 2, 3… ;
 - une source a une URL ou un auteur ;
+- aucun texte ne contient d'octet nul ni de demi-paire de substitution (PostgreSQL les refuse) ; un slug ou un identifiant qui en contient n'est jamais trouvé ;
 - l'**e-mail d'un contributeur n'est jamais affiché ni renvoyé** par le serveur MCP.
 
 ## 2. Ports de stockage
@@ -52,11 +53,14 @@ Règles garanties par le modèle :
 | `get_fiche(slug, include_drafts)` | La fiche, ou `None` (y compris pour un brouillon quand `include_drafts` est faux) |
 | `search(query, include_drafts)` (logique commune : `app/stores/search.py`) | Résultats triés par score décroissant, au plus `query.limit`, insensibles à la casse et aux accents, filtrés par service et pays ; un code d'erreur exact donne un résultat `error_code` |
 | `list_glossary()` | Termes triés par terme |
-| `upsert_fiche(fiche)` / `upsert_glossary(terms)` | Création ou remplacement (utilisés au chargement de `content/`, à chaque démarrage en production). Les pièges retirés disparaissent, leur ordre est conservé ; les **compteurs de confirmation déjà enregistrés sont gardés** et `last_confirmed_on` garde la date la plus récente |
+| `upsert_fiche(fiche)` | Création ou remplacement (utilisé au chargement de `content/`, à chaque démarrage en production). Les pièges retirés disparaissent, leur ordre est conservé ; les **compteurs de confirmation déjà enregistrés sont gardés**, même si une confirmation arrive pendant le chargement, et `last_confirmed_on` garde la date la plus récente (une date future est donc refusée au chargement de `content/`) |
+| `retire_fiches(keep)` | Repasse en brouillon les fiches publiées absentes de `keep`, sans effacer leur historique ; renvoie leurs slugs |
+| `upsert_glossary(terms)` | Remplace tout le glossaire : les termes absents disparaissent |
 | `list_incidents(service_slug, country, active_only, limit)` | Pannes de la plus récente à la plus ancienne |
 | `upsert_incident(incident)` | Idempotent sur `incident.id` |
 | `get_last_ingest(source)` / `set_last_ingest(source, at)` | Dernière lecture réussie d'un flux |
-| `add_contribution`, `get_contribution`, `update_contribution` | Classiques |
+| `add_contribution`, `get_contribution` | Classiques |
+| `update_contribution(contribution)` | Enregistre une relecture ; renvoie `False` sans rien changer si la contribution n'existe pas ou n'est plus en attente (deux relecteurs simultanés : le premier gagne) |
 | `list_contributions(status)` | De la plus ancienne à la plus récente (file de relecture) |
 | `add_confirmation(c)` | Si `still_works` : le compteur de la cible augmente de 1 et sa date de dernière confirmation devient celle du jour |
 | `has_recent_confirmation(account_id, target_id, since)` / `list_confirmations(limit)` | Évite qu'un compte recompte la même cible ; dernières confirmations d'abord |

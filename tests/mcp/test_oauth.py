@@ -577,3 +577,9 @@ def test_reading_has_a_quota_per_account(
     result = call_tool(auth_client, token, "list_services")
     assert result["isError"] is True
     assert "retry later" in result["content"][0]["text"]
+
+
+def test_registration_with_a_nul_byte_is_refused_cleanly(auth_client: TestClient) -> None:
+    body = {"client_name": "outil\u0000", "redirect_uris": [CALLBACK]}
+    response = auth_client.post("/register", json=body)
+    assert response.status_code == 400
