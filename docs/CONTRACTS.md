@@ -62,7 +62,7 @@ Règles garanties par le modèle :
 | `add_contribution`, `get_contribution` | Classiques |
 | `update_contribution(contribution)` | Enregistre une relecture ; renvoie `False` sans rien changer si la contribution n'existe pas ou n'est plus en attente (deux relecteurs simultanés : le premier gagne) |
 | `list_contributions(status)` | De la plus ancienne à la plus récente (file de relecture) |
-| `add_confirmation(c)` | Si `still_works` : le compteur de la cible augmente de 1 et sa date de dernière confirmation devient celle du jour |
+| `add_confirmation(c)` | Si `still_works` : le compteur de la cible augmente de 1 et sa date de dernière confirmation devient celle du jour, sans jamais reculer |
 | `save_account(account)` / `get_account(id)` | Création ou remplacement ; un blocage déjà posé est conservé |
 | `save_oauth_client(id, data)` / `get_oauth_client(id)` | Outils MCP enregistrés |
 | `add_oauth_grant`, `get_oauth_grant`, `take_oauth_grant`, `delete_expired_oauth_grants` | Autorisations retrouvées par l'empreinte de leur jeton. Expirée = absente. `take` renvoie et supprime en une seule opération : deux appels ne peuvent pas réussir |
