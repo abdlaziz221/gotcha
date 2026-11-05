@@ -37,7 +37,8 @@ python -m pre_commit install --hook-type pre-commit --hook-type pre-push
 
 1. Sur la PR, cliquer sur **Details** à côté du statut `ci/circleci: …` en rouge : la page du job s'ouvre sur CircleCI.
 2. Déplier l'étape en échec ; pour les tests, l'onglet *Tests* liste les tests cassés.
-3. Corriger en local, relancer `python scripts/check.py`, pousser : la CI repart toute seule.
+3. Corriger en local, relancer `python scripts/check.py`, pousser : la CI repart toute seule, à chaque commit poussé, sur toutes les branches (aucun filtre de branche).
+4. **Aucun statut `ci/circleci` après un push** (ni vert, ni rouge, ni en cours) : CircleCI a refusé la configuration et n'a rien lancé. C'est arrivé le 5 novembre avec un here-string (`<<<`) dans une commande. `tests/unit/test_circleci_config.py` le détecte avant le push, ainsi qu'un filtre de branche ou un job qui ne correspond plus aux contrôles exigés sur `main`.
 
 ## Modifier la CI
 
