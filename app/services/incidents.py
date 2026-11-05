@@ -105,22 +105,25 @@ class IncidentService:
     async def refresh_if_stale(self) -> int:
         """Relit les flux lus il y a plus de min_interval ; renvoie le nombre de pannes reçues.
 
-        Ne lève jamais d'exception : un flux en échec est journalisé et réessayé plus tard.
+        Ne lève jamais d'exception : un flux ou une base en échec est journalisé et réessayé
+        plus tard, et n'empêche pas de lire les autres flux.
         """
         received = 0
         async with self._lock:
             for feed in self._feeds:
-                now = self._clock.now()
-                last = await self._store.get_last_ingest(feed.source)
-                if last is not None and now - last < self._min_interval:
-                    continue
                 try:
-                    incidents = await feed.fetch()
+                    received += await self._refresh_feed(feed)
                 except Exception:
                     log.warning("lecture du flux %s impossible", feed.source.value, exc_info=True)
-                    continue
-                for incident in incidents:
-                    await self._store.upsert_incident(incident)
-                await self._store.set_last_ingest(feed.source, now)
-                received += len(incidents)
         return received
+
+    async def _refresh_feed(self, feed: IncidentFeed) -> int:
+        now = self._clock.now()
+        last = await self._store.get_last_ingest(feed.source)
+        if last is not None and now - last < self._min_interval:
+            return 0
+        incidents = await feed.fetch()
+        for incident in incidents:
+            await self._store.upsert_incident(incident)
+        await self._store.set_last_ingest(feed.source, now)
+        return len(incidents)
