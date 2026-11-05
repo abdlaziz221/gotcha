@@ -1,63 +1,171 @@
 {% extends "base.html" %}
-{% from "components/status.html" import status_badge %}
+{% from "components/status.html" import status_text %}
 {% from "components/cards.html" import fiche_card, gotcha_card with context %}
 {% from "components/forms.html" import text_field, select_field, search_form %}
+{% from "components/icons.html" import icon %}
 
 {% block content %}
-<h1>{{ page.meta.title }}</h1>
-<p>Chaque composant avec des données d'exemple. Cette page n'existe pas en production.</p>
+<h1>Guide de <em>style</em></h1>
+<p class="hero__lead">Tous les composants du site, conformes à DESIGN_SYSTEM.md. Un composant absent de cette page n'est pas terminé.</p>
 
-<section>
-  <h2>Couleurs et typographie</h2>
-  <div class="swatches">
-    <span class="swatch swatch--brand">Marque</span>
-    <span class="swatch swatch--normal">Normal</span>
-    <span class="swatch swatch--degraded">Dégradé</span>
-    <span class="swatch swatch--down">En panne</span>
+<section aria-labelledby="sg-logo">
+  <h2 id="sg-logo">Logo (« Got you »)</h2>
+  <p>Le monogramme assemble quatre lectures de <em>Gotcha</em> (« Got you ») dans un seul tracé géométrique :</p>
+  <ul>
+    <li><strong>La lettre G</strong> : l'arc circulaire blanc qui ouvre le nom du projet.</li>
+    <li><strong>Le viseur optique (« Got you! »)</strong> : les quatre équerres bordeaux aux angles qui verrouillent un piège caché dans une API.</li>
+    <li><strong>La coche et les bras ouverts (« I got you »)</strong> : la barre rentrante du G se replie en coche de validation et forme deux bras qui rattrapent le développeur avant la chute en production.</li>
+    <li><strong>Le piège neutralisé</strong> : le point bordeaux capturé au foyer du G, à la fois cible verrouillée, point d'alerte maîtrisé et silhouette protégée.</li>
+  </ul>
+  <div class="specimen">
+    <img src="/static/img/logo.svg?v=4" alt="Logo Gotcha grand format" width="72" height="72">
+    <img src="/static/img/logo.svg?v=4" alt="Logo Gotcha format en-tête" width="32" height="32">
+    <img src="/static/img/favicon.svg?v=4" alt="Icône d'onglet Gotcha" width="16" height="16">
   </div>
-  <h3>Titre de niveau 3</h3>
-  <p>Paragraphe avec <a href="/glossaire">un lien</a>, du <strong>gras</strong> et du <code>code</code>.</p>
 </section>
 
-<section>
-  <h2>États des services</h2>
-  <p>{% for s in page.statuses %}{{ status_badge(s) }} {% endfor %}</p>
-</section>
+<section aria-labelledby="sg-couleurs">
+  <h2 id="sg-couleurs">Couleurs</h2>
+  <h3>Interface et accent</h3>
+  <ul class="swatches">
+    {% for name, value, role in [
+      ("--color-brand", "#FF6819", "Orange signature"),
+      ("--color-brand-soft", "#FFA576", "Orange clair"),
+      ("--color-brand-tint", "#FFF0E8", "Teinte orange"),
+      ("--color-primary", "#CC470C", "Bouton principal"),
+      ("--color-primary-hover", "#B43C0A", "Texte orange, liens"),
+      ("--color-maroon", "#450D05", "Bandeau bordeaux"),
+      ("--color-bg", "#FAF9F6", "Fond crème"),
+      ("--color-surface", "#F4F2EE", "Cartes coquille"),
+      ("--color-text", "#0B0907", "Texte"),
+      ("--color-text-secondary", "#686058", "Texte secondaire"),
+      ("--color-border", "#E8E3DA", "Séparateur"),
+    ] %}
+    <li class="swatch">
+      <span class="swatch__color swatch__color{{ name[7:] }}"></span>
+      <span class="swatch__label"><strong>{{ role }}</strong><br><code>{{ name }}</code><br><code>{{ value }}</code></span>
+    </li>
+    {% endfor %}
+  </ul>
 
-<section>
-  <h2>Messages</h2>
-  {% for f in page.flashes %}<div class="flash flash--{{ f.kind }}">{{ f.message }}</div>{% endfor %}
-  <p class="notice notice--draft">Brouillon : cette fiche n'est pas encore vérifiée.</p>
-  <p class="notice notice--review">À revérifier : non confirmée depuis 90 jours.</p>
-</section>
-
-<section>
-  <h2>Boutons</h2>
-  <p>
-    <a class="button" href="/styleguide">Principal</a>
-    <a class="button button--secondary" href="/styleguide">Secondaire</a>
-    <a class="button button--small" href="/styleguide">Petit</a>
+  <h3>États</h3>
+  <p class="specimen">
+    <span class="status status--normal">{{ icon("circle-check", size=16) }}success</span>
+    <span class="status status--degraded">{{ icon("clock", size=16) }}warning</span>
+    <span class="status status--down">{{ icon("circle-x", size=16) }}danger</span>
+    <span class="status status--unknown">{{ icon("circle-help", size=16) }}neutral</span>
   </p>
 </section>
 
-<section>
-  <h2>Formulaire</h2>
+<section aria-labelledby="sg-typo">
+  <h2 id="sg-typo">Typographie</h2>
+  <p class="specimen-h1">Titre de page <em>en deux voix</em></p>
+  <p class="kicker">Pilule de section</p>
+  <p class="specimen-h2">Heading 30px, interligne 120 %</p>
+  <p class="specimen-h3">Title 18px, interligne 120 %</p>
+  <p>Body 18px, interligne 150 %, lignes de 65 caractères au plus. Un <a href="/glossaire">lien</a>, du texte en <strong>gras</strong>, et un identifiant technique en chasse fixe : <code>X-Target-Environment</code>.</p>
+  <p class="card__meta">Description 14px, interligne 150 % : mise à jour le 4 nov. 2026</p>
+  <pre><code>POST /v1/merchant/payments
+Authorization: Bearer [jeton-session]
+X-Target-Environment: sandbox</code></pre>
+</section>
+
+<section aria-labelledby="sg-etats">
+  <h2 id="sg-etats">États et métadonnées</h2>
+  <p>Pas de badge ni de pastille : l'état s'écrit en texte, avec son icône, dans sa couleur.</p>
+  <p class="specimen">{% for s in page.statuses %}{{ status_text(s) }}{% endfor %}</p>
+  <p class="specimen">
+    <span class="severity severity--blocking">{{ icon("circle-x", size=16) }}Bloquant</span>
+    <span class="severity severity--major">{{ icon("triangle-alert", size=16) }}Important</span>
+    <span class="severity severity--minor">{{ icon("info", size=16) }}Mineur</span>
+  </p>
+  <p class="gotcha__meta">
+    <span class="severity severity--major">{{ icon("triangle-alert", size=16) }}Important</span>
+    <span>Bac à sable, Production</span>
+    <span>API v1</span>
+    <span><code>400</code></span>
+    <span>Sourcé</span>
+  </p>
+</section>
+
+<section aria-labelledby="sg-boutons">
+  <h2 id="sg-boutons">Boutons</h2>
+  <p class="specimen">
+    <a class="button" href="/styleguide">Principal</a>
+    <a class="button button--secondary" href="/styleguide">Secondaire</a>
+    <a class="button button--quiet" href="/styleguide">Discret</a>
+    <a class="button button--small" href="/styleguide">Compact</a>
+    <button type="button" class="button">{{ icon("search") }}Avec icône</button>
+  </p>
+</section>
+
+<section aria-labelledby="sg-messages">
+  <h2 id="sg-messages">Messages et encarts</h2>
+  {% for f in page.flashes %}<div class="flash flash--{{ f.kind }}">{{ icon({"success": "circle-check", "error": "circle-x"}.get(f.kind, "info")) }}<span>{{ f.message }}</span></div>{% endfor %}
+  <p class="notice notice--draft">{{ icon("file-pen") }}<span>Brouillon : cette fiche n'est pas encore vérifiée par un relecteur.</span></p>
+  <p class="notice notice--review">{{ icon("clock") }}<span>À revérifier : personne n'a confirmé cette fiche depuis plus de 90 jours.</span></p>
+  <p class="notice">{{ icon("lock") }}<span>La solution est réservée aux membres. Compte gratuit, connexion avec GitHub.</span></p>
+  <p class="empty">Aucun résultat : état vide.</p>
+</section>
+
+<section aria-labelledby="sg-formulaires">
+  <h2 id="sg-formulaires">Formulaires et recherche</h2>
   {{ search_form() }}
   <form class="form" action="/styleguide" method="get">
-    {{ text_field(page.form, "title", "Champ en erreur", required=True) }}
-    {{ select_field(page.form, "exemple", "Liste", page.options) }}
+    {{ text_field(page.form, "title", "Champ en erreur", required=True, help="Aide sous le champ.") }}
+    {{ select_field(page.form, "exemple", "Menu déroulant", page.options) }}
   </form>
 </section>
 
-<section>
-  <h2>Cartes de fiches</h2>
+<section aria-labelledby="sg-cartes">
+  <h2 id="sg-cartes">Cartes de fiches</h2>
   <div class="cards">{% for card in page.cards %}{{ fiche_card(card) }}{% endfor %}</div>
 </section>
 
 {% if page.gotcha %}
-<section>
-  <h2>Piège</h2>
+<section aria-labelledby="sg-piege">
+  <h2 id="sg-piege">Carte de piège</h2>
   {{ gotcha_card(page.gotcha, page.gotcha.id.split(".")[0]) }}
 </section>
 {% endif %}
+
+<section aria-labelledby="sg-tableau">
+  <h2 id="sg-tableau">Tableau</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">Code</th><th scope="col">Signification</th><th scope="col">Que faire</th></tr></thead>
+      <tbody>
+        <tr><th scope="row"><code>401</code></th><td>Jeton expiré</td><td>Redemander un jeton avant chaque appel.</td></tr>
+        <tr><th scope="row"><code>409</code></th><td>Référence déjà utilisée</td><td>Générer un identifiant unique par paiement.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="sg-icones">
+  <h2 id="sg-icones">Icônes (Lucide)</h2>
+  <ul class="swatches">
+    {% for name, meaning in [
+      ("circle-check", "Aucune panne"), ("triangle-alert", "Dégradé"), ("circle-x", "En panne"),
+      ("circle-help", "Inconnu"), ("book-open", "Sourcé"), ("flask-conical", "Reproduit"),
+      ("shield-check", "Confirmé"), ("clock", "En attente"), ("user", "Contributeur"),
+      ("lock", "Réservé"), ("search", "Recherche"), ("volume-2", "Audio wolof"),
+      ("external-link", "Lien externe"), ("file-pen", "Brouillon"), ("info", "Information"),
+    ] %}
+    <li class="swatch"><span class="swatch__label">{{ icon(name) }} {{ meaning }}<br><code>{{ name }}</code></span></li>
+    {% endfor %}
+  </ul>
+</section>
+<section class="band" aria-labelledby="sg-bandeau">
+  <div>
+    <p class="kicker">Bandeau bordeaux</p>
+    <h2 id="sg-bandeau">Un moment fort <em>par page au plus</em></h2>
+    <p>Texte blanc et chiffres orange sur bordeaux. Seul endroit où l'orange vif porte du texte.</p>
+    <p><a class="button" href="/styleguide">Bouton sur bandeau</a></p>
+  </div>
+  <ul class="band__stats">
+    <li><span class="band__number">{{ page.cards | length }}</span><span class="band__label">Fiches affichées ici</span></li>
+    <li><span class="band__number">4</span><span class="band__label">États de service</span></li>
+  </ul>
+</section>
 {% endblock %}

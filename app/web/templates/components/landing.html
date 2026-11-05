@@ -1,0 +1,393 @@
+{# Sections de l'accueil sous le hero : comment ça marche, trois usages, la preuve.
+   Mouvement : entrées et fil liés au défilement (CSS animation-timeline), boucles des
+   illustrations (app.js) ; sans JavaScript ni ce support, tout est affiché et immobile. Voir DESIGN_SYSTEM.md, « Mouvement de l'accueil ». #}
+{% from "components/icons.html" import icon %}
+
+{# 1. Comment ça marche : quatre cartes reliées par le fil, qui se remplit au défilement ;
+   chaque illustration joue sa boucle quand elle est à l'écran (app.js). #}
+<div class="section-sep" aria-hidden="true"><span class="section-sep__cell"></span></div>
+<section class="story" aria-labelledby="cycle-titre">
+  <header class="section-head" data-reveal>
+    <p class="kicker">Comment ça marche</p>
+    <h2 id="cycle-titre">Une solution trouvée une fois, <em>retrouvée par tous</em></h2>
+    <p class="section-head__lead">Quand un dev résout un problème difficile avec son agent, la solution ne reste pas dans sa conversation. Gotcha la garde, vérifiée, pour le suivant.</p>
+  </header>
+
+  <ol class="stack" data-stack>
+    <li class="stack__card">
+      <div class="stack__text">
+        <p class="stack__count">1/4</p>
+        <h3>Un dev tombe sur un piège</h3>
+        <p>Pas de bac à sable chez Wave, un callback Orange Money qui échoue, un déploiement refusé par Datacloud. Son agent essaie plusieurs pistes et finit par trouver la bonne.</p>
+      </div>
+      <div class="stack__art" aria-hidden="true">
+        <span class="beam-corner beam-corner--tl"></span>
+        <span class="beam-corner beam-corner--tr"></span>
+        <span class="beam-corner beam-corner--bl"></span>
+        <span class="beam-corner beam-corner--br"></span>
+        <div class="beam-stage beam-stage--funnel" data-beam-stage>
+          {# Lignes SVG Animated Beam reliant les 3 signaux à la boîte de collecte #}
+          <svg class="beam-svg" viewBox="0 0 440 280" fill="none">
+            <defs>
+              <linearGradient id="beam-grad-funnel" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#ff6819" stop-opacity="0"/>
+                <stop offset="50%" stop-color="#ff6819" stop-opacity="1"/>
+                <stop offset="100%" stop-color="#450d05" stop-opacity="0.9"/>
+              </linearGradient>
+              <pattern id="box-chevron" width="16" height="16" patternUnits="userSpaceOnUse">
+                <path d="M0 8L8 0L16 8M0 16L8 8L16 16M8 0V16" stroke="#ffffff" stroke-width="1" stroke-opacity="0.55" fill="none"/>
+              </pattern>
+            </defs>
+            {# Tracés de base #}
+            <path class="beam-track" d="M 92 132 V 146 Q 92 160 106 160 H 172 Q 186 160 186 174 V 202"/>
+            <path class="beam-track" d="M 220 62 V 202"/>
+            <path class="beam-track" d="M 348 132 V 146 Q 348 160 334 160 H 268 Q 254 160 254 174 V 202"/>
+            {# Faisceaux lumineux animés (Animated Beams) #}
+            <path class="beam-ray" data-beam-ray data-delay="0" d="M 92 132 V 146 Q 92 160 106 160 H 172 Q 186 160 186 174 V 202" stroke="url(#beam-grad-funnel)"/>
+            <path class="beam-ray" data-beam-ray data-delay="450" d="M 220 62 V 202" stroke="url(#beam-grad-funnel)"/>
+            <path class="beam-ray" data-beam-ray data-delay="900" d="M 348 132 V 146 Q 348 160 334 160 H 268 Q 254 160 254 174 V 202" stroke="url(#beam-grad-funnel)"/>
+            {# Anneaux d'ancrage orange sous chaque étiquette #}
+            <circle class="beam-anchor" cx="92" cy="132" r="3.5"/>
+            <circle class="beam-anchor" cx="220" cy="62" r="3.5"/>
+            <circle class="beam-anchor" cx="348" cy="132" r="3.5"/>
+          </svg>
+
+          {# 3 étiquettes de signaux flottantes (style Gojiberry) #}
+          <div class="beam-pill beam-pill--top">Pas de sandbox Wave</div>
+          <div class="beam-pill beam-pill--left">Callback Orange 400</div>
+          <div class="beam-pill beam-pill--right">X-Target-Environment</div>
+
+          {# Plan 1 (arrière de la boîte ouverte) #}
+          <svg class="collector-back" viewBox="0 0 440 280" fill="none">
+            <polygon points="126,184 152,162 152,196 138,196" fill="#dedad2"/>
+            <polygon points="314,184 288,162 288,196 302,196" fill="#dedad2"/>
+            <rect x="152" y="182" width="136" height="20" fill="#6b6763"/>
+            <path d="M152 182L138 196H302L288 182H152Z" fill="#57534e"/>
+          </svg>
+
+          {# Plan 2 (tuiles flottantes en arc qui tombent dans l'ouverture de la boîte) #}
+          <div class="funnel-tiles">
+            <span class="funnel-tile funnel-tile--l1" data-spring-tile><code>400</code></span>
+            <span class="funnel-tile funnel-tile--l2" data-spring-tile>Wave</span>
+            <span class="funnel-tile funnel-tile--l3" data-spring-tile><code>401</code></span>
+            <span class="funnel-tile funnel-tile--r1" data-spring-tile>MTN</span>
+            <span class="funnel-tile funnel-tile--r2" data-spring-tile>M-Pesa</span>
+            <span class="funnel-tile funnel-tile--r3" data-spring-tile><code>502</code></span>
+            {# Tuiles en chute qui passent derrière la façade avant de la boîte #}
+            <span class="funnel-tile funnel-tile--drop-a" data-drop-tile data-delay="0">{{ icon("file-code", size=18) }}</span>
+            <span class="funnel-tile funnel-tile--drop-b" data-drop-tile data-delay="1100">{{ icon("triangle-alert", size=18) }}</span>
+            <span class="funnel-tile funnel-tile--drop-c" data-drop-tile data-delay="2200">{{ icon("circle-check", size=18) }}</span>
+          </div>
+
+          {# Plan 3 (rabat avant et façade texturée de la boîte qui masquent les tuiles entrantes) #}
+          <svg class="collector-front" viewBox="0 0 440 280" fill="none">
+            <rect x="152" y="196" width="136" height="76" rx="2" fill="#e6e2da"/>
+            <rect x="152" y="196" width="136" height="76" rx="2" fill="url(#box-chevron)"/>
+            <rect x="152" y="218" width="136" height="8" fill="#0b0907" fill-opacity="0.06"/>
+            <polygon points="138,196 302,196 312,220 128,220" fill="#d8d4cc"/>
+            {# Monogramme Gotcha centré sur la boîte #}
+            <g transform="translate(206, 226)">
+              <rect width="28" height="28" rx="7" fill="#57534e"/>
+              <path d="M20 8.2A8.5 8.5 0 1 0 22.5 14.2H17.2L14.3 17.1L11.6 14.4" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="14.3" cy="10.3" r="2" fill="#ff6819"/>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </li>
+
+    <li class="stack__card">
+      <div class="stack__text">
+        <p class="stack__count">2/4</p>
+        <h3>Son agent rédige le piège, <em>sans rien de privé</em></h3>
+        <p>L'agent prépare le résumé : symptôme, cause, solution, pistes qui ont échoué, preuve. Les clés et les jetons sont détectés et refusés. Le dev relit avant l'envoi.</p>
+      </div>
+      <div class="stack__art" aria-hidden="true">
+        <span class="beam-corner beam-corner--tl"></span>
+        <span class="beam-corner beam-corner--tr"></span>
+        <span class="beam-corner beam-corner--bl"></span>
+        <span class="beam-corner beam-corner--br"></span>
+        <div class="beam-stage beam-stage--filter" data-beam-stage>
+          <svg class="beam-svg" viewBox="0 0 440 260" fill="none">
+            <defs>
+              <linearGradient id="beam-grad-filter" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#ff6819" stop-opacity="0"/>
+                <stop offset="60%" stop-color="#ff6819" stop-opacity="1"/>
+                <stop offset="100%" stop-color="#047857" stop-opacity="1"/>
+              </linearGradient>
+              <linearGradient id="beam-grad-danger" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#b91c1c" stop-opacity="0"/>
+                <stop offset="80%" stop-color="#b91c1c" stop-opacity="1"/>
+                <stop offset="100%" stop-color="#b91c1c" stop-opacity="1"/>
+              </linearGradient>
+            </defs>
+            {# 4 faisceaux entrants vers le bouclier anti-secret #}
+            <path class="beam-track" d="M 148 48 C 188 48, 192 118, 226 118"/>
+            <path class="beam-track" d="M 148 98 C 184 98, 194 124, 226 124"/>
+            <path class="beam-track" d="M 148 148 C 184 148, 194 134, 226 134"/>
+            <path class="beam-track beam-track--danger" d="M 148 202 C 188 202, 192 144, 226 144"/>
+            {# Faisceau sortant purifié #}
+            <path class="beam-track" d="M 274 130 H 336"/>
+
+            <path class="beam-ray" data-beam-ray data-delay="0" d="M 148 48 C 188 48, 192 118, 226 118" stroke="url(#beam-grad-filter)"/>
+            <path class="beam-ray" data-beam-ray data-delay="300" d="M 148 98 C 184 98, 194 124, 226 124" stroke="url(#beam-grad-filter)"/>
+            <path class="beam-ray" data-beam-ray data-delay="600" d="M 148 148 C 184 148, 194 134, 226 134" stroke="url(#beam-grad-filter)"/>
+            <path class="beam-ray" data-beam-ray data-delay="900" d="M 148 202 C 188 202, 192 144, 226 144" stroke="url(#beam-grad-danger)"/>
+            <path class="beam-ray" data-beam-ray data-delay="1100" d="M 274 130 H 336" stroke="url(#beam-grad-filter)"/>
+
+            <circle class="beam-anchor" cx="148" cy="48" r="3.5"/>
+            <circle class="beam-anchor" cx="148" cy="98" r="3.5"/>
+            <circle class="beam-anchor" cx="148" cy="148" r="3.5"/>
+            <circle class="beam-anchor beam-anchor--danger" cx="148" cy="202" r="3.5"/>
+            <circle class="beam-anchor beam-anchor--ok" cx="336" cy="130" r="3.5"/>
+          </svg>
+
+          <div class="beam-node beam-node--in1"><span>Symptôme</span>Aucun sandbox</div>
+          <div class="beam-node beam-node--in2"><span>Cause</span>Compte Business</div>
+          <div class="beam-node beam-node--in3"><span>Solution</span>Simuler Wave</div>
+          <div class="beam-node beam-node--secret"><span>Secret</span><code>sk_live_8f3…</code></div>
+
+          <div class="beam-hub beam-hub--shield">
+            {{ icon("lock", size=20) }}
+            <span>Filtre</span>
+          </div>
+
+          <div class="beam-node beam-node--out">
+            {{ icon("circle-check", size=16) }}
+            <div>
+              <strong>Fiche propre</strong>
+              <span>0 clé privée</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </li>
+
+    <li class="stack__card">
+      <div class="stack__text">
+        <p class="stack__count">3/4</p>
+        <h3>Un humain relit, <em>puis publie</em></h3>
+        <p>Un relecteur vérifie la source, la preuve et l'absence de données personnelles. Rien n'est publié sans lui, et chaque piège affiche ce qui a été vérifié.</p>
+      </div>
+      <div class="stack__art" aria-hidden="true">
+        <span class="beam-corner beam-corner--tl"></span>
+        <span class="beam-corner beam-corner--tr"></span>
+        <span class="beam-corner beam-corner--bl"></span>
+        <span class="beam-corner beam-corner--br"></span>
+        <div class="beam-stage beam-stage--review" data-beam-stage>
+          <svg class="beam-svg" viewBox="0 0 440 260" fill="none">
+            <defs>
+              <linearGradient id="beam-grad-review" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#ff6819" stop-opacity="0"/>
+                <stop offset="55%" stop-color="#ff6819" stop-opacity="1"/>
+                <stop offset="100%" stop-color="#047857" stop-opacity="1"/>
+              </linearGradient>
+            </defs>
+            <path class="beam-track" d="M 88 74 V 104 Q 88 122 106 122 H 184 Q 202 122 202 140 V 156"/>
+            <path class="beam-track" d="M 220 56 V 156"/>
+            <path class="beam-track" d="M 352 74 V 104 Q 352 122 334 122 H 256 Q 238 122 238 140 V 156"/>
+
+            <path class="beam-ray" data-beam-ray data-delay="0" d="M 88 74 V 104 Q 88 122 106 122 H 184 Q 202 122 202 140 V 156" stroke="url(#beam-grad-review)"/>
+            <path class="beam-ray" data-beam-ray data-delay="400" d="M 220 56 V 156" stroke="url(#beam-grad-review)"/>
+            <path class="beam-ray" data-beam-ray data-delay="800" d="M 352 74 V 104 Q 352 122 334 122 H 256 Q 238 122 238 140 V 156" stroke="url(#beam-grad-review)"/>
+
+            <circle class="beam-anchor" cx="88" cy="74" r="3.5"/>
+            <circle class="beam-anchor" cx="220" cy="56" r="3.5"/>
+            <circle class="beam-anchor" cx="352" cy="74" r="3.5"/>
+          </svg>
+
+          <div class="beam-pill beam-pill--rev-l">{{ icon("book-open", size=14) }}Source citée</div>
+          <div class="beam-pill beam-pill--rev-c">{{ icon("flask-conical", size=14) }}Preuve testée</div>
+          <div class="beam-pill beam-pill--rev-r">{{ icon("shield-check", size=14) }}Zéro donnée privée</div>
+
+          <div class="beam-review-card">
+            <div class="beam-review-card__head">
+              <span class="beam-review-card__user">{{ icon("user", size=16) }}Relecteur humain</span>
+              <span class="art-stamp">{{ icon("shield-check", size=14) }}Publié · Sourcé</span>
+            </div>
+            <p class="beam-review-card__title">Wave Sénégal · Simulation du webhook en local</p>
+          </div>
+        </div>
+      </div>
+    </li>
+
+    <li class="stack__card">
+      <div class="stack__text">
+        <p class="stack__count">4/4</p>
+        <h3>Les agents suivants <em>le retrouvent</em></h3>
+        <p>Par MCP, l'agent suivant lit le piège avant d'écrire la ligne fausse. Si la solution marche encore, un dev le confirme, preuve à l'appui : la fiche reste à jour.</p>
+      </div>
+      <div class="stack__art" aria-hidden="true">
+        <span class="beam-corner beam-corner--tl"></span>
+        <span class="beam-corner beam-corner--tr"></span>
+        <span class="beam-corner beam-corner--bl"></span>
+        <span class="beam-corner beam-corner--br"></span>
+        <div class="beam-stage beam-stage--mcp" data-beam-stage>
+          <svg class="beam-svg" viewBox="0 0 440 260" fill="none">
+            <defs>
+              <linearGradient id="beam-grad-mcp" x1="100%" y1="0%" x2="0%" y2="0%">
+                <stop offset="0%" stop-color="#ff6819" stop-opacity="0"/>
+                <stop offset="50%" stop-color="#ff6819" stop-opacity="1"/>
+                <stop offset="100%" stop-color="#450d05" stop-opacity="0.9"/>
+              </linearGradient>
+            </defs>
+            {# 4 faisceaux courbes entre Gotcha MCP au centre et les agents autour #}
+            <path class="beam-track" d="M 118 60 C 164 60, 174 114, 220 122"/>
+            <path class="beam-track" d="M 118 188 C 164 188, 174 134, 220 126"/>
+            <path class="beam-track" d="M 322 60 C 276 60, 266 114, 220 122"/>
+            <path class="beam-track" d="M 322 188 C 276 188, 266 134, 220 126"/>
+            <path class="beam-track" d="M 220 154 V 204"/>
+
+            <path class="beam-ray" data-beam-ray data-delay="0" d="M 220 122 C 174 114, 164 60, 118 60" stroke="url(#beam-grad-mcp)"/>
+            <path class="beam-ray" data-beam-ray data-delay="350" d="M 220 126 C 174 134, 164 188, 118 188" stroke="url(#beam-grad-mcp)"/>
+            <path class="beam-ray" data-beam-ray data-delay="700" d="M 220 122 C 266 114, 276 60, 322 60" stroke="url(#beam-grad-mcp)"/>
+            <path class="beam-ray" data-beam-ray data-delay="1050" d="M 220 126 C 266 134, 276 188, 322 188" stroke="url(#beam-grad-mcp)"/>
+            <path class="beam-ray" data-beam-ray data-delay="500" d="M 220 154 V 204" stroke="url(#beam-grad-mcp)"/>
+
+            <circle class="beam-anchor" cx="118" cy="60" r="3.5"/>
+            <circle class="beam-anchor" cx="118" cy="188" r="3.5"/>
+            <circle class="beam-anchor" cx="322" cy="60" r="3.5"/>
+            <circle class="beam-anchor" cx="322" cy="188" r="3.5"/>
+            <circle class="beam-anchor beam-anchor--ok" cx="220" cy="204" r="3.5"/>
+          </svg>
+
+          <span class="beam-agent beam-agent--tl" data-spring-tile>{{ icon("bot", size=16) }}Claude Code</span>
+          <span class="beam-agent beam-agent--bl" data-spring-tile>{{ icon("bot", size=16) }}Cursor</span>
+          <span class="beam-agent beam-agent--tr" data-spring-tile>{{ icon("bot", size=16) }}Codex</span>
+          <span class="beam-agent beam-agent--br" data-spring-tile>{{ icon("bot", size=16) }}Gemini CLI</span>
+
+          <span class="art-hub beam-mcp-hub">
+            <img src="/static/img/logo.svg" alt="" width="30" height="30">
+            <span>Gotcha MCP</span>
+          </span>
+
+          <span class="art-plus beam-mcp-plus">{{ icon("circle-check", size=15) }}+1 confirmation en prod</span>
+        </div>
+      </div>
+    </li>
+  </ol>
+</section>
+
+{# 2. Trois façons de s'en servir : menu d'étapes collant (lien actif posé par app.js),
+   chaque étape en deux colonnes : texte à gauche, aperçu flottant à droite. #}
+<div class="section-sep" aria-hidden="true"><span class="section-sep__cell"></span></div>
+<section class="ways" aria-labelledby="usages-titre">
+  <header class="section-head" data-reveal>
+    <p class="kicker">Trois façons de s'en servir</p>
+    <h2 id="usages-titre">Lisez, branchez, <em>partagez</em></h2>
+  </header>
+
+  <div class="ways__grid">
+    <nav class="ways__nav" aria-label="Les trois usages">
+      <a href="#usage-lire" data-way>Lire</a>
+      <a href="#usage-brancher" data-way>Brancher</a>
+      <a href="#usage-partager" data-way>Partager</a>
+    </nav>
+
+    <div class="ways__steps">
+      <article class="way" id="usage-lire" data-reveal>
+        <div class="way__text">
+          <p class="way__num">{{ icon("search", size=14) }}01</p>
+          <h3>Cherchez une erreur</h3>
+          <p>Tapez un code d'erreur, un en-tête ou un symptôme. Chaque fiche explique le piège, sa cause et sa solution, en français simple, avec ses sources.</p>
+          <span class="way__rule" aria-hidden="true"></span>
+          <p class="way__summary">Une erreur, une fiche, une solution sourcée.</p>
+          <p><a href="/recherche">Ouvrir la recherche</a></p>
+        </div>
+        <div class="way__visual">
+          <div class="way__card">
+            <p class="way__search">{{ icon("search", size=16) }}<code>X-Target-Environment</code></p>
+            <p class="way__result"><span class="way__result-label">Piège · MTN MoMo</span><strong>L'en-tête est obligatoire, même dans le bac à sable</strong><span class="way__result-meta">{{ icon("book-open", size=14) }}Sourcé</span></p>
+          </div>
+        </div>
+      </article>
+
+      <article class="way" id="usage-brancher" data-reveal>
+        <div class="way__text">
+          <p class="way__num">{{ icon("bot", size=14) }}02</p>
+          <h3>Branchez votre agent</h3>
+          <p>Ajoutez une fois l'adresse MCP de Gotcha. Votre agent consulte les pièges et l'état des pannes pendant qu'il code, avant d'écrire la ligne fausse.</p>
+          <span class="way__rule" aria-hidden="true"></span>
+          <p class="way__summary">Une adresse à ajouter, quatre outils pour votre agent.</p>
+          <p><a href="/#video">Voir l'agent à l'œuvre</a></p>
+        </div>
+        <div class="way__visual">
+          <div class="way__card">
+            <pre class="way__code"><code>{ "mcpServers": { "gotcha": { "url": "{{ request.base_url }}mcp" } } }</code></pre>
+            <ul class="way__tools">
+              <li><code>search_gotchas</code> chercher un piège</li>
+              <li><code>get_fiche</code> lire une fiche complète</li>
+              <li><code>get_service_status</code> état d'un service en direct</li>
+              <li><code>report_outage</code> signaler une panne</li>
+            </ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="way" id="usage-partager" data-reveal>
+        <div class="way__text">
+          <p class="way__num">{{ icon("user", size=14) }}03</p>
+          <h3>Partagez ce que vous avez résolu</h3>
+          <p>Vous avez payé le prix d'un piège ? Décrivez-le en deux minutes. Un relecteur le vérifie avant publication, et votre pseudo apparaît à côté.</p>
+          <span class="way__rule" aria-hidden="true"></span>
+          <p class="way__summary">Deux minutes pour vous, du temps gagné pour le suivant.</p>
+          <p><a class="button button--secondary" href="/contribuer">Proposer un piège{{ icon("arrow-right", size=16) }}</a></p>
+        </div>
+        <div class="way__visual">
+          <div class="way__card">
+            <p class="way__result"><span class="way__result-label">Piège · Wave Sénégal</span><strong>Aucun bac à sable public : on teste avec un vrai compte</strong></p>
+            <p class="way__credit">{{ icon("user", size=14) }}Proposé par <strong>votre pseudo</strong></p>
+            <p class="way__credit">{{ icon("shield-check", size=14) }}Relu par un relecteur · Publié · Sourcé</p>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+{# 3. La preuve : chiffres réels du test du 4 novembre 2026 (proposition finale de l'équipe), avec leurs limites. #}
+{% set results = [
+  ("MTN MoMo", 100, 100, 100),
+  ("Orange Money Sénégal", 90, 93, 100),
+  ("M-Pesa", 60, 70, 100),
+  ("Wave Sénégal", 50, 40, 100),
+  ("Datacloud", 25, 75, 100),
+] %}
+<div class="section-sep" aria-hidden="true"><span class="section-sep__cell"></span></div>
+<section class="proof" aria-labelledby="preuve-titre">
+  <header class="section-head" data-reveal>
+    <p class="kicker">Mesuré, pas promis</p>
+    <h2 id="preuve-titre">Le même agent, <em>avec et sans Gotcha</em></h2>
+    <p class="section-head__lead">Test du 4 novembre 2026 : 80 essais, un seul agent, son modèle le moins cher. Part des réponses justes, par service.</p>
+  </header>
+
+  <div class="proof__grid">
+    <figure class="chart" data-reveal>
+      <figcaption class="chart__legend">
+        <span class="chart__key chart__key--none">Sans web ni Gotcha</span>
+        <span class="chart__key chart__key--web">Avec le web</span>
+        <span class="chart__key chart__key--gotcha">Avec Gotcha</span>
+      </figcaption>
+      <dl class="chart__rows">
+        {% for name, alone, web, gotcha in results %}
+        <div class="chart__row">
+          <dt>{{ name }}</dt>
+          <dd>
+            <span class="bar bar--none" data-value="{{ alone }}"><span class="bar__fill bar__fill--{{ alone }}"></span><span class="bar__value">{{ alone }} %</span></span>
+            <span class="bar bar--web" data-value="{{ web }}"><span class="bar__fill bar__fill--{{ web }}"></span><span class="bar__value">{{ web }} %</span></span>
+            <span class="bar bar--gotcha" data-value="{{ gotcha }}"><span class="bar__fill bar__fill--{{ gotcha }}"></span><span class="bar__value">{{ gotcha }} %</span></span>
+          </dd>
+        </div>
+        {% endfor %}
+      </dl>
+    </figure>
+
+    <ul class="stats">
+      <li class="stat" data-reveal><span class="stat__number" data-count="51">51</span><span class="stat__unit">% de coût</span><span class="stat__label">en moins qu'un agent qui cherche sur le web</span></li>
+      <li class="stat" data-reveal><span class="stat__number" data-count="5">5</span><span class="stat__unit">sur 5</span><span class="stat__label">pannes en cours signalées au dev par l'agent</span></li>
+      <li class="stat" data-reveal><span class="stat__number" data-count="{{ page.gotcha_total }}">{{ page.gotcha_total }}</span><span class="stat__unit">pièges</span><span class="stat__label">documentés sur {{ page.cards | length }} services, avec leurs sources</span></li>
+    </ul>
+  </div>
+
+  <p class="proof__limits">{{ icon("info", size=16) }}<span>Limites : les réponses attendues viennent de nos fiches, aucune API n'a été appelée, et un modèle plus fort peut réduire les écarts.</span></p>
+</section>

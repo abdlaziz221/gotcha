@@ -1,3 +1,4 @@
+{% from "components/icons.html" import icon -%}
 <!doctype html>
 <html lang="fr">
 <head>
@@ -8,26 +9,100 @@
   {% if page.meta.noindex %}
   <meta name="robots" content="noindex">
   {% endif %}
-  <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/css/app.css">
-  <script src="/static/js/app.js" defer></script>
+  <link rel="icon" href="/static/img/favicon.svg?v=15" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/css/app.css?v=15">
+  <script src="/static/js/app.js?v=15" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#contenu">Aller au contenu</a>
 
+  {% set nav_links = [
+    ("/recherche", "Rechercher", "01"),
+    ("/pannes", "Pannes", "02"),
+    ("/glossaire", "Glossaire", "03"),
+    ("/ou-sont-vos-donnees", "Données", "04"),
+  ] %}
   <header class="site-header">
     <div class="container site-header__inner">
       <a class="brand" href="/">
-        <img src="/static/img/logo.svg" alt="" width="28" height="28">
+        <svg class="brand__mark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32" aria-hidden="true" focusable="false">
+          <rect width="64" height="64" rx="16" fill="#FF6819"/>
+          <g stroke="#450D05" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.6">
+            <path d="M7.5 16.5 V12 A4.5 4.5 0 0 1 12 7.5 H16.5"/>
+            <path d="M47.5 7.5 H52 A4.5 4.5 0 0 1 56.5 12 V16.5"/>
+            <path d="M7.5 47.5 V52 A4.5 4.5 0 0 0 12 56.5 H16.5"/>
+            <path d="M47.5 56.5 H52 A4.5 4.5 0 0 0 56.5 52 V47.5"/>
+          </g>
+          <path d="M45.8 18.2 A19.5 19.5 0 1 0 51.5 32.5 H39.2 L32.6 39.1 L26.4 32.9" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="32.6" cy="23.4" r="4.5" fill="#450D05"/>
+        </svg>
         <span>{{ site.name }}</span>
       </a>
-      <nav aria-label="Navigation principale">
+
+      <nav class="site-nav" aria-label="Navigation principale">
         <ul class="nav">
-          <li><a href="/recherche"{% if request.url.path == "/recherche" %} aria-current="page"{% endif %}>Rechercher</a></li>
-          <li><a href="/pannes"{% if request.url.path.startswith("/pannes") %} aria-current="page"{% endif %}>Pannes</a></li>
-          <li><a href="/contribuer"{% if request.url.path.startswith("/contribuer") %} aria-current="page"{% endif %}>Contribuer</a></li>
+          {% for href, label, num in nav_links %}
+          <li>
+            <a class="nav__link" href="{{ href }}"{% if request.url.path.startswith(href) %} aria-current="page"{% endif %}>
+              <span class="nav__roller">
+                <span class="nav__text">{{ label }}</span>
+                <span class="nav__text nav__text--clone" aria-hidden="true">{{ label }}</span>
+              </span>
+              <span class="nav__index" aria-hidden="true">{{ num }}</span>
+            </a>
+          </li>
+          {% endfor %}
         </ul>
       </nav>
+
+      <div class="site-header__actions">
+        <a class="nav-btn nav-btn--secondary" href="/pannes/signaler">
+          <span class="nav__roller">
+            <span class="nav__text">Signaler</span>
+            <span class="nav__text nav__text--clone" aria-hidden="true">Signaler</span>
+          </span>
+        </a>
+        <a class="nav-btn nav-btn--primary" href="/contribuer">
+          <span class="nav-btn__box" aria-hidden="true">
+            <span class="nav-btn__arrows">
+              {{ icon("arrow-right", size=18) }}
+              {{ icon("arrow-right", size=18) }}
+            </span>
+          </span>
+          <span class="nav__roller">
+            <span class="nav__text">Contribuer</span>
+            <span class="nav__text nav__text--clone" aria-hidden="true">Contribuer</span>
+          </span>
+        </a>
+      </div>
+
+      {# Menu mobile sans JavaScript : <details> s'ouvre et se ferme seul, au clavier aussi. #}
+      <details class="nav-mobile">
+        <summary class="nav-mobile__toggle">
+          <span class="nav-mobile__open">{{ icon("menu", size=24) }}</span>
+          <span class="nav-mobile__close">{{ icon("x", size=24) }}</span>
+          <span class="visually-hidden">Menu</span>
+        </summary>
+        <nav class="nav-mobile__panel" aria-label="Navigation mobile">
+          <ul>
+            {% for href, label, num in nav_links %}
+            <li>
+              <a href="{{ href }}"{% if request.url.path.startswith(href) %} aria-current="page"{% endif %}>
+                <span>{{ label }}</span>
+                <span class="nav__index" aria-hidden="true">{{ num }}</span>
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+          <div class="nav-mobile__actions">
+            <a class="nav-btn nav-btn--secondary" href="/pannes/signaler">Signaler une panne</a>
+            <a class="nav-btn nav-btn--primary" href="/contribuer">
+              <span class="nav-btn__box" aria-hidden="true">{{ icon("arrow-right", size=18) }}</span>
+              <span>Contribuer</span>
+            </a>
+          </div>
+        </nav>
+      </details>
     </div>
   </header>
 

@@ -91,7 +91,7 @@ def test_confirm_rejects_target_of_another_fiche(
 
 
 def test_outage_report_shows_on_the_fiche(client: TestClient, csrf: Callable[[str], str]) -> None:
-    assert "badge--degraded" not in client.get("/fiches/orange-money-sn").text
+    assert "status--degraded" not in client.get("/fiches/orange-money-sn").text
     response = client.post(
         "/pannes/signaler",
         data={
@@ -102,7 +102,7 @@ def test_outage_report_shows_on_the_fiche(client: TestClient, csrf: Callable[[st
         follow_redirects=False,
     )
     assert response.status_code == 303
-    assert "badge--degraded" in client.get(response.headers["location"]).text
+    assert "status--degraded" in client.get(response.headers["location"]).text
 
 
 def test_review_approves_a_contribution(client: TestClient, csrf: Callable[[str], str]) -> None:

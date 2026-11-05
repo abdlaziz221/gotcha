@@ -29,7 +29,7 @@
 <ol class="results">
   {% for hit in page.hits %}
   <li class="result result--{{ hit.kind.value }}">
-    <span class="tag">{{ hit.kind_label }}</span>
+    <span class="result__kind">{{ hit.kind_label }}</span>
     <a href="{{ hit.url }}">{{ hit.title }}</a>
     <p>{{ hit.snippet }}</p>
   </li>

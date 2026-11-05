@@ -1,19 +1,22 @@
-{% from "components/status.html" import status_badge %}
+{% from "components/status.html" import status_text %}
+{% from "components/icons.html" import icon %}
+
+{# Icône de chaque sévérité (DESIGN_SYSTEM.md, section 5). #}
+{% set SEVERITY_ICONS = {"blocking": "circle-x", "major": "triangle-alert", "minor": "info"} %}
 
 {# Carte d'une fiche. `card` : FicheCard. #}
 {% macro fiche_card(card) -%}
 <article class="card">
   <header class="card__header">
     <h3 class="card__title"><a href="{{ card.url }}">{{ card.title }}</a></h3>
-    {{ status_badge(card.status) }}
   </header>
-  <p class="card__meta">{{ card.kind_label }} · {{ card.country_name }}</p>
+  <p class="card__meta">{{ status_text(card.status) }} · {{ card.kind_label }} · {{ card.country_name }}</p>
   <p>{{ card.summary }}</p>
   <p class="card__footer">
     {{ card.gotcha_count }} piège{% if card.gotcha_count > 1 %}s{% endif %}
     · confirmé le {{ card.last_confirmed_on | date_fr }}
-    {% if card.is_draft %}<span class="tag tag--draft">Brouillon</span>{% endif %}
-    {% if card.needs_review %}<span class="tag tag--review">À revérifier</span>{% endif %}
+    {% if card.is_draft %}· brouillon{% endif %}
+    {% if card.needs_review %}· à revérifier{% endif %}
   </p>
 </article>
 {%- endmacro %}
@@ -23,7 +26,7 @@
 <ul class="sources">
   {% for s in sources %}
   <li>
-    {% if s.url %}<a href="{{ s.url }}" rel="noopener noreferrer nofollow">{{ s.title }}</a>{% else %}{{ s.title }}{% endif %}
+    {% if s.url %}<a href="{{ s.url }}" rel="noopener noreferrer nofollow">{{ s.title }}{{ icon("external-link", label="(lien externe)", size=14) }}</a>{% else %}{{ s.title }}{% endif %}
     {% if s.author %} · par {{ s.author }}{% endif %}
     · consulté le {{ s.accessed_on | date_fr }}
   </li>
@@ -37,12 +40,12 @@
   <header>
     <h3 class="gotcha__title">{{ g.title }}</h3>
     <p class="gotcha__meta">
-      <span class="tag tag--{{ g.severity.value }}">{{ g.severity_label }}</span>
-      {% for env in g.environment_labels %}<span class="tag">{{ env }}</span>{% endfor %}
-      {% if g.api_version %}<span class="tag">API {{ g.api_version }}</span>{% endif %}
-      {% for code in g.error_codes %}<code class="tag tag--code">{{ code }}</code>{% endfor %}
-      {% if g.is_draft %}<span class="tag tag--draft">Brouillon, non vérifié</span>{% endif %}
-      {% if g.needs_review %}<span class="tag tag--review">À revérifier</span>{% endif %}
+      <span class="severity severity--{{ g.severity.value }}">{{ icon(SEVERITY_ICONS[g.severity.value], size=16) }}{{ g.severity_label }}</span>
+      {% if g.environment_labels %}<span>{{ g.environment_labels | join(", ") }}</span>{% endif %}
+      {% if g.api_version %}<span>API {{ g.api_version }}</span>{% endif %}
+      {% if g.error_codes %}<span>{% for code in g.error_codes %}<code>{{ code }}</code>{% if not loop.last %} {% endif %}{% endfor %}</span>{% endif %}
+      {% if g.is_draft %}<span>Brouillon, non vérifié</span>{% endif %}
+      {% if g.needs_review %}<span>À revérifier</span>{% endif %}
     </p>
   </header>
   <h4>Symptôme</h4>
