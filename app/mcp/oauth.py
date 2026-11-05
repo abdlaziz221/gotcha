@@ -13,11 +13,15 @@ from mcp.server.auth.provider import (
     AccessToken,
     AuthorizationCode,
     AuthorizationParams,
+    AuthorizeError,
     OAuthAuthorizationServerProvider,
     RefreshToken,
+    RegistrationError,
+    TokenError,
 )
 from mcp.shared.auth import OAuthClientInformationFull, OAuthToken
 
+from app.domain.errors import InvalidInputError
 from app.domain.models import OAuthGrantKind
 
 if TYPE_CHECKING:
@@ -51,15 +55,22 @@ class GotchaOAuthProvider(
         return OAuthClientInformationFull.model_validate(data) if data else None
 
     async def register_client(self, client_info: OAuthClientInformationFull) -> None:
-        await self._oauth.register_client(
-            client_info.client_id, client_info.model_dump(mode="json")
-        )
+        try:
+            await self._oauth.register_client(
+                client_info.client_id, client_info.model_dump(mode="json")
+            )
+        except InvalidInputError as exc:
+            # Réponse OAuth 400 lisible par l'outil, au lieu d'une page HTML.
+            raise RegistrationError("invalid_client_metadata", str(exc)) from exc
 
     async def authorize(
         self, client: OAuthClientInformationFull, params: AuthorizationParams
     ) -> str:
         data = params.model_dump(mode="json")
-        return await self._oauth.begin_login({**data, "client_id": client.client_id})
+        try:
+            return await self._oauth.begin_login({**data, "client_id": client.client_id})
+        except InvalidInputError as exc:
+            raise AuthorizeError("invalid_request", str(exc)) from exc
 
     async def load_authorization_code(
         self, client: OAuthClientInformationFull, authorization_code: str
@@ -85,7 +96,8 @@ class GotchaOAuthProvider(
         authorization_code: AuthorizationCode,
     ) -> OAuthToken:
         if await self._oauth.take_code(authorization_code.code) is None:
-            raise ValueError("code déjà utilisé")
+            # TokenError : le SDK répond invalid_grant (ValueError donnait une page 500).
+            raise TokenError("invalid_grant", "code déjà utilisé")
         pair = await self._oauth.issue_tokens(
             client_id=authorization_code.client_id,
             subject=authorization_code.subject or "",
@@ -116,7 +128,8 @@ class GotchaOAuthProvider(
         scopes: list[str],
     ) -> OAuthToken:
         if await self._oauth.take_refresh(refresh_token.token) is None:
-            raise ValueError("jeton de renouvellement déjà utilisé")
+            # Deux fenêtres renouvellent en même temps : la perdante doit se reconnecter.
+            raise TokenError("invalid_grant", "jeton de renouvellement déjà utilisé")
         kept = scopes or refresh_token.scopes
         pair = await self._oauth.issue_tokens(
             client_id=refresh_token.client_id,

@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Literal, cast
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
+PROBE_TOKEN_MIN_LENGTH = 24
 
 Env = Literal["dev", "test", "prod"]
 StoreKind = Literal["memory", "postgres"]
@@ -50,6 +51,8 @@ class Settings:
     mcp_auth: bool = False
     github_client_id: str = ""
     github_client_secret: str = field(default="", repr=False)
+    # Jeton partagé qu'envoie scripts/probe_platform.py (en-tête X-Sonde-Jeton).
+    probe_token: str = ""
 
     @property
     def is_prod(self) -> bool:
@@ -90,6 +93,7 @@ class Settings:
             mcp_auth=_bool(e.get("GOTCHA_MCP_AUTH"), default=prod),
             github_client_id=e.get("GOTCHA_GITHUB_CLIENT_ID", "").strip(),
             github_client_secret=e.get("GOTCHA_GITHUB_CLIENT_SECRET", "").strip(),
+            probe_token=e.get("GOTCHA_PROBE_TOKEN", ""),
         )
         settings.validate()
         return settings
@@ -101,6 +105,11 @@ class Settings:
             raise ValueError("GOTCHA_PROXY_HOPS doit être positif ou nul")
         if self.is_prod and self.show_drafts:
             raise ValueError("les brouillons ne doivent jamais être affichés en production")
+        if self.probe and len(self.probe_token) < PROBE_TOKEN_MIN_LENGTH:
+            raise ValueError(
+                f"GOTCHA_PROBE demande GOTCHA_PROBE_TOKEN ({PROBE_TOKEN_MIN_LENGTH} caractères"
+                " au moins) : la sonde n'est jamais ouverte à tous"
+            )
         if self.mcp_auth:
             self._validate_mcp_auth()
 

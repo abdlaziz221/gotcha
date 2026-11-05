@@ -54,7 +54,10 @@ commands:
           name: Attente du site (/healthz?db=1)
           command: |
             for i in $(seq 1 60); do
-              if curl -fsS 'http://localhost:8000/healthz?db=1' 2>/dev/null | grep -q '"database":"ok"'; then
+              # Sortie capturée, puis grep sans tube : avec pipefail, « … | grep -q » peut
+              # échouer quand grep s'arrête au premier résultat (SIGPIPE pour l'émetteur).
+              health="$(curl -fsS 'http://localhost:8000/healthz?db=1' 2>/dev/null || true)"
+              if grep -q '"database":"ok"' <<<"$health"; then
                 echo "Site prêt après ${i} s"
                 exit 0
               fi
@@ -176,21 +179,26 @@ jobs:
             test "$(code /styleguide)" = 404 || { echo "ÉCHEC : /styleguide doit être caché"; exit 1; }
             test "$(code /relecture)" = 404 || { echo "ÉCHEC : /relecture doit être fermée"; exit 1; }
             test "$(code /_sonde/requete)" = 404 || { echo "ÉCHEC : la sonde doit être éteinte"; exit 1; }
-            docker logs gotcha 2>&1 | grep -q "la base est à jour" \
+            # Sorties capturées, puis grep sans tube (voir wait-ready : pipefail et SIGPIPE).
+            logs="$(docker logs gotcha 2>&1)"
+            grep -q "la base est à jour" <<<"$logs" \
               || { echo "ÉCHEC : le redémarrage aurait dû trouver la base à jour"; exit 1; }
             headers="$(curl -sI http://localhost:8000/)"
             for header in content-security-policy strict-transport-security x-content-type-options x-frame-options; do
-              printf '%s' "$headers" | grep -qi "^$header:" || { echo "ÉCHEC : en-tête $header absent"; exit 1; }
+              grep -qi "^$header:" <<<"$headers" || { echo "ÉCHEC : en-tête $header absent"; exit 1; }
             done
+            # Sorties capturées, puis grep sans tube : avec pipefail, « … | grep -q » peut
+            # échouer quand grep s'arrête au premier résultat (SIGPIPE pour l'émetteur).
             mcp() {
               curl -sS -X POST "http://localhost:$1/mcp" -D - \
                 -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
-                -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+                -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' || true
             }
-            mcp 8000 | grep -qi '^www-authenticate: bearer' \
+            answer="$(mcp 8000)"
+            grep -qi '^www-authenticate: bearer' <<<"$answer" \
               || { echo "ÉCHEC : le serveur MCP doit demander une connexion"; exit 1; }
-            curl -fsS http://localhost:8000/.well-known/oauth-authorization-server \
-              | grep -q '"issuer":"https://gotcha.example"' \
+            discovery="$(curl -fsS http://localhost:8000/.well-known/oauth-authorization-server || true)"
+            grep -q '"issuer":"https://gotcha.example"' <<<"$discovery" \
               || { echo "ÉCHEC : la découverte OAuth ne répond pas"; exit 1; }
             # Plan de secours : lecture libre, aucun outil d'écriture.
             docker run -d --name secours --network gotcha -p 8001:8000 \
@@ -203,9 +211,9 @@ jobs:
               sleep 2
             done
             tools="$(mcp 8001)"
-            printf '%s' "$tools" | grep -q '"get_fiche"' \
+            grep -q '"get_fiche"' <<<"$tools" \
               || { echo "ÉCHEC : le serveur MCP de secours ne répond pas"; docker logs secours; exit 1; }
-            if printf '%s' "$tools" | grep -q '"report_outage"'; then
+            if grep -q '"report_outage"' <<<"$tools"; then
               echo "ÉCHEC : le plan de secours ne doit exposer aucun outil d'écriture"; exit 1
             fi
             echo "Accueil, pages cachées, en-têtes de sécurité, connexion MCP et plan de secours : OK"

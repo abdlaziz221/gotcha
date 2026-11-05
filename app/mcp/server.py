@@ -17,6 +17,8 @@ from mcp.server.mcpserver import Context, MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import ToolAnnotations
+from starlette.routing import Route
+from starlette.types import ASGIApp
 
 from app.domain.errors import GotchaError
 from app.mcp import tools
@@ -146,9 +148,14 @@ def build_mcp_server(app: FastAPI) -> MCPServer:
             f"mcp-outage:{who}", limit=REPORT_LIMIT, window_seconds=REPORT_WINDOW_SECONDS
         ):
             raise ToolError("Too many outage reports from this client: retry later.")
-        pseudo = await services().oauth.account_pseudo(subject) if subject else None
+        # Identifiant GitHub stable plutôt que le pseudo : un compte renommé reste une seule
+        # personne pour la règle « trois personnes distinctes » de app/services/status.py.
         return await tools.report_outage(
-            services(), service, description, country, reported_by=pseudo or "agent"
+            services(),
+            service,
+            description,
+            country,
+            reported_by=subject or "agent",  # subject vaut déjà « github:<id> »
         )
 
     return mcp
@@ -174,7 +181,13 @@ def mount_mcp(app: FastAPI, mcp: MCPServer) -> None:
         json_response=True,
         transport_security=security,
     )
+    # Les middlewares du SDK (lecture du jeton Bearer) n'enveloppent que la route /mcp :
+    # posés sur toute l'application, ils interrogeaient la base pour chaque page ou fichier
+    # statique envoyé avec un en-tête Authorization, et une panne de base cassait le site.
+    for route in sdk_app.routes:
+        if isinstance(route, Route) and route.path == "/mcp":
+            wrapped: ASGIApp = route.app
+            for middleware in reversed(sdk_app.user_middleware):
+                wrapped = middleware.cls(wrapped, *middleware.args, **middleware.kwargs)
+            route.app = wrapped
     app.router.routes.extend(sdk_app.routes)
-    # add_middleware place le dernier ajouté à l'extérieur : on garde l'ordre du SDK.
-    for middleware in reversed(sdk_app.user_middleware):
-        app.add_middleware(middleware.cls, *middleware.args, **middleware.kwargs)

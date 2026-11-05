@@ -70,6 +70,10 @@ async def build_services(
     if identity is None and settings.mcp_auth:
         identity = GitHubIdentity(settings.github_client_id, settings.github_client_secret)
     oauth = OAuthService(
-        store, clock, identity, callback_url=f"{settings.site_url}/github/callback"
+        store,
+        clock,
+        identity,
+        callback_url=f"{settings.site_url}/github/callback",
+        consent_url=f"{settings.site_url}/connexion/outil",
     )
     return Services(settings, store, clock, fiches, incidents, contributions, oauth)
