@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import re
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from io import BytesIO
@@ -80,8 +81,8 @@ def register(client: TestClient) -> dict[str, Any]:
     return response.json()
 
 
-def start_login(client: TestClient, oauth_client: dict[str, Any], resource: str = RESOURCE) -> str:
-    """Demande la connexion ; renvoie l'état transmis à GitHub."""
+def ask_login(client: TestClient, oauth_client: dict[str, Any], resource: str = RESOURCE) -> str:
+    """Demande la connexion ; renvoie l'adresse de l'écran de consentement."""
     response = client.get(
         "/authorize",
         params={
@@ -96,6 +97,26 @@ def start_login(client: TestClient, oauth_client: dict[str, Any], resource: str 
         follow_redirects=False,
     )
     assert response.status_code == 302, response.text
+    location = urlparse(response.headers["location"])
+    assert location.path == "/connexion/outil"
+    return f"{location.path}?{location.query}"
+
+
+def answer_consent(client: TestClient, consent_url: str, decision: str) -> Any:
+    page = client.get(consent_url)
+    assert page.status_code == 200, page.text
+    token = re.search(r'name="csrf_token" value="([^"]+)"', page.text)
+    assert token
+    demande = parse_qs(urlparse(consent_url).query)["demande"][0]
+    form = {"csrf_token": token.group(1), "demande": demande, "decision": decision}
+    return client.post("/connexion/outil", data=form, follow_redirects=False)
+
+
+def start_login(client: TestClient, oauth_client: dict[str, Any], resource: str = RESOURCE) -> str:
+    """Demande la connexion et l'accepte ; renvoie l'état transmis à GitHub."""
+    response = answer_consent(client, ask_login(client, oauth_client, resource), "autoriser")
+    assert response.status_code == 303, response.text
+    assert response.headers["location"].startswith("https://github.example/authorize")
     return parse_qs(urlparse(response.headers["location"]).query)["state"][0]
 
 
@@ -186,7 +207,8 @@ async def test_outage_report_names_the_account(auth_client: TestClient, store: M
     }
     assert post_mcp(auth_client, tokens["access_token"], body).status_code == 200
     incidents = await store.list_incidents(service_slug="wave", country="SN")
-    assert incidents[0].reported_by == "aminata"
+    # Identifiant stable : un compte renommé reste une seule personne.
+    assert incidents[0].reported_by == "github:42"
 
 
 @pytest.mark.parametrize("token", ["faux", ""])
@@ -381,3 +403,107 @@ def test_registration_with_a_nul_byte_is_refused_cleanly(auth_client: TestClient
     body = {"client_name": "outil\u0000", "redirect_uris": [CALLBACK]}
     response = auth_client.post("/register", json=body)
     assert response.status_code == 400
+
+
+# --- Consentement et adresses de retour ----------------------------------------------
+
+
+def test_consent_screen_shows_the_tool_and_where_the_code_goes(auth_client: TestClient) -> None:
+    page = auth_client.get(ask_login(auth_client, register(auth_client)))
+    assert page.status_code == 200
+    assert "outil" in page.text
+    assert CALLBACK in page.text
+
+
+def test_refusing_on_the_consent_screen_goes_back_to_the_tool(auth_client: TestClient) -> None:
+    consent = ask_login(auth_client, register(auth_client))
+    response = answer_consent(auth_client, consent, "refuser")
+    assert response.status_code == 303
+    query = parse_qs(urlparse(response.headers["location"]).query)
+    assert query == {"error": ["access_denied"], "state": ["etat-outil"]}
+    # La demande est effacée : l'écran ne la retrouve plus.
+    assert auth_client.get(consent).status_code == 400
+
+
+def test_a_login_link_sent_to_someone_else_gives_nothing(auth_client: TestClient) -> None:
+    """« Confused deputy » : l'attaquant lance la connexion, la victime finit chez GitHub."""
+    state = start_login(auth_client, register(auth_client))
+    auth_client.cookies.clear()  # un autre navigateur, qui n'a rien accepté
+    response = auth_client.get(
+        "/github/callback", params={"state": state, "code": "bon"}, follow_redirects=False
+    )
+    assert response.status_code == 400
+    assert "location" not in response.headers
+
+
+@pytest.mark.parametrize(
+    "uri",
+    ["http://evil.example/cb", "javascript:alert(1)", "data:text/html,x", "file:///etc/passwd"],
+)
+def test_dangerous_redirect_uris_are_refused(auth_client: TestClient, uri: str) -> None:
+    response = auth_client.post("/register", json={"client_name": "x", "redirect_uris": [uri]})
+    assert response.status_code == 400
+    assert response.json()["error"] == "invalid_client_metadata"
+
+
+@pytest.mark.parametrize(
+    "uri", ["https://outil.example/cb", "http://127.0.0.1:3000/cb", "cursor://outil/oauth"]
+)
+def test_usual_redirect_uris_are_accepted(auth_client: TestClient, uri: str) -> None:
+    response = auth_client.post("/register", json={"client_name": "x", "redirect_uris": [uri]})
+    assert response.status_code == 201, response.text
+
+
+def test_registration_size_is_bounded(auth_client: TestClient) -> None:
+    too_long = {"client_name": "x" * 101, "redirect_uris": [CALLBACK]}
+    assert auth_client.post("/register", json=too_long).status_code == 400
+    too_many = {"client_name": "x", "redirect_uris": [f"{CALLBACK}/{n}" for n in range(6)]}
+    assert auth_client.post("/register", json=too_many).status_code == 400
+
+
+def test_a_nul_byte_in_the_login_request_is_an_oauth_error(auth_client: TestClient) -> None:
+    oauth_client = register(auth_client)
+    response = auth_client.get(
+        "/authorize",
+        params={
+            "response_type": "code",
+            "client_id": oauth_client["client_id"],
+            "redirect_uri": CALLBACK,
+            "state": "etat\x00",
+            "code_challenge": CHALLENGE,
+            "code_challenge_method": "S256",
+            "resource": RESOURCE,
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert parse_qs(urlparse(response.headers["location"]).query)["error"] == ["invalid_request"]
+
+
+@pytest.mark.anyio
+async def test_two_simultaneous_renewals_give_invalid_grant(auth_client: TestClient) -> None:
+    from mcp.server.auth.provider import TokenError
+
+    from app.mcp.oauth import GotchaOAuthProvider
+
+    oauth_client, tokens = connect(auth_client)
+    provider = GotchaOAuthProvider(lambda: auth_client.app.state.services, resource_url=RESOURCE)  # type: ignore[attr-defined]
+    client_info = await provider.get_client(oauth_client["client_id"])
+    assert client_info is not None
+    refresh = await provider.load_refresh_token(client_info, tokens["refresh_token"])
+    assert refresh is not None
+    # Les deux fenêtres ont chargé le jeton ; la première le consomme.
+    await provider.exchange_refresh_token(client_info, refresh, [])
+    with pytest.raises(TokenError) as caught:
+        await provider.exchange_refresh_token(client_info, refresh, [])
+    assert caught.value.error == "invalid_grant"
+
+
+def test_pages_never_read_bearer_tokens(auth_client: TestClient, store: MemoryStore) -> None:
+    async def broken(*_args: object) -> None:
+        raise RuntimeError("base en panne")
+
+    store.get_oauth_grant = broken  # type: ignore[method-assign]
+    headers = {"Authorization": "Bearer jeton-quelconque"}  # secret-scan: ignore (faux jeton)
+    assert auth_client.get("/", headers=headers).status_code == 200
+    assert auth_client.get("/static/css/app.css", headers=headers).status_code == 200
