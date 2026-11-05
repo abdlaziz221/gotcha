@@ -32,7 +32,8 @@ ALLOWED = re.compile(
 # Paquets vérifiés à la main dont les métadonnées sont ambiguës : nom -> justification.
 OVERRIDES: dict[str, str] = {}
 
-# Outils d'installation, jamais livrés avec l'application.
+# Outils d'installation : le Dockerfile les retire de l'image après l'installation (pip
+# embarque certifi, sous MPL-2.0), ils ne sont donc jamais livrés.
 IGNORED = {"pip", "setuptools", "wheel"}
 
 
@@ -101,13 +102,31 @@ def production_environment() -> dict[str, str]:
 
 def shipped() -> set[str]:
     """Paquets que l'image installe : requirements.txt et toutes leurs dépendances."""
-    # Outil de développement (dépendance de pytest), jamais nécessaire à l'application.
+    return _closure(ROOT / "requirements.txt", production_environment())
+
+
+def dev_tools() -> set[str]:
+    """Outils de requirements-dev.txt et leurs dépendances, sur ce système, hors livrés."""
+    # packaging : outil de développement (requirements-dev.txt), jamais livré.
+    from packaging.markers import default_environment
+
+    environment = {key: str(value) for key, value in default_environment().items()}
+    return _closure(ROOT / "requirements-dev.txt", environment) - shipped()
+
+
+def _closure(requirements_file: Path, environment: dict[str, str]) -> set[str]:
+    """Les paquets d'un fichier requirements et toutes leurs dépendances, pour un système."""
     from packaging.requirements import Requirement
 
-    environment = production_environment()
-    lines = (ROOT / "requirements.txt").read_text("utf-8").splitlines()
+    lines = requirements_file.read_text("utf-8").splitlines()
     specs = [line.split("#")[0].strip() for line in lines]
     todo = [Requirement(spec) for spec in specs if spec and not spec.startswith("-")]
+    # « -r requirements.txt » : les dépendances de l'application sur ce système (pywin32
+    # sous Windows, par exemple) font partie de l'environnement de développement.
+    for spec in specs:
+        if spec.startswith("-r "):
+            included = requirements_file.parent / spec[3:].strip()
+            todo += [Requirement(name) for name in _closure(included, environment)]
     # Paquet -> options demandées (« pyjwt[crypto] » ajoute cryptography aux dépendances).
     seen: dict[str, set[str]] = {}
     while todo:
@@ -140,23 +159,39 @@ def _table(rows: list[tuple[str, str, str]]) -> list[str]:
 def markdown() -> str:
     """Liste des composants à déclarer, livrés d'un côté, outils de développement de l'autre."""
     delivered = shipped()
+    tools = dev_tools()
     groups: dict[bool, list[tuple[str, str, str]]] = {True: [], False: []}
     installed: set[str] = set()
+    strangers: list[str] = []
     for dist in sorted(distributions(), key=dist_name):
         name = dist_name(dist)
         if not name or name in IGNORED or canonical(name) in installed:
             continue
         installed.add(canonical(name))
         licence = short_license(dist).replace("|", "/")
-        groups[canonical(name) in delivered].append((name, dist.version, licence))
+        if canonical(name) in delivered:
+            groups[True].append((name, dist.version, licence))
+        elif canonical(name) in tools:
+            groups[False].append((name, dist.version, licence))
+        else:
+            strangers.append(name)  # oublié dans le venv ou installé à part : hors du projet
+    if strangers:
+        print(
+            "Non listés (ni livrés ni dans requirements-dev.txt) : " + ", ".join(strangers),
+            file=sys.stderr,
+        )
     missing = sorted(delivered - installed)
     python = production_environment()["python_version"]
     lines = [
         "# Composants tiers et licences",
         "",
         "Liste à déclarer lors de la soumission (règlement, article 6). Fichier généré par "
-        "`python scripts/check_licenses.py --markdown` : ne pas le modifier à la main, "
-        "le regénérer après tout changement de `requirements*.txt`.",
+        "`python scripts/check_licenses.py --markdown` : ne pas le modifier à la main. "
+        "**La liste de référence est celle du job `licences` de la CI** (artefact "
+        "`LICENCES.md`, générée dans une installation Linux neuve) : seules les dépendances "
+        "directes ont une version figée, et une génération depuis un poste peut donner "
+        "d'autres versions de dépendances indirectes. Avant la soumission, recopier "
+        "l'artefact du dernier passage sur `main`.",
         "",
         "Les composants qui ne sont pas des paquets Python (image Docker, base de données, "
         "services de CI) sont dans [SUBMISSION.md](SUBMISSION.md).",
@@ -164,8 +199,8 @@ def markdown() -> str:
         f"## Livrés avec l'application ({len(groups[True])})",
         "",
         f"Installés dans l'image de production (Python {python} sous Linux) par "
-        "`requirements.txt`, avec leurs dépendances. Seules les dépendances directes ont une "
-        "version figée : la CI vérifie à chaque PR les licences d'une installation neuve.",
+        "`requirements.txt`, avec leurs dépendances. pip, setuptools et wheel en sont retirés "
+        "après l'installation (Dockerfile).",
         "",
         *_table(groups[True]),
     ]
@@ -180,8 +215,8 @@ def markdown() -> str:
         "",
         f"## Outils de développement et de CI, jamais livrés ({len(groups[False])})",
         "",
-        "Autres paquets du poste qui a généré ce fichier : outils de `requirements-dev.txt` "
-        "(tests, lint, types, crochets Git) et dépendances propres à Windows.",
+        "Outils de `requirements-dev.txt` (tests, lint, types, crochets Git) et leurs "
+        f"dépendances, sur le système qui a généré ce fichier ({sys.platform}).",
         "",
         *_table(groups[False]),
         "",

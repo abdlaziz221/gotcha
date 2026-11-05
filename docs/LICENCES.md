@@ -1,12 +1,12 @@
 # Composants tiers et licences
 
-Liste à déclarer lors de la soumission (règlement, article 6). Fichier généré par `python scripts/check_licenses.py --markdown` : ne pas le modifier à la main, le regénérer après tout changement de `requirements*.txt`.
+Liste à déclarer lors de la soumission (règlement, article 6). Fichier généré par `python scripts/check_licenses.py --markdown` : ne pas le modifier à la main. **La liste de référence est celle du job `licences` de la CI** (artefact `LICENCES.md`, générée dans une installation Linux neuve) : seules les dépendances directes ont une version figée, et une génération depuis un poste peut donner d'autres versions de dépendances indirectes. Avant la soumission, recopier l'artefact du dernier passage sur `main`.
 
 Les composants qui ne sont pas des paquets Python (image Docker, base de données, services de CI) sont dans [SUBMISSION.md](SUBMISSION.md).
 
 ## Livrés avec l'application (37)
 
-Installés dans l'image de production (Python 3.12 sous Linux) par `requirements.txt`, avec leurs dépendances. Seules les dépendances directes ont une version figée : la CI vérifie à chaque PR les licences d'une installation neuve.
+Installés dans l'image de production (Python 3.12 sous Linux) par `requirements.txt`, avec leurs dépendances. pip, setuptools et wheel en sont retirés après l'installation (Dockerfile).
 
 | Composant | Version | Licence |
 | --- | --- | --- |
@@ -50,7 +50,7 @@ Installés dans l'image de production (Python 3.12 sous Linux) par `requirements
 
 ## Outils de développement et de CI, jamais livrés (20)
 
-Autres paquets du poste qui a généré ce fichier : outils de `requirements-dev.txt` (tests, lint, types, crochets Git) et dépendances propres à Windows.
+Outils de `requirements-dev.txt` (tests, lint, types, crochets Git) et leurs dépendances, sur le système qui a généré ce fichier (win32).
 
 | Composant | Version | Licence |
 | --- | --- | --- |

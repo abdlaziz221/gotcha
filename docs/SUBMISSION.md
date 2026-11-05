@@ -166,13 +166,13 @@ Pour s'entraîner, chacun présente aux deux autres une partie qu'il n'a pas éc
 ## 8. Le jour J (samedi 14 novembre)
 
 1. **Code :** `main` à jour, CI verte, aucune PR en attente qui doive faire partie de la soumission.
-2. **Licences :** lancer `python scripts/check_licenses.py --markdown`. Si `docs/LICENCES.md` change, le faire fusionner.
+2. **Licences :** récupérer l'artefact `LICENCES.md` du job `licences` de la CI sur `main` (liste générée dans une installation Linux neuve). S'il diffère de `docs/LICENCES.md`, le recopier et le faire fusionner. Vérifier aussi que l'image ne contient plus pip : `docker run --rm <image> python -c "import pip"` doit échouer.
 3. **Site en ligne :**
    - `/healthz?db=1` répond `"database":"ok"` ;
    - HTTPS actif ;
    - les brouillons n'apparaissent pas ;
    - le serveur MCP demande une connexion, et un vrai outil s'y connecte ;
-   - une fiche sans compte n'affiche que l'aperçu, et le code du jury ouvre tout.
+   - sans compte, `wave-sn` et `datacloud-sn` s'affichent **en entier** (D27), et une autre fiche, par exemple `mtn-momo`, n'affiche que l'aperçu ; le code du jury ouvre tout.
    Faire aussi les vérifications de [app/security/README.md](../app/security/README.md).
 4. **Chiffres :** compter les pièges publiés et mettre à jour les textes de la section 2. Ne promettre une économie de tokens que si le test de `docs/DEMO.md` la mesure.
 5. **Formulaire :** coller les textes et les liens de la section 2, puis joindre la liste des composants (section 3).

@@ -87,6 +87,15 @@ jobs:
             python -m venv /tmp/prod
             /tmp/prod/bin/pip install --quiet -r requirements.txt
             /tmp/prod/bin/python scripts/check_licenses.py --list
+      - run:
+          name: Liste de référence des composants (artefact LICENCES.md)
+          command: |
+            python -m venv /tmp/dev
+            /tmp/dev/bin/pip install --quiet -r requirements-dev.txt
+            /tmp/dev/bin/python scripts/check_licenses.py --markdown
+            mkdir -p /tmp/artefacts && cp docs/LICENCES.md /tmp/artefacts/LICENCES.md
+      - store_artifacts:
+          path: /tmp/artefacts
 
   docker:
     machine:
@@ -120,6 +129,9 @@ jobs:
             test "$(code /)" = 200 || { echo "ÉCHEC : l'accueil ne répond pas 200"; exit 1; }
             test "$(code /styleguide)" = 404 || { echo "ÉCHEC : /styleguide doit être caché"; exit 1; }
             test "$(code /relecture)" = 404 || { echo "ÉCHEC : /relecture doit être fermée"; exit 1; }
+            if docker run --rm gotcha:ci python -c "import pip" 2>/dev/null; then
+              echo "ÉCHEC : pip est encore dans l'image (il embarque certifi, sous MPL-2.0)"; exit 1
+            fi
             headers="$(curl -sI http://localhost:8000/)"
             for header in content-security-policy strict-transport-security x-content-type-options x-frame-options; do
               printf '%s' "$headers" | grep -qi "^$header:" || { echo "ÉCHEC : en-tête $header absent"; exit 1; }
