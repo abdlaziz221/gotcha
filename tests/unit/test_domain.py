@@ -18,7 +18,12 @@ from app.domain.models import (
 )
 from app.domain.text import plain_snippet, strip_term_links
 from app.services.freshness import needs_review
-from app.services.status import REPORT_TTL, compute_status
+from app.services.status import (
+    CONFIRMATION_WINDOW,
+    CONFIRMING_REPORTERS,
+    REPORT_TTL,
+    compute_status,
+)
 
 NOW = datetime(2026, 11, 2, 12, 0, tzinfo=UTC)
 
@@ -121,6 +126,91 @@ def test_community_reports_expire() -> None:
         source=IncidentSource.COMMUNITY, started_at=NOW - REPORT_TTL - timedelta(minutes=1)
     )
     assert compute_status("wave", "SN", [old], NOW).status is Status.NORMAL
+
+
+def _report(
+    reported_by: str | None, *, age: timedelta = timedelta(0), **changes: object
+) -> Incident:
+    return _incident(
+        id=f"community:{reported_by}:{age}:{changes}",
+        source=IncidentSource.COMMUNITY,
+        status=Status.DEGRADED,
+        reported_by=reported_by,
+        started_at=NOW - age,
+        **changes,
+    )
+
+
+def test_report_still_counts_at_exactly_the_ttl() -> None:
+    assert compute_status("wave", "SN", [_report("awa", age=REPORT_TTL)], NOW).status is (
+        Status.DEGRADED
+    )
+
+
+def test_imported_incident_does_not_expire() -> None:
+    old = _incident(
+        source=IncidentSource.FLUTTERWAVE,
+        status=Status.DOWN,
+        started_at=NOW - timedelta(days=3),
+    )
+    assert compute_status("wave", "SN", [old], NOW).status is Status.DOWN
+
+
+def test_new_report_keeps_the_service_degraded_after_the_first_expires() -> None:
+    reports = [_report("awa", age=REPORT_TTL + timedelta(hours=1)), _report("awa")]
+    status = compute_status("wave", "SN", reports, NOW)
+    assert status.status is Status.DEGRADED
+    assert status.since == NOW
+    assert len(status.active_incidents) == 1
+
+
+def test_several_people_make_the_service_down() -> None:
+    names = [f"dev{n}" for n in range(CONFIRMING_REPORTERS)]
+    assert compute_status("wave", "SN", [_report(n) for n in names], NOW).status is Status.DOWN
+    below = [_report(n) for n in names[:-1]]
+    assert compute_status("wave", "SN", below, NOW).status is Status.DEGRADED
+
+
+@pytest.mark.parametrize(
+    "reporters",
+    [
+        ["awa"] * 10,
+        ["Awa", "awa", " AWA "],
+        [None] * 10,
+        [None, ""],
+    ],
+)
+def test_one_person_or_anonymous_reports_cannot_make_the_service_down(
+    reporters: list[str | None],
+) -> None:
+    reports = [_report(name, age=timedelta(minutes=i)) for i, name in enumerate(reporters)]
+    assert compute_status("wave", "SN", reports, NOW).status is Status.DEGRADED
+
+
+def test_anonymous_reports_count_as_one_person() -> None:
+    reports = [
+        _report(None),
+        _report(None, age=timedelta(minutes=1)),
+        _report("awa"),
+        _report("bo"),
+    ]
+    assert compute_status("wave", "SN", reports, NOW).status is Status.DOWN
+
+
+def test_old_reports_do_not_confirm_the_outage() -> None:
+    late = CONFIRMATION_WINDOW + timedelta(minutes=1)
+    reports = [_report("awa"), _report("bo"), _report("cheikh", age=late)]
+    assert compute_status("wave", "SN", reports, NOW).status is Status.DEGRADED
+
+
+def test_reports_from_other_countries_or_resolved_do_not_confirm_the_outage() -> None:
+    reports = [
+        _report("awa"),
+        _report("bo"),
+        _report("cheikh", country="CI"),
+        _report("diane", resolved_at=NOW),
+    ]
+    assert compute_status("wave", "SN", reports, NOW).status is Status.DEGRADED
 
 
 def test_glossary_syntax_is_removed_from_plain_text() -> None:
