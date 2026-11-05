@@ -28,4 +28,5 @@ EXPOSE 8000
 # Avant le site : schéma à jour et contenu de l'image chargé en base (scripts/release.py).
 # --no-proxy-headers : l'adresse du visiteur est lue par l'application, selon le nombre de
 # proxys de confiance (GOTCHA_PROXY_HOPS), jamais en croyant n'importe quel X-Forwarded-For.
+# Le protocole d'origine (X-Forwarded-Proto) suit la même règle : app/security/proxy.py.
 CMD ["sh", "-c", "python scripts/release.py && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --no-proxy-headers"]

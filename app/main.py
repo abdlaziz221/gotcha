@@ -18,6 +18,7 @@ from app.container import Services, build_services
 from app.mcp.server import build_mcp_server, mount_mcp
 from app.security.csrf import CSRFCookieMiddleware
 from app.security.headers import SecurityHeadersMiddleware
+from app.security.proxy import ForwardedProtoMiddleware
 from app.security.ratelimit import RateLimiter
 from app.web.errors import install_error_handlers
 from app.web.routes import contributions, dev, fiches, health, incidents, pages, probe, review
@@ -58,6 +59,8 @@ def create_app(
     app.add_middleware(CSRFCookieMiddleware, secure=settings.is_prod)
     app.add_middleware(GZipMiddleware, minimum_size=500)
     app.add_middleware(SecurityHeadersMiddleware, hsts=settings.is_prod)
+    # Ajouté en dernier, donc exécuté en premier : tout le reste voit le vrai protocole.
+    app.add_middleware(ForwardedProtoMiddleware, proxy_hops=settings.proxy_hops)
 
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     for module in (pages, fiches, contributions, incidents, review, dev, health):

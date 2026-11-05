@@ -73,3 +73,19 @@ async def test_create_store_picks_memory_by_default() -> None:
 async def test_create_store_postgres_requires_a_url() -> None:
     with pytest.raises(ValueError, match="DATABASE_URL"):
         await create_store(Settings(env="test", store="postgres"))
+
+
+def test_failures_on_another_pseudo_do_not_block_a_reviewer(clock: FixedClock) -> None:
+    with make_client(_prod_settings(f"aziz:{hash_password(PASSWORD)}"), clock) as client:
+        for _ in range(MAX_FAILURES):
+            assert client.get("/relecture", auth=("inconnu", "faux")).status_code == 401
+        assert client.get("/relecture", auth=("inconnu", "faux")).status_code == 429
+        assert client.get("/relecture", auth=("aziz", PASSWORD)).status_code == 200
+
+
+def test_successful_pages_do_not_use_up_the_attempts(clock: FixedClock) -> None:
+    # HTTP Basic renvoie le mot de passe à chaque page : seuls les échecs comptent.
+    with make_client(_prod_settings(f"aziz:{hash_password(PASSWORD)}"), clock) as client:
+        for _ in range(MAX_FAILURES + 2):
+            assert client.get("/relecture", auth=("aziz", PASSWORD)).status_code == 200
+        assert client.get("/relecture", auth=("aziz", "faux")).status_code == 401
