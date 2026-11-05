@@ -86,7 +86,13 @@ def _score(tokens: list[str], text: str, weight: float) -> float:
 
 
 def _searchable_text(gotcha: Gotcha) -> str:
-    parts = [gotcha.symptom_md, gotcha.cause_md, gotcha.fix_md, gotcha.failed_attempts_md or ""]
+    parts = [
+        gotcha.symptom_md,
+        gotcha.cause_md,
+        gotcha.fix_md,
+        gotcha.failed_attempts_md or "",
+        gotcha.proof_md or "",  # un message d'erreur exact cité dans la preuve doit être trouvé
+    ]
     return " ".join(parts)
 
 

@@ -31,9 +31,10 @@ from app.domain.models import (
     Status,
 )
 
+# D21 : mémoire opérationnelle ; D22 : niveau de confiance affiché, rien de plus promis.
 DEFAULT_DESCRIPTION = (
-    "Les pièges du paiement et du déploiement en Afrique que personne ne documente, "
-    "confirmés par les devs qui les ont vécus."
+    "La mémoire opérationnelle du paiement mobile et du déploiement en Afrique : "
+    "chaque piège cite ses sources et affiche son niveau de confiance."
 )
 
 
@@ -254,6 +255,16 @@ class MessagePage:
     message: str
     back_url: str
     back_label: str
+
+
+@dataclass(frozen=True, slots=True)
+class ToolConsentPage:
+    """Écran de consentement avant de connecter un outil MCP (app/web/routes/auth.py)."""
+
+    meta: PageMeta
+    client_name: str
+    redirect_uri: str  # affichée telle quelle : le développeur voit où partira le code
+    request_id: str
 
 
 @dataclass(frozen=True, slots=True)

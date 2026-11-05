@@ -77,6 +77,7 @@ async def build_services(
         identity,
         callback_url=f"{settings.site_url}/github/callback",
         jury_code=settings.jury_code,
+        consent_url=f"{settings.site_url}/connexion/outil",
     )
     usage = UsageService(store, clock)
     return Services(settings, store, clock, fiches, incidents, contributions, oauth, usage)

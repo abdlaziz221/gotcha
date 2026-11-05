@@ -6,13 +6,14 @@ import os
 import threading
 import time
 from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import replace
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 from starlette.testclient import TestClient
 
-from app.config import Settings
+from app.config import PROBE_TOKEN_MIN_LENGTH, Settings
 from app.services.clock import FixedClock
 from tests.conftest import make_client
 
@@ -20,21 +21,60 @@ from tests.conftest import make_client
 UNREACHABLE = "http://127.0.0.1:9/"
 
 
+TOKEN = "jeton-de-test-de-la-sonde-0123"
+
+
+@contextmanager
+def probe_client(settings: Settings, clock: FixedClock) -> Iterator[TestClient]:
+    """Client qui envoie le jeton partagé, comme scripts/probe_platform.py."""
+    with make_client(settings, clock) as client:
+        client.headers["X-Sonde-Jeton"] = TOKEN
+        yield client
+
+
 @pytest.fixture
 def probe_settings() -> Settings:
-    return Settings(env="test", probe=True, proxy_hops=1)
+    return Settings(env="test", probe=True, probe_token=TOKEN, proxy_hops=1)
 
 
 @pytest.fixture
 def probe(probe_settings: Settings, clock: FixedClock) -> Iterator[TestClient]:
-    with make_client(probe_settings, clock) as client:
+    with probe_client(probe_settings, clock) as client:
         yield client
+
+
+def test_probe_needs_the_shared_token(probe_settings: Settings, clock: FixedClock) -> None:
+    with make_client(probe_settings, clock) as client:
+        assert client.get("/_sonde/requete").status_code == 404
+        reply = client.get("/_sonde/requete", headers={"X-Sonde-Jeton": "x" * len(TOKEN)})
+        assert reply.status_code == 404
+        # Octets non ASCII : compare_digest sur des str lèverait TypeError (erreur 500).
+        accented = ("é" * len(TOKEN)).encode("latin-1")
+        assert (
+            client.get("/_sonde/requete", headers={b"X-Sonde-Jeton": accented}).status_code == 404
+        )
+        reply = client.get("/_sonde/requete", headers={"X-Sonde-Jeton": TOKEN})
+        assert reply.status_code == 200
+
+
+def test_probe_cannot_be_enabled_without_a_long_token() -> None:
+    with pytest.raises(ValueError, match="GOTCHA_PROBE_TOKEN"):
+        Settings.from_env({"GOTCHA_PROBE": "1"})
+    with pytest.raises(ValueError, match="GOTCHA_PROBE_TOKEN"):
+        Settings.from_env({"GOTCHA_PROBE": "1", "GOTCHA_PROBE_TOKEN": "court"})
+    token = "t" * PROBE_TOKEN_MIN_LENGTH
+    assert Settings.from_env({"GOTCHA_PROBE": "1", "GOTCHA_PROBE_TOKEN": token}).probe
+
+
+def test_probe_calls_are_rate_limited(probe: TestClient) -> None:
+    codes = [probe.get("/_sonde/attente?secondes=0").status_code for _ in range(61)]
+    assert codes[:60] == [200] * 60
+    assert codes[60] == 429
 
 
 def test_probe_is_hidden_unless_enabled(client: TestClient, prod_client: TestClient) -> None:
     for c in (client, prod_client):
         assert c.get("/_sonde/requete").status_code == 404
-    assert Settings.from_env({"GOTCHA_PROBE": "1"}).probe
     assert not Settings.from_env({}).probe
 
 
@@ -77,7 +117,7 @@ def test_errors_name_the_problem_without_leaking_the_address(
         database_url="postgresql://gotcha:motdepasse@127.0.0.1:9/gotcha",  # secret-scan: ignore
         flutterwave_feed_url=UNREACHABLE,
     )
-    with make_client(settings, clock) as client:
+    with probe_client(settings, clock) as client:
         database = client.get("/_sonde/base")
         outbound = client.get("/_sonde/sortie").json()
     assert database.json()["base"].startswith("erreur : ")
@@ -99,7 +139,7 @@ def test_outbound_reaches_the_feed(probe_settings: Settings, clock: FixedClock) 
     threading.Thread(target=server.serve_forever, daemon=True).start()
     try:
         feed = f"http://127.0.0.1:{server.server_port}/incidents.json"
-        with make_client(replace(probe_settings, flutterwave_feed_url=feed), clock) as client:
+        with probe_client(replace(probe_settings, flutterwave_feed_url=feed), clock) as client:
             body = client.get("/_sonde/sortie").json()
     finally:
         server.shutdown()
@@ -112,7 +152,7 @@ def test_database_reports_latency_and_ssl(probe_settings: Settings, clock: Fixed
     url = os.environ.get("GOTCHA_TEST_DATABASE_URL")
     if not url:
         pytest.skip("GOTCHA_TEST_DATABASE_URL non défini")
-    with make_client(replace(probe_settings, database_url=url), clock) as client:
+    with probe_client(replace(probe_settings, database_url=url), clock) as client:
         body = client.get("/_sonde/base").json()
     assert body["base"] == "ok"
     assert body["connexion_ms"] >= 0

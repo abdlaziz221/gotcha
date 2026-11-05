@@ -9,7 +9,7 @@ import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -23,6 +23,7 @@ from app.domain.models import (
     Incident,
     IncidentSource,
     OAuthGrantKind,
+    Publication,
     SearchHitKind,
     SearchQuery,
     Status,
@@ -425,11 +426,16 @@ async def test_recent_confirmations_are_found_by_account(store: Store) -> None:
         created_at=T0,
     )
     await store.add_confirmation(confirmation)
-    has = store.has_recent_confirmation
+
+    def has(account: str, target: str, since: datetime, *, still_works: bool = True) -> Any:
+        return store.has_recent_confirmation(account, target, since, still_works=still_works)
+
     assert await has("github:1", "demo-pay-sn", T0 - timedelta(days=1))
     assert not await has("github:1", "demo-pay-sn", T0 + timedelta(days=1))
     assert not await has("github:2", "demo-pay-sn", T0 - timedelta(days=1))
     assert not await has("github:1", "autre", T0 - timedelta(days=1))
+    # « Ça ne marche plus » après « ça marche » : une autre réponse, jamais bloquée.
+    assert not await has("github:1", "demo-pay-sn", T0 - timedelta(days=1), still_works=False)
     later = confirmation.model_copy(update={"created_at": T0 + timedelta(hours=1)})
     await store.add_confirmation(later)
     listed = await store.list_confirmations(limit=1)
@@ -472,7 +478,9 @@ async def test_fiche_deleted_from_content_leaves_production(store: Store) -> Non
     assert await store.retire_fiches(["demo-host"]) == ["demo-pay-sn"]
     assert await store.get_fiche("demo-pay-sn", include_drafts=False) is None
     assert await store.search(SearchQuery(text="jeton"), include_drafts=False) == []
-    assert await store.get_fiche("demo-pay-sn", include_drafts=True) is not None
+    retired = await store.get_fiche("demo-pay-sn", include_drafts=True)
+    assert retired is not None
+    assert retired.publication is Publication.DRAFT
     assert await store.retire_fiches(["demo-host"]) == []
 
     back = next(f for f in load_fiches(TEST_CONTENT_DIR) if f.slug == "demo-pay-sn")

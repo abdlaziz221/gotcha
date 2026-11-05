@@ -46,4 +46,10 @@ def render(request: Request, template: str, page: object, *, status_code: int = 
             can_write=can_write(settings, account),
         ),
     }
-    return templates.TemplateResponse(request, template, context, status_code=status_code)
+    response = templates.TemplateResponse(request, template, context, status_code=status_code)
+    if settings.site_auth:
+        # Chaque page affiche le pseudo ou l'aperçu selon le visiteur : un cache partagé
+        # ne doit jamais servir à un anonyme la page d'un membre (ni l'inverse).
+        response.headers["Cache-Control"] = "private, no-store"
+        response.headers["Vary"] = "Cookie"
+    return response

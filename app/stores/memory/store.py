@@ -201,10 +201,13 @@ class MemoryStore:
         self._fiches[fiche_slug] = fiche.model_copy(update={"gotchas": gotchas})
 
     async def has_recent_confirmation(
-        self, account_id: str, target_id: str, since: datetime
+        self, account_id: str, target_id: str, since: datetime, *, still_works: bool
     ) -> bool:
         return any(
-            c.account_id == account_id and c.target_id == target_id and c.created_at >= since
+            c.account_id == account_id
+            and c.target_id == target_id
+            and c.still_works is still_works
+            and c.created_at >= since
             for c in self._confirmations
         )
 

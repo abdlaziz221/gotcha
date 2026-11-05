@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from urllib.parse import urlsplit
+
 from fastapi import HTTPException, Request
 from starlette.responses import Response
 from starlette.types import ASGIApp, Receive, Scope, Send
@@ -76,6 +78,22 @@ def can_write(settings: Settings, account: Account | None) -> bool:
     return not settings.is_prod
 
 
+def _return_address(request: Request) -> str:
+    """Où revenir après la connexion.
+
+    Pour un formulaire envoyé (POST), revenir à son adresse ferait un GET sur une route
+    POST : erreur 405. On revient à la page d'où il est parti (Referer du même site),
+    sinon à la page parente (/fiches/x/confirmer devient /fiches/x).
+    """
+    if request.method == "GET":
+        query = f"?{request.url.query}" if request.url.query else ""
+        return f"{request.url.path}{query}"
+    referer = urlsplit(request.headers.get("referer", ""))
+    if referer.netloc == request.url.netloc and referer.path:
+        return referer.path + (f"?{referer.query}" if referer.query else "")
+    return request.url.path.rsplit("/", 1)[0] or "/"
+
+
 def writer_account(request: Request) -> Account | None:
     """Dépendance des formulaires : aucune écriture anonyme en production.
 
@@ -86,6 +104,5 @@ def writer_account(request: Request) -> Account | None:
     if can_write(settings, account):
         return account
     if settings.site_auth:
-        query = f"?{request.url.query}" if request.url.query else ""
-        raise LoginRequiredError(f"{request.url.path}{query}")
+        raise LoginRequiredError(_return_address(request))
     raise HTTPException(status_code=403, detail="Les contributions sont fermées pour l'instant.")

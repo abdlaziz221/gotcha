@@ -138,9 +138,12 @@ class ContributionStore(Protocol):
         ...
 
     async def has_recent_confirmation(
-        self, account_id: str, target_id: str, since: datetime
+        self, account_id: str, target_id: str, since: datetime, *, still_works: bool
     ) -> bool:
-        """Ce compte a-t-il déjà confirmé cette cible depuis cette date ?"""
+        """Ce compte a-t-il déjà donné cette même réponse sur cette cible depuis cette date ?
+
+        La réponse compte : après « ça marche », « ça ne marche plus » reste toujours possible.
+        """
         ...
 
     async def list_confirmations(self, *, limit: int = 50) -> list[Confirmation]:

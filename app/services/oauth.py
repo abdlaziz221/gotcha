@@ -9,6 +9,7 @@ n'en garde que l'empreinte : bloquer un compte coupe l'accès tout de suite.
 from __future__ import annotations
 
 import hashlib
+import json
 import secrets
 from dataclasses import dataclass
 from datetime import timedelta
@@ -18,6 +19,15 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from app.domain.errors import IdentityError, InvalidInputError
 from app.domain.models import Account, ExternalIdentity, OAuthGrantKind, is_storable
 from app.domain.ports import AccountStore, Clock, IdentityProvider
+
+# Taille maximale de la description d'un outil (/register est ouvert à tous).
+MAX_CLIENT_NAME = 100
+MAX_REDIRECT_URIS = 5
+MAX_REDIRECT_URI_LENGTH = 500
+MAX_CLIENT_DATA_BYTES = 4096
+LOOPBACK_HOSTS = {"localhost", "127.0.0.1", "[::1]", "::1"}
+# Schémas qui exécuteraient du code ou liraient un fichier au lieu de rendre la main à l'outil.
+FORBIDDEN_SCHEMES = {"javascript", "data", "file", "vbscript", "about", "blob"}
 
 LOGIN_TTL = timedelta(minutes=10)
 CODE_TTL = timedelta(minutes=5)
@@ -42,6 +52,26 @@ def _storable(value: object) -> bool:
     return True
 
 
+def redirect_uri_problem(uri: str) -> str | None:
+    """Pourquoi une adresse de retour est refusée, ou None si elle est acceptable.
+
+    https partout ; http seulement vers la machine elle-même (outils en ligne de commande) ;
+    les schémas propres à une application (cursor://, vscode://) restent permis, car l'écran
+    de consentement affiche l'adresse avant toute connexion.
+    """
+    if len(uri) > MAX_REDIRECT_URI_LENGTH:
+        return "adresse de retour trop longue"
+    parts = urlsplit(uri)
+    scheme = parts.scheme.lower()
+    if not scheme or scheme in FORBIDDEN_SCHEMES:
+        return f"schéma d'adresse de retour refusé : {scheme or 'aucun'}"
+    if scheme == "http" and (parts.hostname or "").lower() not in LOOPBACK_HOSTS:
+        return "http n'est permis que vers la machine locale (localhost, 127.0.0.1)"
+    if scheme in ("http", "https") and not parts.hostname:
+        return "adresse de retour sans nom de machine"
+    return None
+
+
 def _with_query(url: str, **params: str | None) -> str:
     """Ajoute des paramètres à une adresse, sans toucher à ceux qu'elle contient déjà."""
     parts = urlsplit(url)
@@ -64,6 +94,14 @@ class LoginResult:
 
 
 @dataclass(frozen=True)
+class LoginRequest:
+    """Ce que l'écran de consentement montre au développeur."""
+
+    client_name: str
+    redirect_uri: str
+
+
+@dataclass(frozen=True)
 class TokenPair:
     access_token: str
     refresh_token: str
@@ -78,12 +116,14 @@ class OAuthService:
         identity: IdentityProvider | None,
         *,
         callback_url: str,
+        consent_url: str,
         jury_code: str = "",
     ) -> None:
         self._store = store
         self._clock = clock
         self._identity = identity
         self._callback_url = callback_url
+        self._consent_url = consent_url
         self._jury_code = jury_code
 
     async def _new_grant(
@@ -103,28 +143,93 @@ class OAuthService:
     async def register_client(self, client_id: str, data: dict[str, Any]) -> None:
         if not _storable(data):
             raise InvalidInputError("Description de l'outil invalide (caractère interdit).")
+        if len(str(data.get("client_name") or "")) > MAX_CLIENT_NAME:
+            raise InvalidInputError(
+                f"Nom de l'outil trop long ({MAX_CLIENT_NAME} caractères au plus)."
+            )
+        uris = [str(uri) for uri in data.get("redirect_uris") or []]
+        if len(uris) > MAX_REDIRECT_URIS:
+            raise InvalidInputError(f"{MAX_REDIRECT_URIS} adresses de retour au plus.")
+        for uri in uris:
+            if problem := redirect_uri_problem(uri):
+                raise InvalidInputError(f"Adresse de retour refusée : {problem}.")
+        if len(json.dumps(data).encode()) > MAX_CLIENT_DATA_BYTES:
+            raise InvalidInputError("Description de l'outil trop longue.")
         await self._store.save_oauth_client(client_id, data)
 
     # --- Connexion du développeur ----------------------------------------------
 
     async def begin_login(self, data: dict[str, Any]) -> str:
-        """Garde la demande de l'outil MCP et renvoie l'adresse de connexion chez GitHub."""
+        """Garde la demande de l'outil MCP et renvoie l'adresse de l'écran de consentement.
+
+        Sans cet écran, n'importe qui pourrait enregistrer un outil avec sa propre adresse
+        de retour, puis envoyer le lien /authorize à un développeur déjà connu de GitHub :
+        GitHub répondrait sans rien demander et le code partirait chez l'attaquant.
+        """
+        if self._identity is None:
+            raise InvalidInputError("La connexion n'est pas activée sur ce serveur.")
+        if not _storable(data):
+            raise InvalidInputError("Demande de connexion invalide (caractère interdit).")
+        await self._store.delete_expired_oauth_grants(self._clock.now())
+        state, _ = await self._new_grant(OAuthGrantKind.LOGIN, data, LOGIN_TTL)
+        return _with_query(self._consent_url, demande=state)
+
+    async def describe_login(self, state: str) -> LoginRequest | None:
+        """La demande en attente, pour l'écran de consentement ; None si inconnue ou expirée."""
+        if not is_storable(state):
+            return None
+        now = self._clock.now()
+        login = await self._store.get_oauth_grant(OAuthGrantKind.LOGIN, _digest(state), now)
+        if login is None or login.get("web"):
+            return None
+        client = await self._store.get_oauth_client(login["client_id"]) or {}
+        name = str(client.get("client_name") or login["client_id"])
+        return LoginRequest(client_name=name, redirect_uri=login["redirect_uri"])
+
+    async def approve_login(self, state: str) -> str:
+        """Le développeur accepte : renvoie l'adresse de connexion chez GitHub."""
+        if self._identity is None or await self.describe_login(state) is None:
+            raise InvalidInputError(
+                "Demande de connexion inconnue ou expirée : relancez-la depuis votre outil."
+            )
+        return self._identity.authorize_url(state=state, redirect_uri=self._callback_url)
+
+    async def refuse_login(self, state: str) -> str:
+        """Le développeur refuse : la demande est effacée, l'outil reçoit access_denied."""
+        login = None
+        if is_storable(state):
+            now = self._clock.now()
+            login = await self._store.take_oauth_grant(OAuthGrantKind.LOGIN, _digest(state), now)
+        if login is None or login.get("web"):
+            raise InvalidInputError(
+                "Demande de connexion inconnue ou expirée : relancez-la depuis votre outil."
+            )
+        return _with_query(login["redirect_uri"], error="access_denied", state=login.get("state"))
+
+    async def begin_web_login(self, next_url: str) -> tuple[str, str]:
+        """Connexion sur le site : renvoie l'état de la demande et l'adresse chez GitHub.
+
+        Pas d'écran de consentement (c'est le site lui-même), mais la route lie l'état au
+        navigateur par un cookie, comme pour un outil : sans ce lien, un lien de retour
+        envoyé à une victime la connecterait au compte de l'attaquant (CSRF de connexion).
+        """
         if self._identity is None:
             raise InvalidInputError("La connexion n'est pas activée sur ce serveur.")
         await self._store.delete_expired_oauth_grants(self._clock.now())
+        data = {"web": True, "next": safe_next_url(next_url)}
         state, _ = await self._new_grant(OAuthGrantKind.LOGIN, data, LOGIN_TTL)
-        return self._identity.authorize_url(state=state, redirect_uri=self._callback_url)
-
-    async def begin_web_login(self, next_url: str) -> str:
-        """Connexion sur le site : renvoie l'adresse de connexion chez GitHub."""
-        return await self.begin_login({"web": True, "next": safe_next_url(next_url)})
+        return state, self._identity.authorize_url(state=state, redirect_uri=self._callback_url)
 
     async def finish_login(self, state: str, code: str | None, error: str | None) -> LoginResult:
         """Traite le retour de GitHub : vers l'outil MCP, ou vers le site avec une session."""
         if self._identity is None:
             raise InvalidInputError("La connexion n'est pas activée sur ce serveur.")
-        login = await self._store.take_oauth_grant(
-            OAuthGrantKind.LOGIN, _digest(state), self._clock.now()
+        login = (
+            await self._store.take_oauth_grant(
+                OAuthGrantKind.LOGIN, _digest(state), self._clock.now()
+            )
+            if is_storable(state)
+            else None
         )
         if login is None:
             raise InvalidInputError(
@@ -183,7 +288,10 @@ class OAuthService:
 
     async def login_with_code(self, code: str) -> str | None:
         """Accès du jury ; renvoie un jeton de session, ou None si le code est faux."""
-        if not self._jury_code or not secrets.compare_digest(code, self._jury_code):
+        # En octets : compare_digest lève TypeError sur une chaîne non ASCII (« Téranga »).
+        if not self._jury_code or not secrets.compare_digest(
+            code.encode(), self._jury_code.encode()
+        ):
             return None
         if not await self._save_account(JURY_ACCOUNT):
             return None

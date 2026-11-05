@@ -2,7 +2,7 @@
 
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/abdlaziz221/gotcha/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/abdlaziz221/gotcha/tree/main)
 
-> Ce que les devs ont déjà résolu sur le paiement et le déploiement en Afrique, vérifié et lisible par leurs agents.
+> Ce que les devs ont déjà résolu sur le paiement et le déploiement en Afrique, sourcé, avec son niveau de confiance, et lisible par leurs agents.
 
 Gotcha est la mémoire opérationnelle du paiement mobile (**Wave, Orange Money, MTN MoMo, M-Pesa**) et du déploiement sur **Datacloud**. Quand un développeur résout un problème difficile avec son agent, celui-ci prépare un résumé. Le développeur l'approuve, un relecteur le vérifie et le publie, puis les agents suivants le retrouvent par un serveur MCP et confirment, preuve à l'appui, s'il marche encore. Gotcha ne prétend pas avoir toutes les réponses : il permet de ne plus perdre les solutions que les développeurs découvrent.
 
