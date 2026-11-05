@@ -115,11 +115,12 @@ Dans le texte d'une étape ou d'un piège, `[[webhook]]` ou `[[jeton-acces|jeton
 Une contribution approuvée sur `/relecture` n'est pas publiée telle quelle. Abdoul Aziz lance :
 
 ```bash
-GOTCHA_ENV=prod GOTCHA_MCP_AUTH=false GOTCHA_SITE_AUTH=false DATABASE_URL=… python scripts/export_contributions.py
+DATABASE_URL=… python scripts/export_contributions.py
 ```
 
 - un **piège** devient `fiches/<fiche>/pieges/contribution-<id>.md`, en brouillon : son texte est entier dans « Symptôme », à répartir entre Symptôme, Cause et Solution ;
 - une **étape** ou une **correction** devient une note dans `a-integrer/`, à reporter à la main dans la fiche, puis à supprimer.
+- chaque contribution exportée est notée dans `a-integrer/contributions-exportees.txt` : garder ce fichier dans la PR, il empêche de l'exporter une seconde fois après intégration ou suppression du brouillon.
 
 Le contributeur est cité comme source (son pseudo, jamais son e-mail). On relit, on complète, on recoupe la source, puis on publie par une PR `content(<fiche>): …`.
 

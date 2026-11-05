@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from app.domain.models import Contribution, ContributionKind, ContributionStatus, Publication
+from app.domain.text import TERM_LINK_RE
 from app.stores.content_files import export_contributions, load_fiches
 from tests.conftest import TEST_CONTENT_DIR
 
@@ -85,3 +86,45 @@ def test_pending_and_rejected_are_ignored(content_dir: Path) -> None:
         _contribution(status=ContributionStatus.REJECTED, id="4" * 32),
     ]
     assert export_contributions(contributions, content_dir) == []
+
+
+def test_an_integrated_or_deleted_draft_is_not_exported_again(content_dir: Path) -> None:
+    [draft] = export_contributions([_contribution()], content_dir)
+    draft.unlink()  # intégré à la fiche puis supprimé, comme le demande la note
+    assert export_contributions([_contribution()], content_dir) == []
+    ledger = (content_dir / "a-integrer" / "contributions-exportees.txt").read_text("utf-8")
+    assert _contribution().id in ledger
+
+
+@pytest.mark.parametrize("separator", ["\f", " ", "\x85", "\r"])
+def test_hidden_line_breaks_cannot_create_a_section(content_dir: Path, separator: str) -> None:
+    body = f"Le callback arrive deux fois.{separator}## Cause\nTexte injecté."
+    export_contributions([_contribution(body_md=body)], content_dir)
+    fiche = next(f for f in load_fiches(content_dir) if f.slug == "demo-pay-sn")
+    gotcha = fiche.find_gotcha("demo-pay-sn.contribution-abcdef01")
+    assert gotcha is not None
+    assert "Texte injecté" in gotcha.symptom_md
+    assert "Texte injecté" not in gotcha.cause_md
+
+
+def test_code_blocks_are_kept_and_never_split_the_draft(content_dir: Path) -> None:
+    body = "Exemple :\n\n```bash\n## commentaire du script\nif [[ -z $X ]]; then exit 1; fi\n```\n"
+    export_contributions([_contribution(body_md=body)], content_dir)
+    fiche = next(f for f in load_fiches(content_dir) if f.slug == "demo-pay-sn")
+    gotcha = fiche.find_gotcha("demo-pay-sn.contribution-abcdef01")
+    assert gotcha is not None
+    assert "## commentaire du script" in gotcha.symptom_md  # intact dans le bloc de code
+    assert not TERM_LINK_RE.search(gotcha.symptom_md)  # « [[ » n'est pas un lien de glossaire
+
+
+def test_an_unclosed_code_block_does_not_swallow_the_sections(content_dir: Path) -> None:
+    export_contributions([_contribution(body_md="Exemple :\n```\ncode sans fin")], content_dir)
+    fiche = next(f for f in load_fiches(content_dir) if f.slug == "demo-pay-sn")
+    assert fiche.find_gotcha("demo-pay-sn.contribution-abcdef01") is not None
+
+
+def test_a_slug_can_never_write_outside_content(content_dir: Path) -> None:
+    written = export_contributions([_contribution(fiche_slug="../../evil")], content_dir)
+    assert [p.name for p in written] == ["contribution-abcdef01.md"]
+    assert all(p.resolve().is_relative_to(content_dir.resolve()) for p in written)
+    assert not (content_dir.parent.parent / "evil").exists()

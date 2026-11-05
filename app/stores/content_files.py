@@ -17,6 +17,7 @@ import yaml
 from pydantic import ValidationError
 
 from app.domain.models import (
+    SLUG_PATTERN,
     Contribution,
     ContributionKind,
     ContributionStatus,
@@ -28,6 +29,8 @@ from app.domain.models import (
 
 _FRONTMATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---\s*\n?(.*)\Z", re.DOTALL)
 _SECTION_FIELDS = {"symptome": "symptom_md", "cause": "cause_md", "solution": "fix_md"}
+# Début ou fin d'un bloc de code Markdown : ses lignes « ## » ne sont pas des titres.
+_FENCE_RE = re.compile(r"^ {0,3}(```|~~~)")
 
 
 class ContentError(ValueError):
@@ -69,41 +72,96 @@ def load_glossary(content_dir: Path) -> list[GlossaryTerm]:
         raise ContentError(f"{path} : {exc}") from exc
 
 
+EXPORT_LEDGER = Path("a-integrer") / "contributions-exportees.txt"
+
+
 def export_contributions(contributions: list[Contribution], content_dir: Path) -> list[Path]:
     """Écrit les contributions approuvées dans content/, en brouillons à relire (tâche A7).
 
     Un piège devient content/fiches/<fiche>/pieges/contribution-<id>.md, chargé comme
     brouillon ; une étape ou une correction devient une note dans content/a-integrer/,
-    à reporter à la main. Un fichier déjà présent n'est jamais écrasé. L'e-mail du
-    contributeur n'est jamais écrit. Renvoie les fichiers créés.
+    à reporter à la main. L'e-mail du contributeur n'est jamais écrit. Renvoie les
+    fichiers créés.
+
+    Chaque contribution exportée est notée dans content/a-integrer/contributions-exportees.txt,
+    versionné avec le reste : on peut relancer le script sans risque, même après avoir
+    intégré, renommé ou supprimé un brouillon, ou depuis une autre branche.
     """
+    ledger = content_dir / EXPORT_LEDGER
+    done = _exported_ids(ledger)
     written = []
     for contribution in contributions:
-        if contribution.status is not ContributionStatus.APPROVED:
+        if contribution.status is not ContributionStatus.APPROVED or contribution.id in done:
             continue
-        short_id = contribution.id[:8]
-        fiche_dir = content_dir / "fiches" / contribution.fiche_slug
-        if contribution.kind is ContributionKind.GOTCHA and fiche_dir.is_dir():
+        short_id = re.sub(r"[^a-z0-9]", "", contribution.id.lower())[:8] or "sans-id"
+        # Le slug sert à bâtir un chemin : jamais « ../ » ni autre chose qu'un slug.
+        slug = (
+            contribution.fiche_slug if re.fullmatch(SLUG_PATTERN, contribution.fiche_slug) else ""
+        )
+        fiche_dir = content_dir / "fiches" / slug if slug else None
+        if contribution.kind is ContributionKind.GOTCHA and fiche_dir and fiche_dir.is_dir():
             path = fiche_dir / "pieges" / f"contribution-{short_id}.md"
             text = _gotcha_draft(contribution)
         else:
-            path = content_dir / "a-integrer" / f"{contribution.fiche_slug}-{short_id}.md"
+            name = f"{slug}-{short_id}.md" if slug else f"contribution-{short_id}.md"
+            path = content_dir / "a-integrer" / name
             text = _integration_note(contribution)
-        if path.exists():
+        if not path.resolve().is_relative_to(content_dir.resolve()) or path.exists():
             continue
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8", newline="\n")
         written.append(path)
+        done.add(contribution.id)
+        _note_export(ledger, contribution.id)
     return written
+
+
+def _exported_ids(ledger: Path) -> set[str]:
+    if not ledger.exists():
+        return set()
+    lines = ledger.read_text(encoding="utf-8").splitlines()
+    return {line.strip() for line in lines if line.strip() and not line.startswith("#")}
+
+
+def _note_export(ledger: Path, contribution_id: str) -> None:
+    ledger.parent.mkdir(parents=True, exist_ok=True)
+    header = (
+        ""
+        if ledger.exists()
+        else (
+            "# Contributions déjà exportées par scripts/export_contributions.py, une par ligne.\n"
+            "# Ne pas retirer de ligne : la contribution serait exportée de nouveau.\n"
+        )
+    )
+    with ledger.open("a", encoding="utf-8", newline="\n") as file:
+        file.write(f"{header}{contribution_id}\n")
 
 
 def _contribution_day(contribution: Contribution) -> date:
     return (contribution.reviewed_at or contribution.created_at).date()
 
 
-def _demote_headings(markdown: str) -> str:
-    """Un titre « ## » dans le texte casserait le découpage Symptôme / Cause / Solution."""
-    return re.sub(r"(?m)^## ", "### ", markdown).strip()
+def _contributed_markdown(markdown: str) -> str:
+    """Prépare le texte d'un contributeur pour un brouillon qui doit toujours se charger.
+
+    - Fins de ligne normalisées comme le chargeur les lit (\r, \f, \x85,  …) : un
+      « ## » caché derrière l'une d'elles créerait une section.
+    - Hors des blocs de code, « ## » devient « ### » : il casserait le découpage
+      Symptôme / Cause / Solution. Dans un bloc de code, le texte reste intact.
+    - « [[ » est échappé : il serait lu comme un lien de glossaire (« if [[ -z $X ]] »).
+    - Un bloc de code laissé ouvert est refermé, sinon il avalerait les sections suivantes.
+    """
+    lines = []
+    in_fence = False
+    for line in markdown.splitlines():
+        if _FENCE_RE.match(line):
+            in_fence = not in_fence
+        elif not in_fence and line.startswith("## "):
+            line = "#" + line
+        lines.append(line.replace("[[", r"\[\["))
+    if in_fence:
+        lines.append("```")
+    return "\n".join(lines).strip()
 
 
 def _gotcha_draft(contribution: Contribution) -> str:
@@ -133,8 +191,9 @@ def _gotcha_draft(contribution: Contribution) -> str:
         f"<!-- Contribution {contribution.id}, approuvée par {reviewer} le {day.isoformat()}.\n"
         "À faire avant publication : répartir le texte entre Symptôme, Cause et Solution,\n"
         "ajuster la gravité et les environnements, recouper la source, puis publier\n"
+        "Les « [[ » du texte sont échappés : dans un bloc de code, retirer les barres obliques.\n"
         "(publication: published, verified_by: <pseudo>). -->\n\n"
-        f"## Symptôme\n\n{_demote_headings(contribution.body_md)}\n\n"
+        f"## Symptôme\n\n{_contributed_markdown(contribution.body_md)}\n\n"
         "## Cause\n\nÀ compléter à partir du texte de la contribution.\n\n"
         "## Solution\n\nÀ compléter à partir du texte de la contribution.\n"
     )
@@ -155,7 +214,7 @@ def _integration_note(contribution: Contribution) -> str:
         "",
         "## Texte de la contribution",
         "",
-        _demote_headings(contribution.body_md),
+        _contributed_markdown(contribution.body_md),
         "",
     ]
     return "\n".join(lines)
@@ -192,11 +251,17 @@ def _parse_steps(markdown: str) -> list[Step]:
 
 
 def _split_sections(markdown: str) -> dict[str, str]:
-    """Découpe un texte Markdown sur ses titres de niveau 2 (« ## Titre »)."""
+    """Découpe un texte Markdown sur ses titres de niveau 2 (« ## Titre »).
+
+    Une ligne « ## » dans un bloc de code (commentaire, exemple) n'est pas un titre.
+    """
     sections: dict[str, list[str]] = {}
     current: list[str] | None = None
+    in_fence = False
     for line in markdown.splitlines():
-        if line.startswith("## "):
+        if _FENCE_RE.match(line):
+            in_fence = not in_fence
+        if not in_fence and line.startswith("## "):
             current = sections.setdefault(line[3:].strip(), [])
         elif current is not None:
             current.append(line)
