@@ -8,7 +8,9 @@ Servis tels quels sous `/static/…`. Pas d'étape de compilation, pas de dépen
 
 | Fichier | Contenu |
 | --- | --- |
-| `css/app.css` | **Une seule** feuille de style (une seule requête en 3G), en six sections : jetons, base, mise en page, composants, pages, utilitaires. Thème sombre automatique |
+| `css/app.css` | Styles communs à toutes les pages : jetons, base, en-tête, pied de page, composants, utilitaires |
+| `css/accueil.css` | Styles de l'accueil seulement (hero, démo, sections, FAQ), chargés par `pages/home.html` |
+| `css/pages.css` | Styles des autres pages (fiche, recherche, formulaires, pannes, textes, panneaux) ; chaque page charge deux feuilles au plus, pour rester sous 200 Ko |
 | `js/app.js` | Amélioration progressive : définition du glossaire au toucher. Le site marche sans |
 | `img/logo.svg`, `img/favicon.svg` | Logo provisoire, à remplacer (L1) |
 

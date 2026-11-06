@@ -216,15 +216,15 @@ Correspondance fixe :
 Le composant central. Ordre de lecture fixe :
 
 1. **Titre**.
-2. **Métadonnées**, en une ligne de texte : sévérité (couleur et icône), environnement, version d'API, codes d'erreur, niveau de confiance.
-3. **Attribution** : contributeur et relecteur avec l'icône `user`, en texte courant, pas en note.
+2. **Métadonnées**, en une ligne de texte : sévérité (couleur et icône), niveau de confiance (`.confidence` : « Sourcé » `book-open` gris, « Reproduit » `flask-conical` bleu, « Confirmé en production » `shield-check` vert), environnement, version d'API, codes d'erreur.
+3. **Attribution** : « Relu par » (`verified_by`) avec l'icône `circle-check`, sous la solution. Aucun auteur affiché tant que le modèle n'a pas de champ pour lui (L15) : jamais d'attribution inventée.
 4. **Symptôme**, puis **Cause**.
-5. **Solution**, avec bloc de code. En aperçu public, un encart remplace la solution (voir plus bas).
+5. **Solution**, avec bloc de code. En aperçu public, l'encart `.locked` (filet orange clair en tirets, `lock`, bouton « Se connecter avec GitHub ») remplace la solution.
 6. **Pistes qui ont échoué**, puis **Preuve**.
 7. **Audio en wolof**, s'il existe : lecteur `<audio controls preload="none">` et transcription relue, sous le texte français qui reste la référence.
 8. **Confirmation** : `<details>` avec champ de preuve et nombre de confirmations.
 
-Fond `--color-surface`, rayon `--radius-lg`, bordure gauche de 4px aux couleurs de la sévérité (`danger`, `warning`, `neutral`). La sévérité reste aussi écrite dans les métadonnées.
+Sur la fiche : fond blanc, filet `--color-border`, rayon `--radius-md`, bordure gauche de 4px aux couleurs de la sévérité (`danger`, `warning`, `neutral`). La sévérité reste aussi écrite dans les métadonnées. Intertitres (Symptôme, Cause…) en mono, capitales, gris.
 
 ### Encart
 
@@ -250,15 +250,21 @@ Fond `--color-surface`, rayon `--radius-lg`, bordure gauche de 4px aux couleurs 
 
 ### Archétypes de pages
 
+Chaque page intérieure commence par `.page-head` : libellé à alvéole (`.eyebrow`, mono orange foncé en capitales), titre jusqu'à 3rem, phrase d'introduction grise de 56ch au plus.
+
 | Page | Structure |
 | :--- | :--- |
-| **Accueil** (`/`) | Une phrase qui dit ce qu'est Gotcha, le champ de recherche, puis la liste des fiches. Sur écran large : 2/3 fiches, 1/3 état des services en direct. |
-| **Recherche** (`/recherche`) | Champ de recherche en haut, résultats en liste avec leur type (Fiche, Piège, Code d'erreur). |
-| **Fiche** (`/fiches/<service>`) | Sur écran large : 2/3 pièges, 1/3 volet (état du service, pannes récentes, sources). Sur mobile, le volet passe sous l'en-tête. |
-| **Pannes** (`/pannes`) | Liste chronologique, état en texte et source de chaque signalement. |
-| **Contribuer** (`/contribuer`) | Formulaire en une colonne, `65ch` au plus, libellés au-dessus. |
-| **Relecture** (`/relecture`) | Liste des contributions en attente (« En attente de relecture » en texte `warning` avec `clock`), détail à droite sur écran large. |
-| **Connexion** | Une phrase, un bouton « Se connecter avec GitHub », la liste de ce que Gotcha garde. |
+| **Accueil** (`/`) | Voir section 8. |
+| **Recherche** (`/recherche`) | Filtres dans un panneau gris, puis le nombre de résultats et une liste blanche : une ligne par résultat (type avec icône, titre, extrait, flèche), toute la ligne est un lien. Sans requête : quelques recherches d'exemple en liens. |
+| **Fiche** (`/fiches/<service>`) | Fil d'Ariane, libellé (type, pays, API), titre, résumé, quatre repères (`.facts` : état en direct, pièges, mise à jour, confirmations), boutons « Suivre pas à pas » et « Documentation officielle ». Puis, à partir de 64rem, sommaire collant à gauche (`.toc`, 14rem) et contenu à droite. Étapes numérotées dans un rond, reliées par un trait. Aperçu public : encart `.locked--fiche` avant le contenu. Mode pas à pas : une carte, barre de progression en segments. |
+| **Pannes** (`/pannes`) | En-tête avec le bouton « Signaler une panne » à droite. En cours, puis récentes ; chaque panne est une carte blanche avec un filet gauche de 3px à la couleur de son état (vert une fois résolue). |
+| **Contribuer**, **Signaler une panne** | Formulaire dans une carte blanche ; à droite (64rem et plus, collant) un volet gris : ce qu'il faut savoir avant d'envoyer, puis ce qui se passe ensuite (étapes numérotées reliées). |
+| **Relecture** (`/relecture`) | File d'attente en cartes blanches avec note, « Approuver » et « Refuser » ; usage sur 30 jours en tableau ; dernières confirmations avec leur état en texte et la preuve sous un filet. |
+| **Glossaire** | Initiales collantes sous l'en-tête, une carte par terme (deux colonnes à partir de 48rem) ; le terme visé par un lien est cerclé d'orange. |
+| **Où sont vos données** | Quatre piliers (deux colonnes à partir de 48rem), chacun avec son icône sur un carré abricot. |
+| **Connexion**, **Autorisation d'un outil**, **Message**, **Erreur** | Panneau centré (`.panel`, 32rem) : logo ou icône sur un carré abricot, titre, phrase, action principale ; liste de ce que permet le compte (connexion) ; accès du jury replié dans un `<details>`. |
+
+En-tête du site : « Se connecter » (icône `log-in`) quand la connexion est proposée, ou le pseudo avec un bouton de déconnexion (`log-out`). « Signaler » et « Contribuer » n'apparaissent que si le visiteur peut écrire.
 
 ---
 
@@ -410,7 +416,8 @@ Cible : WCAG 2.2 niveau AA.
 
 | Élément | Budget |
 | :--- | :--- |
-| Feuille de style compressée (gzip) | 12 Ko au plus (5,4 Ko au 5 novembre 2026) |
+| Feuilles de style | `app.css` (commun à toutes les pages), plus `accueil.css` sur l'accueil ou `pages.css` sur les autres pages : chaque page ne charge que ses styles. Une règle va dans `accueil.css` si ses classes n'existent que sur l'accueil, dans `pages.css` si elles n'existent que dans les autres pages |
+| Page complète, non compressée (HTML et fichiers liés) | moins de 200 Ko (test `test_page_weight_under_200_kb`, décision D1) |
 | Page complète compressée (HTML, CSS, SVG), hors audio | 45 Ko au plus |
 | JavaScript | Aucun requis. Seul `static/js/app.js` (définition du glossaire au toucher) existe, en amélioration progressive |
 
@@ -419,7 +426,7 @@ Les fichiers audio (environ 180 Ko pour 45 secondes) se chargent seulement à la
 Mesure avant chaque PR qui touche le CSS :
 
 ```bash
-gzip -c app/web/static/css/app.css | wc -c
+gzip -c app/web/static/css/app.css app/web/static/css/accueil.css | wc -c
 ```
 
 ---
