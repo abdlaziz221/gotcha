@@ -6,10 +6,6 @@
 .layout__aside > :first-child,
 .layout__main > :first-child { margin-top: 0; }
 
-.button--quiet { border-color: var(--color-border-input); background-color: var(--color-surface-raised); color: var(--color-text); }
-
-.button--quiet:hover { background-color: var(--color-surface); color: var(--color-text); }
-
 .hero { position: relative; isolation: isolate; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: var(--space-6); margin-top: 0; padding: var(--space-8) 0 var(--space-12); }
 
 /* Hero centré : texte en haut, aperçu produit en dessous (posé sur une lueur orange). */

@@ -1,9 +1,11 @@
 {% extends "base.html" %}
+{% from "components/icons.html" import icon %}
 
 {% block content %}
-<section class="message">
-  <h1>{{ page.heading }}</h1>
-  <p>{{ page.message }}</p>
+<section class="panel" aria-labelledby="message-titre">
+  <span class="panel__icon panel__icon--ok">{{ icon("circle-check", size=24) }}</span>
+  <h1 id="message-titre">{{ page.heading }}</h1>
+  <p class="panel__lead">{{ page.message }}</p>
   <p><a class="button" href="{{ page.back_url }}">{{ page.back_label }}</a></p>
 </section>
 {% endblock %}

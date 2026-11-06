@@ -1,12 +1,15 @@
 {% extends "base.html" %}
 {% from "components/forms.html" import search_form %}
+{% from "components/icons.html" import icon %}
 
+{# Page d'erreur : le code, une phrase claire, et un chemin pour repartir (recherche sur 404). #}
 {% block content %}
-<section class="message">
-  <p class="message__code">Erreur {{ page.status_code }}</p>
-  <h1>{{ page.meta.title }}</h1>
-  <p>{{ page.message }}</p>
+<section class="panel panel--wide" aria-labelledby="erreur-titre">
+  <span class="panel__icon">{{ icon("search" if page.status_code == 404 else "triangle-alert", size=24) }}</span>
+  <p class="panel__code-label">Erreur {{ page.status_code }}</p>
+  <h1 id="erreur-titre">{{ page.meta.title }}</h1>
+  <p class="panel__lead">{{ page.message }}</p>
   {% if page.status_code == 404 %}{{ search_form() }}{% endif %}
-  <p><a href="/">Retour à l'accueil</a></p>
+  <p class="panel__links"><a href="/">{{ icon("arrow-left", size=16) }}Retour à l'accueil</a><a href="/pannes">Pannes en direct</a><a href="/glossaire">Glossaire</a></p>
 </section>
 {% endblock %}

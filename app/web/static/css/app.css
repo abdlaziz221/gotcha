@@ -234,6 +234,21 @@ section { margin-top: var(--space-10); }
 
 .nav-mobile__actions .nav-btn--primary { justify-content: flex-start; }
 
+/* Compte dans l'en-tête : « Se connecter », ou le pseudo et la déconnexion. */
+.account { display: inline-flex; align-items: center; gap: var(--space-2); margin: 0; color: var(--color-text-secondary); font-size: var(--text-small); }
+
+.account__in { min-height: var(--tap); color: var(--color-text); font-weight: 500; text-decoration: none; }
+
+.account__in:hover { color: var(--color-primary-hover); }
+
+.account__name { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--color-text); font-weight: 500; }
+
+.account__out { display: inline-grid; place-items: center; width: 2.25rem; height: 2.25rem; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--color-text-secondary); cursor: pointer; }
+
+.account__out:hover { background-color: var(--color-brand-tint); color: var(--color-primary-hover); }
+
+.nav-mobile__actions .account { justify-content: space-between; width: 100%; }
+
 /* Pied de page : présentation à gauche, liens en deux colonnes, licence en bas. */
 .site-footer { border-top: 1px solid var(--color-border); background-color: var(--color-surface); background-image: radial-gradient(ellipse 70% 85% at 50% 100%, var(--color-brand-tint), transparent 75%), linear-gradient(180deg, var(--color-bg) 0%, var(--color-surface) 55%, #fbeadd 100%); padding: var(--space-12) 0 var(--space-6); color: var(--color-text-secondary); font-size: var(--text-small); }
 
@@ -288,6 +303,10 @@ section { margin-top: var(--space-10); }
 .button--secondary:hover { background-color: #ffe0cf; color: var(--color-primary-active); }
 
 .button--secondary:active,
+.button--quiet { border-color: var(--color-border-input); background-color: var(--color-surface-raised); color: var(--color-text); }
+
+.button--quiet:hover { background-color: var(--color-surface); color: var(--color-text); }
+
 .button--quiet:active { background-color: var(--color-brand-tint); }
 
 .button--small { min-height: 36px; padding: var(--space-1) var(--space-3); }

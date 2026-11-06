@@ -1,25 +1,37 @@
 {% extends "base.html" %}
+{% from "components/icons.html" import icon %}
 
+{# Connexion : un seul bouton GitHub, ce que le compte permet, et l'accès du jury replié. #}
 {% block content %}
-<h1>{{ page.meta.title }}</h1>
-<p>Le compte est gratuit. Il permet de lire les solutions, de confirmer un piège et d'en proposer un nouveau. GitHub sert seulement à vous identifier : aucune permission sur vos dépôts n'est demandée.</p>
+<section class="panel" aria-labelledby="connexion-titre">
+  <img class="panel__logo" src="/static/img/logo.svg" alt="" width="48" height="48">
+  <h1 id="connexion-titre">{{ page.meta.title }}</h1>
+  <p class="panel__lead">Le compte est gratuit. GitHub sert seulement à vous identifier : aucune permission sur vos dépôts n'est demandée.</p>
 
-{% if page.form.errors.get("form") %}<p class="flash flash--error" role="alert">{{ page.form.errors["form"] }}</p>{% endif %}
+  {% if page.form.errors.get("form") %}<p class="flash flash--error" role="alert">{{ icon("circle-x") }}<span>{{ page.form.errors["form"] }}</span></p>{% endif %}
 
-<p><a class="button" href="{{ page.github_url }}">Se connecter avec GitHub</a></p>
+  <p><a class="button button--block" href="{{ page.github_url }}">{{ icon("github", size=18) }}Se connecter avec GitHub</a></p>
 
-{% if page.jury_enabled %}
-<section aria-labelledby="jury">
-  <h2 id="jury">Accès du jury</h2>
-  <form class="form" method="post" action="/connexion/jury" novalidate>
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <input type="hidden" name="retour" value="{{ page.retour }}">
-    <div class="field">
-      <label for="code">Code d'accès</label>
-      <input id="code" name="code" type="password" required autocomplete="off">
-    </div>
-    <button type="submit" class="button button--secondary">Entrer</button>
-  </form>
+  <ul class="panel__points">
+    <li>{{ icon("circle-check", size=16) }}<span>Les solutions, les étapes et les preuves de toutes les fiches</span></li>
+    <li>{{ icon("circle-check", size=16) }}<span>Votre agent branché sur Gotcha par MCP</span></li>
+    <li>{{ icon("circle-check", size=16) }}<span>Proposer un piège, confirmer une solution, signaler une panne</span></li>
+    <li>{{ icon("lock", size=16) }}<span>Le jeton GitHub est oublié dès la lecture de votre profil. <a href="/ou-sont-vos-donnees">Où sont vos données</a></span></li>
+  </ul>
+
+  {% if page.jury_enabled %}
+  <details class="panel__more"{% if page.form.errors %} open{% endif %}>
+    <summary>Accès du jury</summary>
+    <form class="form" method="post" action="/connexion/jury" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="retour" value="{{ page.retour }}">
+      <div class="field">
+        <label for="code">Code d'accès</label>
+        <input id="code" name="code" type="password" required autocomplete="off">
+      </div>
+      <p><button type="submit" class="button button--secondary">Entrer</button></p>
+    </form>
+  </details>
+  {% endif %}
 </section>
-{% endif %}
 {% endblock %}
