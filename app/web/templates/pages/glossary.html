@@ -1,12 +1,25 @@
 {% extends "base.html" %}
+{% from "components/icons.html" import icon %}
 
+{# Glossaire : index des initiales, puis une carte par terme ; le terme visé par un lien est surligné. #}
 {% block content %}
-<h1>{{ page.meta.title }}</h1>
-<p>Les mots techniques des fiches, expliqués simplement.</p>
+<header class="page-head">
+  <p class="eyebrow">Pour les débutants</p>
+  <h1>{{ page.meta.title }}</h1>
+  <p class="page-head__lead">Les mots techniques des fiches, expliqués simplement. Dans une fiche, touchez un mot souligné pour voir sa définition.</p>
+</header>
+
+{% set seen = namespace(letters="") %}
+<nav class="az" aria-label="Aller à la lettre">
+  {% for t in page.terms %}{% set letter = t.term[:1] | upper %}{% if letter not in seen.letters %}{% set seen.letters = seen.letters ~ letter %}<a href="#{{ t.slug }}">{{ letter }}</a>{% endif %}{% endfor %}
+</nav>
+
 <dl class="glossary">
   {% for t in page.terms %}
-  <dt id="{{ t.slug }}">{{ t.term }}</dt>
-  <dd>{{ t.definition }}</dd>
+  <div class="term" id="{{ t.slug }}">
+    <dt>{{ t.term }}</dt>
+    <dd>{{ t.definition }}</dd>
+  </div>
   {% endfor %}
 </dl>
 {% endblock %}

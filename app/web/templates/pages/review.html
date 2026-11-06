@@ -1,34 +1,41 @@
 {% extends "base.html" %}
+{% from "components/icons.html" import icon %}
 
 {% block content %}
-<h1>{{ page.meta.title }}</h1>
-<p>Connecté en tant que <strong>{{ page.reviewer }}</strong>. Vérifiez la source, le format et l'absence de données personnelles avant d'approuver.</p>
+<header class="page-head">
+  <p class="eyebrow">Relecteur : {{ page.reviewer }}</p>
+  <h1>{{ page.meta.title }}</h1>
+  <p class="page-head__lead">Vérifiez la source, le format et l'absence de données personnelles avant d'approuver.</p>
+</header>
 
+<section class="queue" aria-labelledby="file">
+<h2 id="file">En attente <span class="count">{{ page.pending | length }}</span></h2>
 {% for c in page.pending %}
-<article class="card contribution">
+<article class="contribution">
   <header class="card__header">
-    <h2 class="card__title">{{ c.title }}</h2>
+    <h3 class="card__title">{{ c.title }}</h3>
   </header>
   <p class="card__meta">
     {{ c.kind_label }} · <a href="{{ c.fiche_url }}">{{ c.fiche_title }}</a> · par {{ c.pseudo }} · le {{ c.created_at | datetime_fr }}
     {% if c.api_version %} · API {{ c.api_version }}{% endif %}
   </p>
   {{ c.body_html }}
-  {% if c.source_url %}<p>Source : <a href="{{ c.source_url }}" rel="noopener noreferrer nofollow">{{ c.source_url }}</a></p>{% endif %}
+  {% if c.source_url %}<p class="contribution__source">{{ icon("book-open", size=16) }}<span>Source : <a href="{{ c.source_url }}" rel="noopener noreferrer nofollow">{{ c.source_url }}</a></span></p>{% endif %}
   <form class="form form--inline" method="post" action="/relecture/{{ c.id }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <label for="note-{{ c.id }}">Note (facultatif)</label>
     <input id="note-{{ c.id }}" name="note" type="text" maxlength="500">
-    <button type="submit" name="action" value="approve" class="button">Approuver</button>
-    <button type="submit" name="action" value="reject" class="button button--secondary">Refuser</button>
+    <button type="submit" name="action" value="approve" class="button">{{ icon("circle-check", size=16) }}Approuver</button>
+    <button type="submit" name="action" value="reject" class="button button--quiet">{{ icon("circle-x", size=16) }}Refuser</button>
   </form>
 </article>
 {% else %}
-<p class="empty">Aucune contribution en attente.</p>
+<p class="empty">{{ icon("circle-check", size=16) }} Aucune contribution en attente.</p>
 {% endfor %}
+</section>
 
 {% if page.usage %}
-<section aria-labelledby="usage">
+<section class="queue" aria-labelledby="usage">
   <h2 id="usage">Usage des 30 derniers jours</h2>
   <div class="table-wrap">
     <table>
@@ -42,13 +49,14 @@
 {% endif %}
 
 {% if page.confirmations %}
-<section aria-labelledby="confirmations">
+<section class="queue" aria-labelledby="confirmations">
   <h2 id="confirmations">Dernières confirmations</h2>
-  <ul>
+  <ul class="confirmations">
     {% for c in page.confirmations %}
     <li>
-      <code>{{ c.target_id }}</code> · {{ "marche encore" if c.still_works else "ne marche plus" }} · par {{ c.pseudo or "anonyme" }} · le {{ c.created_at | datetime_fr }}{% if c.api_version %} · API {{ c.api_version }}{% endif %}
-      {% if c.proof %}<p>{{ c.proof }}</p>{% endif %}
+      <p class="confirmations__head"><span class="status status--{{ 'normal' if c.still_works else 'down' }}">{{ icon("circle-check" if c.still_works else "circle-x", size=16) }}{{ "Marche encore" if c.still_works else "Ne marche plus" }}</span><code>{{ c.target_id }}</code></p>
+      <p class="confirmations__meta">par {{ c.pseudo or "anonyme" }} · le {{ c.created_at | datetime_fr }}{% if c.api_version %} · API {{ c.api_version }}{% endif %}</p>
+      {% if c.proof %}<p class="confirmations__proof">{{ c.proof }}</p>{% endif %}
     </li>
     {% endfor %}
   </ul>

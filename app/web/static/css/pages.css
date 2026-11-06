@@ -19,10 +19,66 @@
 /* Tableaux : défilent dans leur conteneur, jamais la page. */
 .table-wrap { overflow-x: auto; border: 1px solid var(--color-border); border-radius: var(--radius-md); }
 
-/* Glossaire */
-.glossary dt { margin-top: var(--space-5); font-weight: 500; }
+/* Glossaire : initiales collantes, une carte par terme, le terme visé surligné. */
+.az { position: sticky; top: 76px; z-index: 5; display: flex; flex-wrap: wrap; gap: var(--space-1); margin: 0 0 var(--space-6); padding: var(--space-2) 0; background-color: var(--color-bg); }
 
-.glossary dd { margin: var(--space-1) 0 0; color: var(--color-text-secondary); }
+.az a { display: grid; place-items: center; min-width: 2.25rem; height: 2.25rem; border-radius: var(--radius-sm); color: var(--color-text-secondary); font-family: var(--font-mono); font-size: var(--text-small); text-decoration: none; }
+
+.az a:hover { background-color: var(--color-brand-tint); color: var(--color-primary-hover); }
+
+.glossary { display: grid; gap: var(--space-3); max-width: none; margin: 0; }
+
+.term { padding: var(--space-5); border-radius: var(--radius-md); background-color: var(--color-surface-raised); box-shadow: 0 0 0 1px var(--color-border); scroll-margin-top: 140px; transition: box-shadow 300ms ease; }
+
+.term:target { box-shadow: 0 0 0 2px var(--color-brand); }
+
+.term dt { font-size: 1.0625rem; font-weight: 600; }
+
+.term dd { margin: var(--space-2) 0 0; color: var(--color-text-secondary); }
+
+/* Où sont vos données : quatre piliers. */
+.pillars { display: grid; gap: var(--space-4); }
+
+.pillar { margin: 0; padding: var(--space-6); border-radius: var(--radius-lg); background-color: var(--color-surface-raised); box-shadow: 0 0 0 1px var(--color-border); }
+
+.pillar > .icon { width: 2.75rem; height: 2.75rem; padding: 0.7rem; border-radius: 12px; background-color: var(--color-brand-tint); color: var(--color-primary-hover); }
+
+.pillar h2 { margin: var(--space-4) 0 var(--space-2); font-size: 1.25rem; font-weight: 600; }
+
+.pillar p { color: var(--color-text-secondary); }
+
+.pillar > :last-child { margin-bottom: 0; }
+
+/* Relecture : file d'attente, usage, confirmations. */
+.queue + .queue { margin-top: var(--space-12); }
+
+.queue h2 { display: flex; align-items: baseline; gap: var(--space-3); margin: 0 0 var(--space-4); }
+
+.contribution { margin: 0 0 var(--space-4); padding: var(--space-6); border-radius: var(--radius-md); background-color: var(--color-surface-raised); box-shadow: 0 0 0 1px var(--color-border); }
+
+.contribution .card__title { font-size: 1.25rem; font-weight: 600; }
+
+.contribution__source { display: flex; align-items: flex-start; gap: var(--space-2); overflow-wrap: anywhere; font-size: var(--text-small); }
+
+.contribution .form--inline { margin-top: var(--space-5); padding-top: var(--space-5); border-top: 1px solid var(--color-border); }
+
+.confirmations { display: grid; gap: var(--space-3); max-width: none; padding: 0; list-style: none; }
+
+.confirmations li { margin: 0; padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); background-color: var(--color-surface-raised); box-shadow: 0 0 0 1px var(--color-border); }
+
+.confirmations p { margin: 0; }
+
+.confirmations__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+
+.confirmations__meta { margin-top: var(--space-1); color: var(--color-text-secondary); font-size: var(--text-small); }
+
+.confirmations__proof { margin-top: var(--space-3); padding-left: var(--space-3); border-left: 2px solid var(--color-border-strong); color: var(--color-text-secondary); }
+
+@media (min-width: 48rem) {
+  .glossary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .pillars { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 
 /* En-tête des pages intérieures : libellé à alvéole, titre, phrase d'introduction. */
 .page-head { margin: var(--space-10) 0 var(--space-8); }
