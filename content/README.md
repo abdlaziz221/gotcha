@@ -126,6 +126,26 @@ Une date récente ne rend pas une source plus sûre : un blog ou un dépôt réc
 
 Dans le texte d'une étape ou d'un piège, `[[webhook]]` ou `[[jeton-acces|jeton]]` devient un lien vers la définition. Le terme doit exister dans `glossaire.yml` (le test le vérifie).
 
+## Explication audio en wolof (D26)
+
+Seulement si le site est en ligne le 8 novembre. Un piège peut avoir **une** explication orale en wolof, avec sa transcription. Le français reste la référence.
+
+1. Enregistrer l'explication : un membre, en gardant les noms techniques tels quels (`pay_token`, `callback`…).
+2. La faire **écouter et relire par un second locuteur**, qui n'est pas l'auteur.
+3. Mettre le fichier dans `fiches/<fiche>/audio/<nom-du-piege>.mp3` (`.ogg` ou `.m4a` aussi).
+4. Dans l'en-tête du piège :
+
+   ```yaml
+   audio:
+     file: <nom-du-piege>.mp3
+     recorded_by: <pseudo de qui a enregistré>
+     reviewed_by: <pseudo du second locuteur>   # obligatoire pour publier
+   ```
+
+5. À la fin du piège, la section `## Transcription en wolof`, mot pour mot.
+
+Le chargement refuse un audio sans transcription, une transcription sans audio, un fichier absent, et un piège publié dont l'audio n'est pas relu. L'audio n'est servi que par `/fiches/<fiche>/audio/<piège>`, avec les mêmes droits que la solution (jamais par `/static`). Il n'est jamais renvoyé par le serveur MCP. La transcription est cherchable ; les mots de trois lettres ou moins n'y trouvent qu'un mot entier.
+
 ## Règles de rédaction
 
 1. **Chaque piège a au moins une source** : une page publique (URL) ou un retour de terrain (auteur).

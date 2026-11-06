@@ -80,9 +80,23 @@ def keep_confirmations(new: Fiche, old: Fiche | None) -> Fiche:
     )
 
 
+# Mots courts : un mot entier seulement. Sinon « bi » (wolof) trouverait « mobile », alors
+# que « paiement » doit toujours trouver « paiements » (D26).
+SHORT_TOKEN_LENGTH = 3
+# Mots trop fréquents pour aider à chercher. Liste à valider par un locuteur du wolof (D26) :
+# vide tant qu'elle ne l'est pas, plutôt qu'une liste devinée.
+STOPWORDS: frozenset[str] = frozenset()
+
+
+def _matches(token: str, haystack: str) -> bool:
+    if len(token) <= SHORT_TOKEN_LENGTH:
+        return re.search(rf"(?<![\w-]){re.escape(token)}(?![\w-])", haystack) is not None
+    return token in haystack
+
+
 def _score(tokens: list[str], text: str, weight: float) -> float:
     haystack = normalize(text)
-    return sum(weight for t in tokens if t in haystack)
+    return sum(weight for t in tokens if t not in STOPWORDS and _matches(t, haystack))
 
 
 def _searchable_text(gotcha: Gotcha) -> str:
@@ -92,6 +106,7 @@ def _searchable_text(gotcha: Gotcha) -> str:
         gotcha.fix_md,
         gotcha.failed_attempts_md or "",
         gotcha.proof_md or "",  # un message d'erreur exact cité dans la preuve doit être trouvé
+        gotcha.audio.transcript_md if gotcha.audio else "",  # chercher en wolof (D26)
     ]
     return " ".join(parts)
 
