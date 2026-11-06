@@ -83,6 +83,53 @@
   .page-head--split { grid-template-columns: minmax(0, 1fr) auto; }
 }
 
+/* Formulaires : carte blanche à gauche, conseils à droite (64rem et plus). */
+.form-layout { display: grid; gap: var(--space-8); align-items: start; }
+
+.form--card { max-width: none; margin: 0; padding: var(--space-6) var(--space-5); border-radius: var(--radius-lg); background-color: var(--color-surface-raised); box-shadow: 0 0 0 1px var(--color-border), 0 30px 60px -48px rgba(69, 13, 5, 0.45); }
+
+.form--card > p:last-child { margin: 0; }
+
+.form__who { display: flex; align-items: center; gap: var(--space-2); margin: 0; color: var(--color-text-secondary); }
+
+.form-aside { padding: var(--space-6) var(--space-5); border-radius: var(--radius-lg); background-color: var(--color-surface); }
+
+.form-aside h2 { margin: 0 0 var(--space-4); font-size: 1.125rem; font-weight: 600; }
+
+.form-aside h2 + .checklist,
+.form-aside h2 + .next { margin-bottom: var(--space-6); }
+
+.form-aside .checklist { gap: var(--space-3); font-size: var(--text-small); }
+
+.form-aside .checklist .icon { color: var(--color-primary-hover); }
+
+.form-aside > p:last-child { margin: 0; font-size: var(--text-small); }
+
+/* Ensuite : trois étapes numérotées reliées par un trait. */
+.next { counter-reset: next; margin: 0; padding: 0; list-style: none; }
+
+.next li { position: relative; display: grid; gap: 0.1rem; margin: 0; padding: 0 0 var(--space-4) 2.25rem; counter-increment: next; font-size: var(--text-small); }
+
+.next li::before { content: counter(next); position: absolute; top: 0; left: 0; display: grid; place-items: center; width: 1.5rem; height: 1.5rem; border-radius: 50%; background-color: var(--color-surface-raised); box-shadow: 0 0 0 1px var(--color-border-strong); color: var(--color-primary-hover); font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; }
+
+.next li::after { content: ""; position: absolute; top: 1.85rem; bottom: 0.35rem; left: calc(0.75rem - 0.5px); width: 1px; background-color: var(--color-border-strong); }
+
+.next li:last-child { padding-bottom: 0; }
+
+.next li:last-child::after { display: none; }
+
+.next span { color: var(--color-text-secondary); }
+
+@media (min-width: 40rem) {
+  .form--card { padding: var(--space-8); }
+}
+
+@media (min-width: 64rem) {
+  .form-layout { grid-template-columns: minmax(0, 1fr) 22rem; gap: var(--space-10); }
+
+  .form-aside { position: sticky; top: 112px; }
+}
+
 /* Fiche : en-tête, repères, sommaire collant et contenu. */
 .crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: var(--space-6) 0 0; color: var(--color-text-secondary); font-size: var(--text-small); }
 

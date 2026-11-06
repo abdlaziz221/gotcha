@@ -4,12 +4,16 @@
 {% from "components/icons.html" import icon %}
 
 {% block content %}
-<h1>{{ page.meta.title }}</h1>
-<p>Des paiements échouent ou n'aboutissent pas ? Signalez-le : la fiche passe en « dégradé » pendant quelques heures et les autres devs, ainsi que leurs agents IA, sont prévenus.</p>
+<header class="page-head">
+  <p class="eyebrow">En direct</p>
+  <h1>{{ page.meta.title }}</h1>
+  <p class="page-head__lead">Des paiements échouent ou n'aboutissent pas ? Signalez-le : la fiche passe en « dégradé » pendant quelques heures et les autres devs, ainsi que leurs agents IA, sont prévenus.</p>
+</header>
 
 {% if page.form.errors.get("form") %}<p class="flash flash--error" role="alert">{{ icon("circle-x") }}<span>{{ page.form.errors["form"] }}</span></p>{% endif %}
 
-<form class="form" method="post" action="/pannes/signaler" novalidate>
+<div class="form-layout">
+<form class="form form--card" method="post" action="/pannes/signaler" novalidate>
   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   {{ select_field(page.form, "fiche_slug", "Service concerné", page.fiche_options, required=True, placeholder="Choisir une fiche") }}
   {{ select_field(page.form, "country", "Pays", page.country_options, placeholder="Celui de la fiche") }}
@@ -17,6 +21,17 @@
   {% if not viewer.pseudo %}
   {{ text_field(page.form, "pseudo", "Pseudo", maxlength=40, autocomplete="nickname") }}
   {% endif %}
-  <button type="submit" class="button">Signaler la panne</button>
+  <p><button type="submit" class="button">{{ icon("activity", size=16) }}Signaler la panne</button></p>
 </form>
+
+<aside class="form-aside" aria-labelledby="ce-qui-se-passe">
+  <h2 id="ce-qui-se-passe">Ce qui se passe</h2>
+  <ul class="checklist">
+    <li>{{ icon("triangle-alert", size=16) }}<span>Le service passe en « dégradé » sur sa fiche et dans le journal des pannes.</span></li>
+    <li>{{ icon("bot", size=16) }}<span>Les agents qui interrogent Gotcha préviennent leur développeur.</span></li>
+    <li>{{ icon("clock", size=16) }}<span>Sans autre signalement, il cesse de compter au bout de 6 heures.</span></li>
+  </ul>
+  <p><a href="/pannes">Voir le journal des pannes</a></p>
+</aside>
+</div>
 {% endblock %}

@@ -3,13 +3,18 @@
 
 {% from "components/icons.html" import icon %}
 
+{# Formulaire à gauche dans une carte, à droite (64rem et plus) ce qu'il faut savoir avant d'envoyer. #}
 {% block content %}
-<h1>{{ page.meta.title }}</h1>
-<p>Chaque contribution est relue avant publication. Ne collez jamais de clé, de jeton ni de mot de passe : ils sont détectés et refusés.</p>
+<header class="page-head">
+  <p class="eyebrow">Retour de terrain</p>
+  <h1>{{ page.meta.title }}</h1>
+  <p class="page-head__lead">Un piège que la documentation ne dit pas, ou une correction de fiche. Chaque contribution est relue par un humain avant publication.</p>
+</header>
 
 {% if page.form.errors.get("form") %}<p class="flash flash--error" role="alert">{{ icon("circle-x") }}<span>{{ page.form.errors["form"] }}</span></p>{% endif %}
 
-<form class="form" method="post" action="/contribuer" novalidate>
+<div class="form-layout">
+<form class="form form--card" method="post" action="/contribuer" novalidate>
   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   {{ select_field(page.form, "kind", "Vous voulez partager", page.kind_options, required=True, placeholder="Choisir le type") }}
   {{ select_field(page.form, "fiche_slug", "Fiche concernée", page.fiche_options, required=True, placeholder="Choisir une fiche") }}
@@ -18,7 +23,7 @@
   {{ text_field(page.form, "source_url", "Lien vers une source", type="url", help="Page de documentation, fil de forum, ticket…") }}
   {{ text_field(page.form, "api_version", "Version de l'API concernée", maxlength=40) }}
   {% if viewer.pseudo %}
-  <p>Publié sous votre pseudo : <strong>{{ viewer.pseudo }}</strong>.</p>
+  <p class="form__who">{{ icon("user", size=16) }}<span>Publié sous votre pseudo : <strong>{{ viewer.pseudo }}</strong>.</span></p>
   {% else %}
   {{ text_field(page.form, "pseudo", "Pseudo affiché", required=True, maxlength=40, autocomplete="nickname") }}
   {{ text_field(page.form, "email", "E-mail (privé, jamais affiché)", type="email", required=True, autocomplete="email", help="Pour vous prévenir quand la contribution est publiée.") }}
@@ -28,6 +33,22 @@
     <label for="licence">J'accepte que ma contribution soit publiée sous licence CC BY 4.0, avec mon pseudo.</label>
     {{ field_error(page.form, "licence") }}
   </div>
-  <button type="submit" class="button">Envoyer pour relecture</button>
+  <p><button type="submit" class="button">Envoyer pour relecture{{ icon("arrow-right", size=16) }}</button></p>
 </form>
+
+<aside class="form-aside" aria-labelledby="avant-envoi">
+  <h2 id="avant-envoi">Avant d'envoyer</h2>
+  <ul class="checklist">
+    <li>{{ icon("lock", size=16) }}<span>Jamais de clé, de jeton ni de mot de passe : ils sont détectés et refusés. Écrivez <code>&lt;VOTRE_CLE&gt;</code> à la place.</span></li>
+    <li>{{ icon("book-open", size=16) }}<span>Une source par piège : documentation, ticket, fil de forum ou votre propre essai.</span></li>
+    <li>{{ icon("flask-conical", size=16) }}<span>Une preuve si vous l'avez reproduit : versions, étapes, résultat obtenu.</span></li>
+  </ul>
+  <h2>Ensuite</h2>
+  <ol class="next">
+    <li><strong>Relecture</strong><span>Un relecteur vérifie la source et la solution.</span></li>
+    <li><strong>Publication</strong><span>Sous votre pseudo, licence CC BY 4.0.</span></li>
+    <li><strong>Réutilisation</strong><span>Les devs et leurs agents le retrouvent.</span></li>
+  </ol>
+</aside>
+</div>
 {% endblock %}
