@@ -392,6 +392,7 @@ class Account(Model):
 
 class UsageEvent(StrEnum):
     READ_FICHE = "read_fiche"
+    READ_OPEN_FICHE = "read_open_fiche"  # fiche ouverte (D27) lue sans compte, anonymisée
     SEARCH_HIT = "search_hit"
     SEARCH_MISS = "search_miss"
     READ_STATUS = "read_status"

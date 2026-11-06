@@ -64,7 +64,7 @@ Règles garanties par le modèle :
 | `list_contributions(status)` | De la plus ancienne à la plus récente (file de relecture) |
 | `add_confirmation(c)` | Si `still_works` : le compteur de la cible augmente de 1 et sa date de dernière confirmation devient celle du jour, sans jamais reculer |
 | `has_recent_confirmation(account_id, target_id, since, still_works)` / `list_confirmations(limit)` | Évite qu'un compte redonne la même réponse sur la même cible (« ça ne marche plus » reste possible) ; dernières confirmations d'abord |
-| `add_usage(day, event, account_id)` / `usage_totals(since)` | Compteurs par jour, événement et compte ; aucun texte de recherche n'est conservé |
+| `add_usage(day, event, account_id)` / `usage_totals(since)` | Compteurs par jour, événement et compte ; aucun texte de recherche n'est conservé. `read_open_fiche` : une fiche ouverte (D27) lue sans compte, au plus une fois par jour et par visiteur, sans rien garder sur lui (empreinte salée de l'adresse, en mémoire 24 h) |
 | `save_account(account)` / `get_account(id)` | Création ou remplacement ; un blocage déjà posé est conservé |
 | `save_oauth_client(id, data)` / `get_oauth_client(id)` | Outils MCP enregistrés |
 | `add_oauth_grant`, `get_oauth_grant`, `take_oauth_grant`, `delete_expired_oauth_grants` | Autorisations retrouvées par l'empreinte de leur jeton. Expirée = absente. `take` renvoie et supprime en une seule opération : deux appels ne peuvent pas réussir |

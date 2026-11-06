@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import secrets
 from typing import Annotated
 from urllib.parse import urlencode
 
@@ -11,7 +13,7 @@ from starlette.responses import RedirectResponse, Response
 from app.domain.countries import country_name
 from app.domain.models import Account, Publication, TargetKind, UsageEvent
 from app.security.csrf import verify_csrf
-from app.security.ratelimit import rate_limit
+from app.security.ratelimit import RateLimiter, client_ip, rate_limit
 from app.web.deps import ServicesDep, flash_from, glossary_map
 from app.web.forms import form_values
 from app.web.presenters import (
@@ -27,6 +29,26 @@ from app.web.templating import render
 from app.web.viewmodels import FichePage, PageMeta, StepMode
 
 router = APIRouter()
+
+
+VIEW_WINDOW_SECONDS = 24 * 3600
+# Sel tiré au démarrage : l'empreinte d'une adresse ne peut pas être recalculée plus tard.
+_VIEW_SALT = secrets.token_bytes(16)
+
+
+def _first_view_today(request: Request, slug: str) -> bool:
+    """Vrai la première fois qu'un visiteur anonyme lit cette fiche en 24 h (D27).
+
+    Rien n'est enregistré sur le visiteur : seule une empreinte salée de son adresse reste
+    en mémoire pendant 24 h, pour ne pas compter deux fois un rechargement. Le compteur
+    en base ne garde que le nombre de lectures par jour.
+    """
+    settings = request.app.state.settings
+    peer = request.client.host if request.client else None
+    ip = client_ip(request.headers, peer, proxy_hops=settings.proxy_hops)
+    digest = hashlib.sha256(_VIEW_SALT + f"{ip}|{slug}".encode()).hexdigest()
+    limiter: RateLimiter = request.app.state.rate_limiter
+    return limiter.hit(f"vue-ouverte:{digest}", limit=1, window_seconds=VIEW_WINDOW_SECONDS)
 
 
 @router.get("/fiches/{slug}")
@@ -93,6 +115,8 @@ async def fiche_detail(
     account = current_account(request)
     if account is not None:
         background.add_task(services.usage.record, UsageEvent.READ_FICHE, account.id)
+    elif fiche.open_access and _first_view_today(request, fiche.slug):
+        background.add_task(services.usage.record, UsageEvent.READ_OPEN_FICHE, None)
     response = render(request, "pages/fiche.html", page)
     if settings.site_auth:
         # La page dépend du visiteur : un cache ne doit jamais servir la vue d'un membre.
