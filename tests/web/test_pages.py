@@ -67,6 +67,7 @@ def test_unknown_fiche_is_a_friendly_404(client: TestClient) -> None:
     response = client.get("/fiches/inconnue")
     assert response.status_code == 404
     assert "Page introuvable" in response.text
+    assert client.get("/fiches/%00").status_code == 404
 
 
 def test_step_by_step_mode(client: TestClient) -> None:
@@ -78,6 +79,8 @@ def test_step_by_step_mode(client: TestClient) -> None:
 def test_search_finds_the_demo_gotcha(client: TestClient) -> None:
     page = client.get("/recherche?q=X-Target-Environment").text
     assert "/fiches/mtn-momo#piege-x-target-environment" in page
+    assert client.get("/recherche?q=%00").status_code == 200
+    assert client.get("/recherche?q=jeton%00&service=%00&pays=%00").status_code == 200
 
 
 def test_production_hides_drafts_and_dev_pages(prod_client: TestClient) -> None:

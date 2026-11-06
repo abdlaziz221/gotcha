@@ -6,6 +6,8 @@ import re
 import uuid
 from collections.abc import Callable, Sequence
 
+from pydantic import ValidationError
+
 from app.domain.errors import InvalidInputError, NotFoundError, SecretDetectedError
 from app.domain.models import (
     Confirmation,
@@ -73,14 +75,17 @@ class ContributionService:
             raise NotFoundError(f"Piège introuvable : {target_id}")
         if target_kind is TargetKind.FICHE and target_id != fiche.slug:
             raise NotFoundError(f"Fiche introuvable : {target_id}")
-        confirmation = Confirmation(
-            target_kind=target_kind,
-            target_id=target_id,
-            still_works=still_works,
-            api_version=api_version or None,
-            pseudo=pseudo or None,
-            created_at=self._clock.now(),
-        )
+        try:
+            confirmation = Confirmation(
+                target_kind=target_kind,
+                target_id=target_id,
+                still_works=still_works,
+                api_version=api_version or None,
+                pseudo=pseudo or None,
+                created_at=self._clock.now(),
+            )
+        except ValidationError as exc:
+            raise InvalidInputError("Pseudo ou version invalide.") from exc
         await self._store.add_confirmation(confirmation)
         return confirmation
 
@@ -100,13 +105,22 @@ class ContributionService:
             raise NotFoundError(f"Contribution introuvable : {contribution_id}")
         if contribution.status is not ContributionStatus.PENDING:
             raise InvalidInputError("Cette contribution a déjà été relue.")
-        reviewed = contribution.model_copy(
-            update={
-                "status": ContributionStatus.APPROVED if approve else ContributionStatus.REJECTED,
-                "reviewed_at": self._clock.now(),
-                "reviewer": reviewer,
-                "review_note": note or None,
-            }
-        )
-        await self._store.update_contribution(reviewed)
+        try:
+            # model_validate et non model_copy : la note est vérifiée comme tout texte saisi.
+            reviewed = Contribution.model_validate(
+                {
+                    **contribution.model_dump(),
+                    "status": ContributionStatus.APPROVED
+                    if approve
+                    else ContributionStatus.REJECTED,
+                    "reviewed_at": self._clock.now(),
+                    "reviewer": reviewer,
+                    "review_note": note or None,
+                }
+            )
+        except ValidationError as exc:
+            raise InvalidInputError("Note de relecture invalide.") from exc
+        if not await self._store.update_contribution(reviewed):
+            # Un autre relecteur a décidé entre la lecture et l'écriture.
+            raise InvalidInputError("Cette contribution a déjà été relue.")
         return reviewed
