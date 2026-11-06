@@ -1,21 +1,29 @@
 {% extends "base.html" %}
 {% from "components/status.html" import incident_item %}
+{% from "components/icons.html" import icon %}
 
+{# Journal des pannes : en cours puis récentes ; chaque panne porte son état en couleur à gauche. #}
 {% block content %}
-<h1>{{ page.meta.title }}</h1>
-<p>Pannes signalées par les devs et importées du flux public d'incidents de Flutterwave. {% if viewer.can_write or viewer.site_auth %}<a class="button button--small" href="/pannes/signaler">Signaler une panne</a>{% endif %}</p>
+<header class="page-head page-head--split">
+  <div>
+    <p class="eyebrow">En direct</p>
+    <h1>{{ page.meta.title }}</h1>
+    <p class="page-head__lead">Pannes signalées par les devs et leurs agents, et importées du flux public d'incidents de Flutterwave. Un signalement non confirmé cesse de compter au bout de 6 heures.</p>
+  </div>
+  {% if viewer.can_write or viewer.site_auth %}<p><a class="button" href="/pannes/signaler">{{ icon("activity", size=16) }}Signaler une panne</a></p>{% endif %}
+</header>
 
-<section aria-labelledby="en-cours">
-  <h2 id="en-cours">En cours</h2>
+<section class="log" aria-labelledby="en-cours">
+  <h2 id="en-cours">En cours <span class="count">{{ page.active | length }}</span></h2>
   {% if page.active %}
   <ul class="incidents">{% for i in page.active %}{{ incident_item(i) }}{% endfor %}</ul>
   {% else %}
-  <p class="empty">Aucune panne en cours sur les services suivis.</p>
+  <p class="empty">{{ icon("circle-check", size=16) }} Aucune panne en cours sur les services suivis.</p>
   {% endif %}
 </section>
 
-<section aria-labelledby="recentes">
-  <h2 id="recentes">Récentes</h2>
+<section class="log" aria-labelledby="recentes">
+  <h2 id="recentes">Récentes <span class="count">{{ page.recent | length }}</span></h2>
   {% if page.recent %}
   <ul class="incidents">{% for i in page.recent %}{{ incident_item(i) }}{% endfor %}</ul>
   {% else %}

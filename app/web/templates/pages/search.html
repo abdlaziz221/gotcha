@@ -1,7 +1,15 @@
 {% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+
+{# Recherche : filtres dans un panneau, résultats en lignes (fiche ou piège), suggestions sans requête. #}
+{% set HIT_ICONS = {"fiche": "book-open", "gotcha": "triangle-alert", "error_code": "terminal"} %}
 
 {% block content %}
-<h1>{{ page.meta.title }}</h1>
+<header class="page-head">
+  <p class="eyebrow">Fiches et pièges</p>
+  <h1>{{ page.meta.title }}</h1>
+  <p class="page-head__lead">Collez une erreur, un en-tête HTTP ou un symptôme : la recherche couvre les fiches et chaque piège publié.</p>
+</header>
 
 <form class="search search--filters" method="get" action="/recherche" role="search">
   <div class="field">
@@ -22,20 +30,33 @@
       {% for o in page.country_options %}<option value="{{ o.value }}"{% if o.selected %} selected{% endif %}>{{ o.label }}</option>{% endfor %}
     </select>
   </div>
-  <button type="submit" class="button">Rechercher</button>
+  <button type="submit" class="button">{{ icon("search") }}Rechercher</button>
 </form>
 
 {% if page.hits %}
+<p class="results__count" role="status">{{ page.hits | length }} résultat{% if page.hits | length > 1 %}s{% endif %}{% if page.query %} pour « {{ page.query }} »{% endif %}</p>
 <ol class="results">
   {% for hit in page.hits %}
   <li class="result result--{{ hit.kind.value }}">
-    <span class="result__kind">{{ hit.kind_label }}</span>
-    <a href="{{ hit.url }}">{{ hit.title }}</a>
-    <p>{{ hit.snippet }}</p>
+    <a href="{{ hit.url }}">
+      <span class="result__kind">{{ icon(HIT_ICONS.get(hit.kind.value, "book-open"), size=16) }}{{ hit.kind_label }}</span>
+      <span class="result__title">{{ hit.title }}</span>
+      <span class="result__snippet">{{ hit.snippet }}</span>
+      {{ icon("arrow-right", size=16) }}
+    </a>
   </li>
   {% endfor %}
 </ol>
 {% elif page.query %}
 <p class="empty">Aucun résultat pour « {{ page.query }} ». {% if viewer.can_write or viewer.site_auth %}Vous connaissez ce piège ? <a href="/contribuer">Ajoutez-le</a>.{% endif %}</p>
+{% else %}
+<section class="suggest" aria-labelledby="suggestions">
+  <h2 id="suggestions">Essayez par exemple</h2>
+  <ul>
+    {% for q in ["bac à sable Wave", "X-Target-Environment", "callback", "jeton expiré", "Datacloud"] %}
+    <li><a href="/recherche?q={{ q | urlencode }}">{{ icon("search", size=16) }}{{ q }}</a></li>
+    {% endfor %}
+  </ul>
+</section>
 {% endif %}
 {% endblock %}
