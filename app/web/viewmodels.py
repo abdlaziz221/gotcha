@@ -168,6 +168,7 @@ class GotchaView:
     audio_url: str | None = None
     audio_transcript_html: Markup | None = None
     audio_credit: str | None = None  # « Enregistré par X, relu par Y »
+    verified_by: str | None = None  # relecteur affiché « Relu par » (L15) ; jamais d'auteur inventé
 
 
 @dataclass(frozen=True, slots=True)

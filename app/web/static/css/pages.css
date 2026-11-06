@@ -1,0 +1,75 @@
+/* Gotcha : styles des pages intérieures (fiche, recherche, formulaires, pannes, textes). Après app.css. */
+
+.notice--review { border-color: var(--color-info-bg); background-color: var(--color-info-bg); }
+
+.field--checkbox { grid-template-columns: auto 1fr; align-items: start; gap: var(--space-3); }
+
+.field--checkbox input { width: 1.25rem; height: 1.25rem; margin: 0.15rem 0 0; accent-color: var(--color-primary); }
+
+.field--checkbox label { font-weight: 400; }
+
+.form--inline { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); max-width: none; }
+
+.form--inline label { flex-basis: 100%; font-weight: 500; }
+
+.form--inline input { flex: 1 1 16rem; width: auto; }
+
+.search--filters { display: grid; gap: var(--space-4); max-width: none; padding: var(--space-5); border: 1px solid var(--color-border); border-radius: var(--radius-lg); background-color: var(--color-surface); }
+
+.results { margin: var(--space-6) 0 0; padding: 0; list-style: none; max-width: none; }
+
+.result { padding: var(--space-4) 0; border-bottom: 1px solid var(--color-border); }
+
+.result + .result { margin-top: 0; }
+
+.result__kind { color: var(--color-text-secondary); font-size: var(--text-small); }
+
+.result > a { display: block; margin-top: var(--space-2); font-size: 1.25rem; font-weight: 500; }
+
+.result p { margin: var(--space-1) 0 0; color: var(--color-text-secondary); }
+
+/* Tableaux : défilent dans leur conteneur, jamais la page. */
+.table-wrap { overflow-x: auto; border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+
+/* Glossaire */
+.glossary dt { margin-top: var(--space-5); font-weight: 500; }
+
+.glossary dd { margin: var(--space-1) 0 0; color: var(--color-text-secondary); }
+
+/* Fiche */
+.fiche__header { padding-bottom: var(--space-4); border-bottom: 1px solid var(--color-border); }
+
+.fiche__meta { margin: var(--space-6) 0 0; color: var(--color-text-secondary); font-size: var(--text-small); }
+
+.fiche__header h1 { margin-top: var(--space-2); }
+
+.fiche__summary { margin-top: var(--space-6); color: var(--color-text-secondary); font-size: 1.25rem; }
+
+.fiche__actions { padding: var(--space-6); border: 1px solid var(--color-border); border-radius: var(--radius-lg); background-color: var(--color-surface); }
+
+.fiche__actions h2 { margin-top: 0; }
+
+.steps { padding-left: var(--space-6); }
+
+.step h3 { margin-top: var(--space-6); }
+
+.step-mode { padding: var(--space-6); border: 1px solid var(--color-border); border-radius: var(--radius-lg); }
+
+.step-mode__progress { margin: 0; color: var(--color-text-secondary); font-size: var(--text-small); font-weight: 500; }
+
+.step-mode h2 { margin-top: var(--space-2); }
+
+.step-mode__nav { display: flex; flex-wrap: wrap; gap: var(--space-3); margin: var(--space-6) 0 var(--space-4); }
+
+/* Pages de texte */
+.prose h2 { margin-top: var(--space-8); }
+
+.message { max-width: var(--measure); margin: var(--space-12) 0; }
+
+.message__code { margin: 0; color: var(--color-text-secondary); font-family: var(--font-mono); font-size: var(--text-small); }
+
+.message h1 { margin-top: var(--space-2); }
+
+@media (min-width: 40rem) {
+  .search--filters { grid-template-columns: 2fr 1fr 1fr auto; align-items: end; }
+}

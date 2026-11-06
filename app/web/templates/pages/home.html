@@ -6,6 +6,8 @@
 
 {% block title %}{{ site.name }} · {{ site.tagline }}{% endblock %}
 
+{% block styles %}<link rel="stylesheet" href="/static/css/accueil.css?v=23">{% endblock %}
+
 {% block content %}
 <section class="hero" aria-labelledby="hero-titre">
   <div class="hero__copy">
@@ -16,13 +18,13 @@
         sur <span class="hero__highlight"><span class="hero__glow"></span><span class="rotator"><span>Wave</span><span>Orange Money</span><span>MTN MoMo</span><span>M-Pesa</span><span>Datacloud</span></span></span></span>
     </h1>
 
-    <p class="hero__lead reveal reveal--3">La mémoire opérationnelle du paiement mobile et du déploiement en Afrique : des solutions sourcées, vérifiées par un humain, avec l'état des services en direct. Cherchez une erreur, ou laissez votre agent IA le faire pour vous.</p>
+    <p class="hero__lead reveal reveal--3">La mémoire opérationnelle du paiement mobile et du déploiement en Afrique : des solutions sourcées et relues, chacune avec son niveau de confiance, et l'état des services en direct. Cherchez une erreur, ou laissez votre agent IA le faire pour vous.</p>
 
     <div class="hero__search reveal reveal--4">{{ search_form(autofocus=False) }}</div>
 
     <p class="hero__actions reveal reveal--5">
       <a class="button button--quiet" href="#video">{{ icon("play", size=16) }}Voir la vidéo</a>
-      <a class="button button--secondary" href="/contribuer">Ajouter un piège{{ icon("arrow-right", size=16) }}</a>
+      {% if viewer.can_write or viewer.site_auth %}<a class="button button--secondary" href="/contribuer">Ajouter un piège{{ icon("arrow-right", size=16) }}</a>{% endif %}
     </p>
 
     <ul class="hero__proof reveal reveal--6">
@@ -277,7 +279,7 @@
 
 {# Une ligne par fiche : service, pays, état en direct, nombre de pièges ; toute la ligne mène à la fiche. #}
 {% macro service_row(card) -%}
-<li><a class="svc" href="{{ card.url }}"><span class="svc__name">{{ card.title }}<span>{{ card.country_name }} · confirmé le {{ card.last_confirmed_on | date_fr }}{% if card.is_draft %} · brouillon{% endif %}{% if card.needs_review %} · à revérifier{% endif %}</span></span>{{ status_text(card.status) }}<span class="svc__count">{{ card.gotcha_count }} piège{% if card.gotcha_count > 1 %}s{% endif %}</span>{{ icon("arrow-right", size=16) }}</a></li>
+<li><a class="svc" href="{{ card.url }}"><span class="svc__name">{{ card.title }}<span>{{ card.country_name }} · mise à jour le {{ card.last_confirmed_on | date_fr }}{% if card.is_draft %} · brouillon{% endif %}{% if card.needs_review %} · à revérifier{% endif %}</span></span>{{ status_text(card.status) }}<span class="svc__count">{{ card.gotcha_count }} piège{% if card.gotcha_count > 1 %}s{% endif %}</span>{{ icon("arrow-right", size=16) }}</a></li>
 {%- endmacro %}
 {% set payment = page.cards | selectattr("kind.value", "equalto", "payment") | list %}
 {% set hosting = page.cards | selectattr("kind.value", "equalto", "hosting") | list %}
@@ -334,19 +336,19 @@
   <div class="faq__list">
     <details class="faq__item" name="faq" open>
       <summary>Faut-il créer un compte ?</summary>
-      <div class="faq__a"><p>Non. Chercher, lire une fiche et brancher votre agent se fait sans compte, gratuitement. Pour contribuer, un pseudo suffit. Votre e-mail reste privé et sert seulement à vous prévenir de la publication.</p></div>
+      <div class="faq__a"><p>Pas pour chercher : titre, symptôme, début de la cause, niveau de confiance, sources et état des pannes sont publics, et les fiches Wave et Datacloud sont entières. Pour le reste (solutions, agent, contributions), un compte gratuit : connexion avec GitHub, sans aucune permission sur vos dépôts.</p></div>
     </details>
     <details class="faq__item" name="faq">
       <summary>Quels agents peuvent s'en servir ?</summary>
-      <div class="faq__a"><p>Tout agent de codage qui accepte un serveur MCP : Claude Code, Cursor, GitHub Copilot, Windsurf, Codex, Gemini CLI, Cline… Ajoutez cette adresse dans sa configuration :</p><p><code>{{ mcp_url }}</code></p></div>
+      <div class="faq__a"><p>Tout agent de codage qui accepte un serveur MCP : Claude Code, Cursor, GitHub Copilot, Windsurf, Codex, Gemini CLI, Cline… Ajoutez cette adresse dans sa configuration ; à la première utilisation, il ouvre la connexion GitHub dans votre navigateur, sans jeton à copier :</p><p><code>{{ mcp_url }}</code></p></div>
     </details>
     <details class="faq__item" name="faq">
       <summary>Que fait mon agent avec Gotcha ?</summary>
-      <div class="faq__a"><p>Il lit : la liste des services, une fiche complète, les pièges par mot-clé, en-tête HTTP ou code d'erreur, et l'état d'un service en direct. Il n'écrit qu'une chose : une panne qu'il vient d'observer, avec un quota.</p><ul class="faq__tools"><li><code>list_services</code></li><li><code>get_fiche</code></li><li><code>search_gotchas</code></li><li><code>get_service_status</code></li><li><code>report_outage</code></li></ul></div>
+      <div class="faq__a"><p>Il lit les fiches, cherche un piège par mot-clé, en-tête HTTP ou code d'erreur, et vérifie l'état d'un service en direct. Il peut aussi signaler une panne, proposer un piège avec votre accord, ou confirmer une solution avec une preuve : rien n'est publié sans relecture humaine.</p><ul class="faq__tools"><li><code>search_gotchas</code></li><li><code>get_fiche</code></li><li><code>get_service_status</code></li><li><code>propose_gotcha</code></li><li><code>confirm_gotcha</code></li></ul></div>
     </details>
     <details class="faq__item" name="faq">
       <summary>D'où viennent les pièges, et peut-on s'y fier ?</summary>
-      <div class="faq__a"><p>Chaque piège cite sa source (documentation officielle, ticket, essai réel) et passe une relecture humaine avant d'être publié. Aucune fiche n'est générée automatiquement. Ensuite, les devs confirment qu'une solution marche encore en production : la date de la dernière confirmation est affichée.</p></div>
+      <div class="faq__a"><p>Chaque piège cite sa source (documentation officielle, ticket, essai réel) et passe une relecture humaine avant d'être publié. Aucune fiche n'est générée automatiquement. Chaque piège affiche son niveau : sourcé, reproduit ou confirmé en production, avec une preuve au-delà du premier.</p></div>
     </details>
     <details class="faq__item" name="faq">
       <summary>Et si je colle une clé d'API par erreur ?</summary>
@@ -358,7 +360,7 @@
     </details>
     <details class="faq__item" name="faq">
       <summary>Où sont stockées mes données ?</summary>
-      <div class="faq__a"><p>À Dakar, sur Datacloud. Pas de publicité, pas de traceur tiers : le seul cookie protège les formulaires. <a href="/ou-sont-vos-donnees">Où sont vos données</a></p></div>
+      <div class="faq__a"><p>À Dakar, sur Datacloud. Seule la connexion passe par GitHub. Pas de publicité, pas de traceur tiers. <a href="/ou-sont-vos-donnees">Où sont vos données</a></p></div>
     </details>
   </div>
 </section>
@@ -370,7 +372,7 @@
     <h2 id="contribuer">Vous avez payé le prix <em>d'un piège ?</em></h2>
     <p>Évitez-le au suivant : documentez une anomalie vécue en deux minutes, ou confirmez qu'une solution fonctionne toujours en production.</p>
     <p class="band__signature">Les développeurs partagent. Les agents retrouvent. <em>L'expérience reste.</em></p>
-    <p class="band__actions"><a class="button" href="/contribuer">Ajouter un retour de terrain{{ icon("arrow-right") }}</a><a class="band__link" href="/pannes/signaler">{{ icon("activity", size=18) }}Signaler une panne</a></p>
+    <p class="band__actions">{% if viewer.can_write or viewer.site_auth %}<a class="button" href="/contribuer">Ajouter un retour de terrain{{ icon("arrow-right") }}</a><a class="band__link" href="/pannes/signaler">{{ icon("activity", size=18) }}Signaler une panne</a>{% endif %}</p>
   </div>
   <ul class="band__stats">
     <li><span class="band__number">{{ page.cards | length }}</span><span class="band__label">fiche{% if page.cards | length > 1 %}s{% endif %} de référence</span></li>

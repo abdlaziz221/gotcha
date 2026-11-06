@@ -307,7 +307,7 @@
           <p>Vous avez payé le prix d'un piège ? Décrivez-le en deux minutes. Un relecteur le vérifie avant publication, et votre pseudo apparaît à côté.</p>
           <span class="way__rule" aria-hidden="true"></span>
           <p class="way__summary">Deux minutes pour vous, du temps gagné pour le suivant.</p>
-          <p><a class="button button--secondary" href="/contribuer">Proposer un piège{{ icon("arrow-right", size=16) }}</a></p>
+          {% if viewer.can_write or viewer.site_auth %}<p><a class="button button--secondary" href="/contribuer">Proposer un piège{{ icon("arrow-right", size=16) }}</a></p>{% endif %}
         </div>
         <div class="way__visual">
           <div class="screen" aria-hidden="true">

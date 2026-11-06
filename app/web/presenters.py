@@ -161,6 +161,7 @@ def gotcha_view(
         confirmations=gotcha.confirmations,
         needs_review=needs_review,
         is_draft=gotcha.publication is not Publication.PUBLISHED,
+        verified_by=gotcha.verified_by,
         **_audio_fields(gotcha, glossary),
     )
 

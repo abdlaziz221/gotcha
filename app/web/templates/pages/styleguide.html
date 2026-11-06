@@ -4,6 +4,8 @@
 {% from "components/forms.html" import text_field, select_field, search_form %}
 {% from "components/icons.html" import icon %}
 
+{% block styles %}{{ super() }}<link rel="stylesheet" href="/static/css/accueil.css?v=23">{% endblock %}
+
 {% block content %}
 <h1>Guide de <em>style</em></h1>
 <p class="hero__lead">Tous les composants du site, conformes à DESIGN_SYSTEM.md. Un composant absent de cette page n'est pas terminé.</p>

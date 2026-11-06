@@ -9,9 +9,11 @@
   {% if page.meta.noindex %}
   <meta name="robots" content="noindex">
   {% endif %}
-  <link rel="icon" href="/static/img/favicon.svg?v=22" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/css/app.css?v=22">
-  <script src="/static/js/app.js?v=22" defer></script>
+  <link rel="icon" href="/static/img/favicon.svg?v=23" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/css/app.css?v=23">
+  {# Styles propres : accueil.css pour l'accueil, pages.css pour les autres pages (poids, D1). #}
+  {% block styles %}<link rel="stylesheet" href="/static/css/pages.css?v=23">{% endblock %}
+  <script src="/static/js/app.js?v=23" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -45,7 +47,19 @@
         </ul>
       </nav>
 
+      {% set can_contribute = viewer.can_write or viewer.site_auth %}
+      {% set login_url = "/connexion?retour=" ~ (request.url.path | urlencode) %}
       <div class="site-header__actions">
+        {% if viewer.pseudo %}
+        <form class="account" method="post" action="/deconnexion">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <span class="account__name">{{ icon("user", size=16) }}{{ viewer.pseudo }}</span>
+          <button type="submit" class="account__out" title="Se déconnecter">{{ icon("log-out", size=16, label="Se déconnecter (" ~ viewer.pseudo ~ ")") }}</button>
+        </form>
+        {% elif viewer.site_auth %}
+        <a class="account account__in" href="{{ login_url }}">{{ icon("log-in", size=16) }}Se connecter</a>
+        {% endif %}
+        {% if can_contribute %}
         <a class="nav-btn nav-btn--secondary" href="/pannes/signaler">
           <span class="nav__roller">
             <span class="nav__text">Signaler</span>
@@ -64,6 +78,7 @@
             <span class="nav__text nav__text--clone" aria-hidden="true">Contribuer</span>
           </span>
         </a>
+        {% endif %}
       </div>
 
       {# Menu mobile sans JavaScript : <details> s'ouvre et se ferme seul, au clavier aussi. #}
@@ -85,11 +100,22 @@
             {% endfor %}
           </ul>
           <div class="nav-mobile__actions">
+            {% if viewer.pseudo %}
+            <form class="account" method="post" action="/deconnexion">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <span class="account__name">{{ icon("user", size=16) }}{{ viewer.pseudo }}</span>
+              <button type="submit" class="nav-btn nav-btn--secondary">Se déconnecter</button>
+            </form>
+            {% elif viewer.site_auth %}
+            <a class="nav-btn nav-btn--secondary" href="{{ login_url }}">Se connecter avec GitHub</a>
+            {% endif %}
+            {% if can_contribute %}
             <a class="nav-btn nav-btn--secondary" href="/pannes/signaler">Signaler une panne</a>
             <a class="nav-btn nav-btn--primary" href="/contribuer">
               <span class="nav-btn__box" aria-hidden="true">{{ icon("arrow-right", size=18) }}</span>
               <span>Contribuer</span>
             </a>
+            {% endif %}
           </div>
         </nav>
       </details>
@@ -120,8 +146,10 @@
         <div>
           <p class="site-footer__title">Participer</p>
           <ul>
+            {% if can_contribute %}
             <li><a href="/contribuer">Ajouter un retour</a></li>
             <li><a href="/pannes/signaler">Signaler une panne</a></li>
+            {% endif %}
           </ul>
         </div>
       </nav>
