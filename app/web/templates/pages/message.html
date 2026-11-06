@@ -2,10 +2,10 @@
 {% from "components/icons.html" import icon %}
 
 {% block content %}
-<section class="panel" aria-labelledby="message-titre">
-  <span class="panel__icon panel__icon--ok">{{ icon("circle-check", size=24) }}</span>
+<section class="auth" aria-labelledby="message-titre">
+  <span class="auth__mark auth__mark--ok">{{ icon("circle-check", size=20) }}</span>
   <h1 id="message-titre">{{ page.heading }}</h1>
-  <p class="panel__lead">{{ page.message }}</p>
-  <p><a class="button" href="{{ page.back_url }}">{{ page.back_label }}</a></p>
+  <p class="auth__desc">{{ page.message }}</p>
+  <a class="button button--secondary" href="{{ page.back_url }}">{{ page.back_label }}</a>
 </section>
 {% endblock %}

@@ -1,37 +1,49 @@
 {% extends "base.html" %}
-{% from "components/icons.html" import icon %}
 
+{# Où sont vos données : le texte (65 %), l'essentiel en paires clé-valeur (35 %). #}
 {% block content %}
-<header class="page-head">
-  <p class="eyebrow">Confiance</p>
-  <h1>{{ page.meta.title }}</h1>
-  <p class="page-head__lead">Ce que Gotcha garde, où, et pourquoi. En quatre points.</p>
+<header class="ph">
+  <div>
+    <nav class="crumbs" aria-label="Fil d'Ariane"><a href="/">Accueil</a><span aria-hidden="true">/</span><span aria-current="page">Données</span></nav>
+    <h1>{{ page.meta.title }}</h1>
+    <p class="ph__desc">Ce que Gotcha garde, où, et ce que vous pouvez demander.</p>
+  </div>
 </header>
 
-<div class="pillars">
-  <section class="pillar" aria-labelledby="dakar">
-    {{ icon("shield-check", size=20) }}
-    <h2 id="dakar">Hébergées à Dakar</h2>
-    <p>Gotcha et sa base de données sont hébergés au Sénégal, sur la plateforme Datacloud de Systalink. Vos données restent à Dakar. Une seule étape passe par un service hors d'Afrique : la connexion, assurée par GitHub, qui nous donne seulement votre identifiant et votre pseudo publics.</p>
-  </section>
+<div class="split">
+  <div class="split__main">
+    <section class="box" aria-labelledby="dakar">
+      <div class="box__head"><h2 id="dakar">Hébergées à Dakar</h2></div>
+      <div class="box__body prose-ui"><p>Gotcha et sa base de données sont hébergés au Sénégal, sur la plateforme Datacloud de Systalink. Vos données restent à Dakar. Une seule étape passe par un service hors d'Afrique : la connexion, assurée par GitHub, qui nous donne seulement votre identifiant et votre pseudo publics.</p></div>
+    </section>
+    <section class="box" aria-labelledby="gardons">
+      <div class="box__head"><h2 id="gardons">Ce que nous gardons</h2></div>
+      <div class="box__body prose-ui">
+        <p><strong>Votre identifiant et votre pseudo GitHub</strong>, si vous vous connectez, affichés avec vos contributions et vos confirmations. Aucune permission sur vos dépôts n'est demandée, et le jeton GitHub n'est pas conservé.</p>
+        <p>Pas de publicité, pas de traceur tiers. Deux cookies seulement : l'un protège les formulaires, l'autre garde votre session si vous vous connectez.</p>
+      </div>
+    </section>
+    <section class="box" aria-labelledby="contributions">
+      <div class="box__head"><h2 id="contributions">Vos contributions</h2></div>
+      <div class="box__body prose-ui"><p>Elles sont publiées sous licence CC BY 4.0, avec votre pseudo : chacun peut les réutiliser en citant Gotcha.</p></div>
+    </section>
+    <section class="box" aria-labelledby="droits">
+      <div class="box__head"><h2 id="droits">Vos droits</h2></div>
+      <div class="box__body prose-ui"><p>Conformément à la loi sénégalaise n° 2008-12 sur la protection des données personnelles, vous pouvez demander l'accès à vos données, leur correction ou leur suppression.</p></div>
+    </section>
+  </div>
 
-  <section class="pillar" aria-labelledby="gardons">
-    {{ icon("user", size=20) }}
-    <h2 id="gardons">Ce que nous gardons</h2>
-    <p><strong>Votre identifiant et votre pseudo GitHub</strong>, si vous vous connectez, affichés avec vos contributions et vos confirmations. Aucune permission sur vos dépôts n'est demandée, et le jeton GitHub n'est pas conservé.</p>
-    <p>Pas de publicité, pas de traceur tiers. Deux cookies seulement : l'un protège les formulaires, l'autre garde votre session si vous vous connectez.</p>
-  </section>
-
-  <section class="pillar" aria-labelledby="contributions">
-    {{ icon("file-pen", size=20) }}
-    <h2 id="contributions">Vos contributions</h2>
-    <p>Elles sont publiées sous licence CC BY 4.0, avec votre pseudo : chacun peut les réutiliser en citant Gotcha.</p>
-  </section>
-
-  <section class="pillar" aria-labelledby="droits">
-    {{ icon("lock", size=20) }}
-    <h2 id="droits">Vos droits</h2>
-    <p>Conformément à la loi sénégalaise n° 2008-12 sur la protection des données personnelles, vous pouvez demander l'accès à vos données, leur correction ou leur suppression.</p>
-  </section>
+  <aside class="split__side split__side--sticky" aria-label="L'essentiel">
+    <section class="box" aria-labelledby="essentiel">
+      <div class="box__head"><h2 id="essentiel">L'essentiel</h2></div>
+      <dl class="kv">
+        <div><dt>Hébergement</dt><dd>Dakar, Datacloud</dd></div>
+        <div><dt>Connexion</dt><dd>GitHub, sans permission</dd></div>
+        <div><dt>Cookies</dt><dd>2</dd></div>
+        <div><dt>Traceurs tiers</dt><dd>Aucun</dd></div>
+        <div><dt>Licence</dt><dd>CC BY 4.0</dd></div>
+      </dl>
+    </section>
+  </aside>
 </div>
 {% endblock %}

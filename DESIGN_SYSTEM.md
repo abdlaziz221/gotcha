@@ -219,12 +219,12 @@ Le composant central. Ordre de lecture fixe :
 2. **Métadonnées**, en une ligne de texte : sévérité (couleur et icône), niveau de confiance (`.confidence` : « Sourcé » `book-open` gris, « Reproduit » `flask-conical` bleu, « Confirmé en production » `shield-check` vert), environnement, version d'API, codes d'erreur.
 3. **Attribution** : « Relu par » (`verified_by`) avec l'icône `circle-check`, sous la solution. Aucun auteur affiché tant que le modèle n'a pas de champ pour lui (L15) : jamais d'attribution inventée.
 4. **Symptôme**, puis **Cause**.
-5. **Solution**, avec bloc de code. En aperçu public, l'encart `.locked` (filet orange clair en tirets, `lock`, bouton « Se connecter avec GitHub ») remplace la solution.
+5. **Solution**, avec bloc de code. En aperçu public, l'encart `.locked` (filet gris en tirets, `lock`, bouton « Se connecter avec GitHub ») remplace la solution.
 6. **Pistes qui ont échoué**, puis **Preuve**.
 7. **Audio en wolof**, s'il existe : lecteur `<audio controls preload="none">` et transcription relue, sous le texte français qui reste la référence.
 8. **Confirmation** : `<details>` avec champ de preuve et nombre de confirmations.
 
-Sur la fiche : fond blanc, filet `--color-border`, rayon `--radius-md`, bordure gauche de 4px aux couleurs de la sévérité (`danger`, `warning`, `neutral`). La sévérité reste aussi écrite dans les métadonnées. Intertitres (Symptôme, Cause…) en mono, capitales, gris.
+Sur la fiche : panneau blanc à filet fin, en-tête (titre, métadonnées), corps, pied gris clair (sources, « Relu par », confirmation). La sévérité est écrite avec son icône, sans bordure colorée. Intertitres (Symptôme, Cause…) en gris 13px.
 
 ### Encart
 
@@ -248,21 +248,28 @@ Sur la fiche : fond blanc, filet `--color-border`, rayon `--radius-md`, bordure 
 - Chaque bloc a sa propre zone : aucun chevauchement, aucune position absolue décorative.
 - **Pas de rangée de trois cartes identiques.** On hiérarchise : une carte large et deux étroites, ou une liste.
 
-### Archétypes de pages
+### Pages intérieures (tout sauf l'accueil)
 
-Chaque page intérieure commence par `.page-head` : libellé à alvéole (`.eyebrow`, mono orange foncé en capitales), titre jusqu'à 3rem, phrase d'introduction grise de 56ch au plus.
+Outil de travail, pas brochure : sobre, dense, lisible d'un coup d'œil. Styles dans `pages.css`, jamais chargé par l'accueil.
 
-| Page | Structure |
-| :--- | :--- |
-| **Accueil** (`/`) | Voir section 8. |
-| **Recherche** (`/recherche`) | Filtres dans un panneau gris, puis le nombre de résultats et une liste blanche : une ligne par résultat (type avec icône, titre, extrait, flèche), toute la ligne est un lien. Sans requête : quelques recherches d'exemple en liens. |
-| **Fiche** (`/fiches/<service>`) | Fil d'Ariane, libellé (type, pays, API), titre, résumé, quatre repères (`.facts` : état en direct, pièges, mise à jour, confirmations), boutons « Suivre pas à pas » et « Documentation officielle ». Puis, à partir de 64rem, sommaire collant à gauche (`.toc`, 14rem) et contenu à droite. Étapes numérotées dans un rond, reliées par un trait. Aperçu public : encart `.locked--fiche` avant le contenu. Mode pas à pas : une carte, barre de progression en segments. |
-| **Pannes** (`/pannes`) | En-tête avec le bouton « Signaler une panne » à droite. En cours, puis récentes ; chaque panne est une carte blanche avec un filet gauche de 3px à la couleur de son état (vert une fois résolue). |
-| **Contribuer**, **Signaler une panne** | Formulaire dans une carte blanche ; à droite (64rem et plus, collant) un volet gris : ce qu'il faut savoir avant d'envoyer, puis ce qui se passe ensuite (étapes numérotées reliées). |
-| **Relecture** (`/relecture`) | File d'attente en cartes blanches avec note, « Approuver » et « Refuser » ; usage sur 30 jours en tableau ; dernières confirmations avec leur état en texte et la preuve sous un filet. |
-| **Glossaire** | Initiales collantes sous l'en-tête, une carte par terme (deux colonnes à partir de 48rem) ; le terme visé par un lien est cerclé d'orange. |
-| **Où sont vos données** | Quatre piliers (deux colonnes à partir de 48rem), chacun avec son icône sur un carré abricot. |
-| **Connexion**, **Autorisation d'un outil**, **Message**, **Erreur** | Panneau centré (`.panel`, 32rem) : logo ou icône sur un carré abricot, titre, phrase, action principale ; liste de ce que permet le compte (connexion) ; accès du jury replié dans un `<details>`. |
+- **Jetons `--ui-*`** : fond `#fafafa`, panneaux blancs, filets `rgba(17, 24, 39, 0.08)`, texte `#111827`, gris `#6b7280`, ombre très étalée et légère. Aucune couleur écrite en dur dans `pages.css` : un mode sombre ne demandera que de redéfinir ces jetons (bloc prêt, commenté en fin de fichier, désactivé tant que DS-05 s'applique).
+- **En-tête de page** (`.ph`) : fil d'Ariane gris en 13px, titre 26 à 32px graisse 600, une phrase de description grise, actions à droite. Pas de libellé décoratif, pas de capitales, pas d'italique.
+- **Mise en page** (`.split`) : zone principale 65 %, panneau latéral 35 % (collant quand il résume), empilés sous 64rem.
+- **Boîte** (`.box`) : panneau blanc, filet fin, coins de 12px ; en-tête (`.box__head`, titre 15px graisse 600, nombre en mono gris), corps, pied gris clair (`.box__foot`).
+- **Lignes** (`.rows`, `.row`) : listes denses séparées par un filet ; toute la ligne est un lien quand elle mène quelque part. **Paires clé-valeur** (`.kv`) pour les résumés.
+- **Boutons** : coins de 10px, 40px de haut ; orange plein pour l'action principale seulement, blanc à filet pour le reste. Chaque bouton dit ce qu'il fait (« Approuver et publier », « Confirmer avec cette preuve »).
+- **États** : icône + texte dans la couleur de l'état, jamais de pastille. Intertitres des pièges (Symptôme, Cause…) en gris 13px.
+- **Panneau centré** (`.auth`, 26rem) pour connexion, autorisation d'un outil, message et erreur.
+
+| Page | Zone principale | Panneau latéral |
+| :--- | :--- | :--- |
+| Fiche | Avant de commencer, étapes, pièges, tableaux, sources | Résumé, pannes en cours, sommaire, confirmation |
+| Recherche | Barre de filtres, résultats | Raccourcis par service, exemples |
+| Pannes | En cours, récentes | Résumé, règles de changement d'état |
+| Glossaire | Termes | Index des initiales |
+| Données | Quatre sections | L'essentiel |
+| Contribuer, Signaler | Formulaire | Avant d'envoyer, ensuite |
+| Relecture | File d'attente | Usage, dernières confirmations |
 
 En-tête du site : « Se connecter » (icône `log-in`) quand la connexion est proposée, ou le pseudo avec un bouton de déconnexion (`log-out`). « Signaler » et « Contribuer » n'apparaissent que si le visiteur peut écrire.
 

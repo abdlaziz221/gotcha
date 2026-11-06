@@ -1,65 +1,73 @@
 {% extends "base.html" %}
 {% from "components/icons.html" import icon %}
 
+{# Relecture : file d'attente (65 %), usage et confirmations (35 %). #}
 {% block content %}
-<header class="page-head">
-  <p class="eyebrow">Relecteur : {{ page.reviewer }}</p>
-  <h1>{{ page.meta.title }}</h1>
-  <p class="page-head__lead">Vérifiez la source, le format et l'absence de données personnelles avant d'approuver.</p>
+<header class="ph">
+  <div>
+    <nav class="crumbs" aria-label="Fil d'Ariane"><a href="/">Accueil</a><span aria-hidden="true">/</span><span aria-current="page">Relecture</span></nav>
+    <h1>{{ page.meta.title }}</h1>
+    <p class="ph__desc">Connecté en tant que <strong>{{ page.reviewer }}</strong>. Vérifiez la source, le format et l'absence de données personnelles avant d'approuver.</p>
+  </div>
 </header>
 
-<section class="queue" aria-labelledby="file">
-<h2 id="file">En attente <span class="count">{{ page.pending | length }}</span></h2>
-{% for c in page.pending %}
-<article class="contribution">
-  <header class="card__header">
-    <h3 class="card__title">{{ c.title }}</h3>
-  </header>
-  <p class="card__meta">
-    {{ c.kind_label }} · <a href="{{ c.fiche_url }}">{{ c.fiche_title }}</a> · par {{ c.pseudo }} · le {{ c.created_at | datetime_fr }}
-    {% if c.api_version %} · API {{ c.api_version }}{% endif %}
-  </p>
-  {{ c.body_html }}
-  {% if c.source_url %}<p class="contribution__source">{{ icon("book-open", size=16) }}<span>Source : <a href="{{ c.source_url }}" rel="noopener noreferrer nofollow">{{ c.source_url }}</a></span></p>{% endif %}
-  <form class="form form--inline" method="post" action="/relecture/{{ c.id }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <label for="note-{{ c.id }}">Note (facultatif)</label>
-    <input id="note-{{ c.id }}" name="note" type="text" maxlength="500">
-    <button type="submit" name="action" value="approve" class="button">{{ icon("circle-check", size=16) }}Approuver</button>
-    <button type="submit" name="action" value="reject" class="button button--quiet">{{ icon("circle-x", size=16) }}Refuser</button>
-  </form>
-</article>
-{% else %}
-<p class="empty">{{ icon("circle-check", size=16) }} Aucune contribution en attente.</p>
-{% endfor %}
-</section>
-
-{% if page.usage %}
-<section class="queue" aria-labelledby="usage">
-  <h2 id="usage">Usage des 30 derniers jours</h2>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th scope="col">Indicateur</th><th scope="col">Total</th><th scope="col">Comptes différents</th></tr></thead>
-      <tbody>
-        {% for u in page.usage %}<tr><th scope="row">{{ u.label }}</th><td>{{ u.count }}</td><td>{{ u.accounts }}</td></tr>{% endfor %}
-      </tbody>
-    </table>
-  </div>
-</section>
-{% endif %}
-
-{% if page.confirmations %}
-<section class="queue" aria-labelledby="confirmations">
-  <h2 id="confirmations">Dernières confirmations</h2>
-  <ul class="confirmations">
-    {% for c in page.confirmations %}
-    <li>
-      <p class="confirmations__head"><span class="status status--{{ 'normal' if c.still_works else 'down' }}">{{ icon("circle-check" if c.still_works else "circle-x", size=16) }}{{ "Marche encore" if c.still_works else "Ne marche plus" }}</span><code>{{ c.target_id }}</code></p>
-      <p class="confirmations__meta">par {{ c.pseudo or "anonyme" }} · le {{ c.created_at | datetime_fr }}{% if c.api_version %} · API {{ c.api_version }}{% endif %}</p>
-      {% if c.proof %}<p class="confirmations__proof">{{ c.proof }}</p>{% endif %}
-    </li>
+<div class="split">
+  <section class="split__main" aria-labelledby="file">
+    <h2 id="file" class="stack__title">En attente <span class="num">{{ page.pending | length }}</span></h2>
+    {% for c in page.pending %}
+    <article class="box contribution">
+      <div class="box__head">
+        <div>
+          <h3>{{ c.title }}</h3>
+          <p>{{ c.kind_label }} · <a href="{{ c.fiche_url }}">{{ c.fiche_title }}</a> · par {{ c.pseudo }} · le {{ c.created_at | datetime_fr }}{% if c.api_version %} · API {{ c.api_version }}{% endif %}</p>
+        </div>
+      </div>
+      <div class="box__body">
+        <div class="prose-ui">{{ c.body_html }}</div>
+        {% if c.source_url %}<p class="row__meta">{{ icon("book-open", size=16) }}<span>Source : <a href="{{ c.source_url }}" rel="noopener noreferrer nofollow">{{ c.source_url }}</a></span></p>{% endif %}
+        <form class="form form--inline" method="post" action="/relecture/{{ c.id }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label for="note-{{ c.id }}">Note (facultatif)</label>
+          <input id="note-{{ c.id }}" name="note" type="text" maxlength="500">
+          <button type="submit" name="action" value="reject" class="button button--secondary">Refuser</button>
+          <button type="submit" name="action" value="approve" class="button">Approuver et publier</button>
+        </form>
+      </div>
+    </article>
+    {% else %}
+    <p class="box empty">Aucune contribution en attente.</p>
     {% endfor %}
-  </ul>
-</section>
-{% endif %}
+  </section>
+
+  <aside class="split__side" aria-label="Activité">
+    {% if page.usage %}
+    <section class="box" aria-labelledby="usage">
+      <div class="box__head"><div><h2 id="usage">Usage</h2><p>30 derniers jours</p></div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Indicateur</th><th scope="col">Total</th><th scope="col">Comptes</th></tr></thead>
+          <tbody>
+            {% for u in page.usage %}<tr><th scope="row">{{ u.label }}</th><td>{{ u.count }}</td><td>{{ u.accounts }}</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {% endif %}
+
+    {% if page.confirmations %}
+    <section class="box" aria-labelledby="confirmations">
+      <div class="box__head"><h2 id="confirmations">Dernières confirmations</h2></div>
+      <ul class="rows">
+        {% for c in page.confirmations %}
+        <li class="row">
+          <span class="row__title"><span class="status status--{{ 'normal' if c.still_works else 'down' }}">{{ icon("circle-check" if c.still_works else "circle-x", size=16) }}{{ "Marche encore" if c.still_works else "Ne marche plus" }}</span></span>
+          <span class="row__meta"><code>{{ c.target_id }}</code> par {{ c.pseudo or "anonyme" }} · le {{ c.created_at | datetime_fr }}{% if c.api_version %} · API {{ c.api_version }}{% endif %}</span>
+          {% if c.proof %}<span class="row__text">{{ c.proof }}</span>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+  </aside>
+</div>
 {% endblock %}

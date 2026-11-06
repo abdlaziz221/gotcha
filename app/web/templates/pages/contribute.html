@@ -5,50 +5,61 @@
 
 {# Formulaire à gauche dans une carte, à droite (64rem et plus) ce qu'il faut savoir avant d'envoyer. #}
 {% block content %}
-<header class="page-head">
-  <p class="eyebrow">Retour de terrain</p>
-  <h1>{{ page.meta.title }}</h1>
-  <p class="page-head__lead">Un piège que la documentation ne dit pas, ou une correction de fiche. Chaque contribution est relue par un humain avant publication.</p>
+<header class="ph">
+  <div>
+    <nav class="crumbs" aria-label="Fil d'Ariane"><a href="/">Accueil</a><span aria-hidden="true">/</span><span aria-current="page">Contribuer</span></nav>
+    <h1>{{ page.meta.title }}</h1>
+    <p class="ph__desc">Un piège que la documentation ne dit pas, ou une correction de fiche. Chaque contribution est relue avant publication.</p>
+  </div>
 </header>
 
 {% if page.form.errors.get("form") %}<p class="flash flash--error" role="alert">{{ icon("circle-x") }}<span>{{ page.form.errors["form"] }}</span></p>{% endif %}
 
-<div class="form-layout">
-<form class="form form--card" method="post" action="/contribuer" novalidate>
-  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-  {{ select_field(page.form, "kind", "Vous voulez partager", page.kind_options, required=True, placeholder="Choisir le type") }}
-  {{ select_field(page.form, "fiche_slug", "Fiche concernée", page.fiche_options, required=True, placeholder="Choisir une fiche") }}
-  {{ text_field(page.form, "title", "Titre", required=True, maxlength=160, help="Le piège en une phrase, par exemple : « Le bac à sable n'accepte que l'EUR ».") }}
-  {{ textarea_field(page.form, "body_md", "Ce qui se passe, pourquoi, et comment l'éviter", required=True, maxlength=10000, help="Markdown accepté. Indiquez le symptôme, la cause, la solution, les pistes qui ont échoué et votre preuve (versions, étapes, résultat).") }}
-  {{ text_field(page.form, "source_url", "Lien vers une source", type="url", help="Page de documentation, fil de forum, ticket…") }}
-  {{ text_field(page.form, "api_version", "Version de l'API concernée", maxlength=40) }}
-  {% if viewer.pseudo %}
-  <p class="form__who">{{ icon("user", size=16) }}<span>Publié sous votre pseudo : <strong>{{ viewer.pseudo }}</strong>.</span></p>
-  {% else %}
-  {{ text_field(page.form, "pseudo", "Pseudo affiché", required=True, maxlength=40, autocomplete="nickname") }}
-  {{ text_field(page.form, "email", "E-mail (privé, jamais affiché)", type="email", required=True, autocomplete="email", help="Pour vous prévenir quand la contribution est publiée.") }}
-  {% endif %}
-  <div class="field field--checkbox{% if page.form.errors.get('licence') %} field--invalid{% endif %}">
-    <input id="licence" name="licence" type="checkbox" value="oui"{% if page.form.values.get("licence") == "oui" %} checked{% endif %}>
-    <label for="licence">J'accepte que ma contribution soit publiée sous licence CC BY 4.0, avec mon pseudo.</label>
-    {{ field_error(page.form, "licence") }}
-  </div>
-  <p><button type="submit" class="button">Envoyer pour relecture{{ icon("arrow-right", size=16) }}</button></p>
-</form>
+<div class="split">
+  <form class="box" method="post" action="/contribuer" novalidate>
+    <div class="box__head"><h2>Votre retour de terrain</h2></div>
+    <div class="box__body form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      {{ select_field(page.form, "kind", "Vous voulez partager", page.kind_options, required=True, placeholder="Choisir le type") }}
+      {{ select_field(page.form, "fiche_slug", "Fiche concernée", page.fiche_options, required=True, placeholder="Choisir une fiche") }}
+      {{ text_field(page.form, "title", "Titre", required=True, maxlength=160, help="Le piège en une phrase, par exemple : « Le bac à sable n'accepte que l'EUR ».") }}
+      {{ textarea_field(page.form, "body_md", "Ce qui se passe, pourquoi, et comment l'éviter", required=True, maxlength=10000, help="Markdown accepté. Indiquez le symptôme, la cause, la solution, les pistes qui ont échoué et votre preuve (versions, étapes, résultat).") }}
+      {{ text_field(page.form, "source_url", "Lien vers une source", type="url", help="Page de documentation, fil de forum, ticket…") }}
+      {{ text_field(page.form, "api_version", "Version de l'API concernée", maxlength=40) }}
+      {% if viewer.pseudo %}
+      <p class="field__help">Publié sous votre pseudo : <strong>{{ viewer.pseudo }}</strong>.</p>
+      {% else %}
+      {{ text_field(page.form, "pseudo", "Pseudo affiché", required=True, maxlength=40, autocomplete="nickname") }}
+      {{ text_field(page.form, "email", "E-mail (privé, jamais affiché)", type="email", required=True, autocomplete="email", help="Pour vous prévenir quand la contribution est publiée.") }}
+      {% endif %}
+      <div class="field field--checkbox{% if page.form.errors.get('licence') %} field--invalid{% endif %}">
+        <input id="licence" name="licence" type="checkbox" value="oui"{% if page.form.values.get("licence") == "oui" %} checked{% endif %}>
+        <label for="licence">J'accepte que ma contribution soit publiée sous licence CC BY 4.0, avec mon pseudo.</label>
+        {{ field_error(page.form, "licence") }}
+      </div>
+    </div>
+    <div class="box__foot box__foot--actions"><button type="submit" class="button">Envoyer pour relecture</button></div>
+  </form>
 
-<aside class="form-aside" aria-labelledby="avant-envoi">
-  <h2 id="avant-envoi">Avant d'envoyer</h2>
-  <ul class="checklist">
-    <li>{{ icon("lock", size=16) }}<span>Jamais de clé, de jeton ni de mot de passe : ils sont détectés et refusés. Écrivez <code>&lt;VOTRE_CLE&gt;</code> à la place.</span></li>
-    <li>{{ icon("book-open", size=16) }}<span>Une source par piège : documentation, ticket, fil de forum ou votre propre essai.</span></li>
-    <li>{{ icon("flask-conical", size=16) }}<span>Une preuve si vous l'avez reproduit : versions, étapes, résultat obtenu.</span></li>
-  </ul>
-  <h2>Ensuite</h2>
-  <ol class="next">
-    <li><strong>Relecture</strong><span>Un relecteur vérifie la source et la solution.</span></li>
-    <li><strong>Publication</strong><span>Sous votre pseudo, licence CC BY 4.0.</span></li>
-    <li><strong>Réutilisation</strong><span>Les devs et leurs agents le retrouvent.</span></li>
-  </ol>
-</aside>
+  <aside class="split__side split__side--sticky" aria-label="Avant d'envoyer">
+    <section class="box" aria-labelledby="avant-envoi">
+      <div class="box__head"><h2 id="avant-envoi">Avant d'envoyer</h2></div>
+      <div class="box__body">
+        <ul class="checks">
+          <li>{{ icon("lock", size=16) }}<span>Jamais de clé, de jeton ni de mot de passe : ils sont détectés et refusés. Écrivez <code>&lt;VOTRE_CLE&gt;</code> à la place.</span></li>
+          <li>{{ icon("book-open", size=16) }}<span>Une source : documentation, ticket, fil de forum ou votre propre essai.</span></li>
+          <li>{{ icon("flask-conical", size=16) }}<span>Une preuve si vous l'avez reproduit : versions, étapes, résultat.</span></li>
+        </ul>
+      </div>
+    </section>
+    <section class="box" aria-labelledby="ensuite">
+      <div class="box__head"><h2 id="ensuite">Ensuite</h2></div>
+      <dl class="kv">
+        <div><dt>1. Relecture</dt><dd>source et solution vérifiées</dd></div>
+        <div><dt>2. Publication</dt><dd>sous votre pseudo</dd></div>
+        <div><dt>3. Réutilisation</dt><dd>par les devs et leurs agents</dd></div>
+      </dl>
+    </section>
+  </aside>
 </div>
 {% endblock %}

@@ -1,26 +1,26 @@
 {% extends "base.html" %}
 {% from "components/icons.html" import icon %}
 
-{# Connexion : un seul bouton GitHub, ce que le compte permet, et l'accès du jury replié. #}
+{# Connexion : un panneau centré, un bouton GitHub, ce que le compte permet, l'accès du jury replié. #}
 {% block content %}
-<section class="panel" aria-labelledby="connexion-titre">
-  <img class="panel__logo" src="/static/img/logo.svg" alt="" width="48" height="48">
+<section class="auth" aria-labelledby="connexion-titre">
+  <img class="auth__logo" src="/static/img/logo.svg" alt="" width="40" height="40">
   <h1 id="connexion-titre">{{ page.meta.title }}</h1>
-  <p class="panel__lead">Le compte est gratuit. GitHub sert seulement à vous identifier : aucune permission sur vos dépôts n'est demandée.</p>
+  <p class="auth__desc">Compte gratuit. GitHub sert seulement à vous identifier : aucune permission sur vos dépôts n'est demandée.</p>
 
   {% if page.form.errors.get("form") %}<p class="flash flash--error" role="alert">{{ icon("circle-x") }}<span>{{ page.form.errors["form"] }}</span></p>{% endif %}
 
-  <p><a class="button button--block" href="{{ page.github_url }}">{{ icon("github", size=18) }}Se connecter avec GitHub</a></p>
+  <a class="button button--block" href="{{ page.github_url }}">{{ icon("github", size=16) }}Se connecter avec GitHub</a>
 
-  <ul class="panel__points">
+  <ul class="auth__list">
     <li>{{ icon("circle-check", size=16) }}<span>Les solutions, les étapes et les preuves de toutes les fiches</span></li>
     <li>{{ icon("circle-check", size=16) }}<span>Votre agent branché sur Gotcha par MCP</span></li>
     <li>{{ icon("circle-check", size=16) }}<span>Proposer un piège, confirmer une solution, signaler une panne</span></li>
-    <li>{{ icon("lock", size=16) }}<span>Le jeton GitHub est oublié dès la lecture de votre profil. <a href="/ou-sont-vos-donnees">Où sont vos données</a></span></li>
+    <li>{{ icon("lock", size=16) }}<span>Le jeton GitHub est oublié après la lecture de votre profil. <a href="/ou-sont-vos-donnees">Où sont vos données</a></span></li>
   </ul>
 
   {% if page.jury_enabled %}
-  <details class="panel__more"{% if page.form.errors %} open{% endif %}>
+  <details class="auth__more"{% if page.form.errors %} open{% endif %}>
     <summary>Accès du jury</summary>
     <form class="form" method="post" action="/connexion/jury" novalidate>
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -29,7 +29,7 @@
         <label for="code">Code d'accès</label>
         <input id="code" name="code" type="password" required autocomplete="off">
       </div>
-      <p><button type="submit" class="button button--secondary">Entrer</button></p>
+      <p><button type="submit" class="button button--secondary button--block">Entrer avec le code</button></p>
     </form>
   </details>
   {% endif %}
