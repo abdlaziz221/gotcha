@@ -1,9 +1,10 @@
 {# Sections de l'accueil sous le hero : comment ça marche, trois usages, la preuve.
-   Mouvement : entrées et fil liés au défilement (CSS animation-timeline), boucles des
+   Mouvement : entrées liées au défilement (CSS animation-timeline), boucles des
    illustrations (app.js) ; sans JavaScript ni ce support, tout est affiché et immobile. Voir DESIGN_SYSTEM.md, « Mouvement de l'accueil ». #}
 {% from "components/icons.html" import icon %}
+{% from "components/agents.html" import agent_logo %}
 
-{# 1. Comment ça marche : quatre cartes reliées par le fil, qui se remplit au défilement ;
+{# 1. Comment ça marche : quatre cartes l'une sous l'autre ;
    chaque illustration joue sa boucle quand elle est à l'écran (app.js). #}
 <div class="section-sep" aria-hidden="true"><span class="section-sep__cell"></span></div>
 <section class="story" aria-labelledby="cycle-titre">
@@ -13,6 +14,9 @@
     <p class="section-head__lead">Quand un dev résout un problème difficile avec son agent, la solution ne reste pas dans sa conversation. Gotcha la garde, vérifiée, pour le suivant.</p>
   </header>
 
+  {# Illustrations en « faisceaux » : une scène de 440 unités de large qui se met à l'échelle comme
+     une image (unités cqw). Les rayons orange parcourent les tracés (app.js) ; data-pulse fait réagir
+     un élément au départ ou à l'arrivée d'un rayon, avec le même rythme (2,4 s). #}
   <ol class="stack" data-stack>
     <li class="stack__card">
       <div class="stack__text">
@@ -26,70 +30,53 @@
         <span class="beam-corner beam-corner--bl"></span>
         <span class="beam-corner beam-corner--br"></span>
         <div class="beam-stage beam-stage--funnel" data-beam-stage>
-          {# Lignes SVG Animated Beam reliant les 3 signaux à la boîte de collecte #}
+          {# Arrière de la boîte ouverte : rabats et ouverture bordeaux #}
+          <svg class="beam-svg beam-svg--back" viewBox="0 0 440 280" fill="none">
+            <polygon points="126,186 152,164 152,198 138,198" fill="#ffd9c4"/>
+            <polygon points="314,186 288,164 288,198 302,198" fill="#ffd9c4"/>
+            <path d="M152 184H288L302 198H138Z" fill="#450d05"/>
+          </svg>
+
+          {# Trois pièges qui convergent vers la boîte #}
           <svg class="beam-svg" viewBox="0 0 440 280" fill="none">
+            <path class="beam-track" d="M 96 118 V 140 Q 96 156 112 156 H 170 Q 186 156 186 172 V 196"/>
+            <path class="beam-track" d="M 220 54 V 196"/>
+            <path class="beam-track" d="M 344 118 V 140 Q 344 156 328 156 H 270 Q 254 156 254 172 V 196"/>
+            <path class="beam-ray" data-beam-ray data-delay="0" d="M 96 118 V 140 Q 96 156 112 156 H 170 Q 186 156 186 172 V 196"/>
+            <path class="beam-ray" data-beam-ray data-delay="800" d="M 220 54 V 196"/>
+            <path class="beam-ray" data-beam-ray data-delay="1600" d="M 344 118 V 140 Q 344 156 328 156 H 270 Q 254 156 254 172 V 196"/>
+            <circle class="beam-anchor" cx="96" cy="118" r="3.5"/>
+            <circle class="beam-anchor" cx="220" cy="54" r="3.5"/>
+            <circle class="beam-anchor" cx="344" cy="118" r="3.5"/>
+          </svg>
+
+          <span class="beam-chip beam-chip--trap-c" data-pulse data-delay="800" data-at="0.08">{{ icon("triangle-alert", size=14) }}Pas de sandbox Wave</span>
+          <span class="beam-chip beam-chip--trap-l" data-pulse data-delay="0" data-at="0.08">{{ icon("triangle-alert", size=14) }}Callback Orange 400</span>
+          <span class="beam-chip beam-chip--trap-r" data-pulse data-delay="1600" data-at="0.08">{{ icon("triangle-alert", size=14) }}Datacloud refuse</span>
+
+          {# Codes d'erreur qui flottent (ressorts) ; trois fiches tombent dans la boîte #}
+          <span class="beam-tile beam-tile--a" data-spring-tile><code>401</code></span>
+          <span class="beam-tile beam-tile--b" data-spring-tile>Wave</span>
+          <span class="beam-tile beam-tile--c" data-spring-tile>MTN</span>
+          <span class="beam-tile beam-tile--d" data-spring-tile><code>502</code></span>
+          <span class="beam-tile beam-tile--drop beam-tile--drop-a">{{ icon("file-code", size=16) }}</span>
+          <span class="beam-tile beam-tile--drop beam-tile--drop-b">{{ icon("file-code", size=16) }}</span>
+          <span class="beam-tile beam-tile--drop beam-tile--drop-c">{{ icon("circle-check", size=16) }}</span>
+
+          {# Façade de la boîte, devant les fiches qui tombent, avec le monogramme Gotcha #}
+          <svg class="beam-svg beam-svg--front" viewBox="0 0 440 280" fill="none">
             <defs>
-              <linearGradient id="beam-grad-funnel" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stop-color="#ff6819" stop-opacity="0"/>
-                <stop offset="50%" stop-color="#ff6819" stop-opacity="1"/>
-                <stop offset="100%" stop-color="#450d05" stop-opacity="0.9"/>
-              </linearGradient>
               <pattern id="box-chevron" width="16" height="16" patternUnits="userSpaceOnUse">
-                <path d="M0 8L8 0L16 8M0 16L8 8L16 16M8 0V16" stroke="#ffffff" stroke-width="1" stroke-opacity="0.55" fill="none"/>
+                <path d="M0 8L8 0L16 8M0 16L8 8L16 16" stroke="#ff6819" stroke-opacity="0.18" fill="none"/>
               </pattern>
             </defs>
-            {# Tracés de base #}
-            <path class="beam-track" d="M 92 132 V 146 Q 92 160 106 160 H 172 Q 186 160 186 174 V 202"/>
-            <path class="beam-track" d="M 220 62 V 202"/>
-            <path class="beam-track" d="M 348 132 V 146 Q 348 160 334 160 H 268 Q 254 160 254 174 V 202"/>
-            {# Faisceaux lumineux animés (Animated Beams) #}
-            <path class="beam-ray" data-beam-ray data-delay="0" d="M 92 132 V 146 Q 92 160 106 160 H 172 Q 186 160 186 174 V 202" stroke="url(#beam-grad-funnel)"/>
-            <path class="beam-ray" data-beam-ray data-delay="450" d="M 220 62 V 202" stroke="url(#beam-grad-funnel)"/>
-            <path class="beam-ray" data-beam-ray data-delay="900" d="M 348 132 V 146 Q 348 160 334 160 H 268 Q 254 160 254 174 V 202" stroke="url(#beam-grad-funnel)"/>
-            {# Anneaux d'ancrage orange sous chaque étiquette #}
-            <circle class="beam-anchor" cx="92" cy="132" r="3.5"/>
-            <circle class="beam-anchor" cx="220" cy="62" r="3.5"/>
-            <circle class="beam-anchor" cx="348" cy="132" r="3.5"/>
-          </svg>
-
-          {# 3 étiquettes de signaux flottantes (style Gojiberry) #}
-          <div class="beam-pill beam-pill--top">Pas de sandbox Wave</div>
-          <div class="beam-pill beam-pill--left">Callback Orange 400</div>
-          <div class="beam-pill beam-pill--right">X-Target-Environment</div>
-
-          {# Plan 1 (arrière de la boîte ouverte) #}
-          <svg class="collector-back" viewBox="0 0 440 280" fill="none">
-            <polygon points="126,184 152,162 152,196 138,196" fill="#dedad2"/>
-            <polygon points="314,184 288,162 288,196 302,196" fill="#dedad2"/>
-            <rect x="152" y="182" width="136" height="20" fill="#6b6763"/>
-            <path d="M152 182L138 196H302L288 182H152Z" fill="#57534e"/>
-          </svg>
-
-          {# Plan 2 (tuiles flottantes en arc qui tombent dans l'ouverture de la boîte) #}
-          <div class="funnel-tiles">
-            <span class="funnel-tile funnel-tile--l1" data-spring-tile><code>400</code></span>
-            <span class="funnel-tile funnel-tile--l2" data-spring-tile>Wave</span>
-            <span class="funnel-tile funnel-tile--l3" data-spring-tile><code>401</code></span>
-            <span class="funnel-tile funnel-tile--r1" data-spring-tile>MTN</span>
-            <span class="funnel-tile funnel-tile--r2" data-spring-tile>M-Pesa</span>
-            <span class="funnel-tile funnel-tile--r3" data-spring-tile><code>502</code></span>
-            {# Tuiles en chute qui passent derrière la façade avant de la boîte #}
-            <span class="funnel-tile funnel-tile--drop-a" data-drop-tile data-delay="0">{{ icon("file-code", size=18) }}</span>
-            <span class="funnel-tile funnel-tile--drop-b" data-drop-tile data-delay="1100">{{ icon("triangle-alert", size=18) }}</span>
-            <span class="funnel-tile funnel-tile--drop-c" data-drop-tile data-delay="2200">{{ icon("circle-check", size=18) }}</span>
-          </div>
-
-          {# Plan 3 (rabat avant et façade texturée de la boîte qui masquent les tuiles entrantes) #}
-          <svg class="collector-front" viewBox="0 0 440 280" fill="none">
-            <rect x="152" y="196" width="136" height="76" rx="2" fill="#e6e2da"/>
-            <rect x="152" y="196" width="136" height="76" rx="2" fill="url(#box-chevron)"/>
-            <rect x="152" y="218" width="136" height="8" fill="#0b0907" fill-opacity="0.06"/>
-            <polygon points="138,196 302,196 312,220 128,220" fill="#d8d4cc"/>
-            {# Monogramme Gotcha centré sur la boîte #}
-            <g transform="translate(206, 226)">
-              <rect width="28" height="28" rx="7" fill="#57534e"/>
+            <rect x="152" y="198" width="136" height="74" rx="3" fill="#fff0e8"/>
+            <rect x="152" y="198" width="136" height="74" rx="3" fill="url(#box-chevron)"/>
+            <polygon points="138,198 302,198 312,220 128,220" fill="#ffe2d1"/>
+            <g transform="translate(206 230)">
+              <rect width="28" height="28" rx="7" fill="#ff6819"/>
               <path d="M20 8.2A8.5 8.5 0 1 0 22.5 14.2H17.2L14.3 17.1L11.6 14.4" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-              <circle cx="14.3" cy="10.3" r="2" fill="#ff6819"/>
+              <circle cx="14.3" cy="10.3" r="2" fill="#450d05"/>
             </g>
           </svg>
         </div>
@@ -107,58 +94,40 @@
         <span class="beam-corner beam-corner--tr"></span>
         <span class="beam-corner beam-corner--bl"></span>
         <span class="beam-corner beam-corner--br"></span>
-        <div class="beam-stage beam-stage--filter" data-beam-stage>
+        <div class="beam-stage" data-beam-stage>
           <svg class="beam-svg" viewBox="0 0 440 260" fill="none">
-            <defs>
-              <linearGradient id="beam-grad-filter" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#ff6819" stop-opacity="0"/>
-                <stop offset="60%" stop-color="#ff6819" stop-opacity="1"/>
-                <stop offset="100%" stop-color="#047857" stop-opacity="1"/>
-              </linearGradient>
-              <linearGradient id="beam-grad-danger" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#b91c1c" stop-opacity="0"/>
-                <stop offset="80%" stop-color="#b91c1c" stop-opacity="1"/>
-                <stop offset="100%" stop-color="#b91c1c" stop-opacity="1"/>
-              </linearGradient>
-            </defs>
-            {# 4 faisceaux entrants vers le bouclier anti-secret #}
-            <path class="beam-track" d="M 148 48 C 188 48, 192 118, 226 118"/>
-            <path class="beam-track" d="M 148 98 C 184 98, 194 124, 226 124"/>
-            <path class="beam-track" d="M 148 148 C 184 148, 194 134, 226 134"/>
-            <path class="beam-track beam-track--danger" d="M 148 202 C 188 202, 192 144, 226 144"/>
-            {# Faisceau sortant purifié #}
-            <path class="beam-track" d="M 274 130 H 336"/>
+            <path class="beam-track" d="M 150 48 C 190 48, 192 118, 228 118"/>
+            <path class="beam-track" d="M 150 98 C 186 98, 194 124, 228 124"/>
+            <path class="beam-track" d="M 150 148 C 186 148, 194 134, 228 134"/>
+            {# Le secret s'arrête avant le filtre : refusé #}
+            <path class="beam-track beam-track--danger" d="M 150 206 C 176 206, 184 182, 196 172"/>
+            <path class="beam-track" d="M 276 130 H 318"/>
 
-            <path class="beam-ray" data-beam-ray data-delay="0" d="M 148 48 C 188 48, 192 118, 226 118" stroke="url(#beam-grad-filter)"/>
-            <path class="beam-ray" data-beam-ray data-delay="300" d="M 148 98 C 184 98, 194 124, 226 124" stroke="url(#beam-grad-filter)"/>
-            <path class="beam-ray" data-beam-ray data-delay="600" d="M 148 148 C 184 148, 194 134, 226 134" stroke="url(#beam-grad-filter)"/>
-            <path class="beam-ray" data-beam-ray data-delay="900" d="M 148 202 C 188 202, 192 144, 226 144" stroke="url(#beam-grad-danger)"/>
-            <path class="beam-ray" data-beam-ray data-delay="1100" d="M 274 130 H 336" stroke="url(#beam-grad-filter)"/>
+            <path class="beam-ray" data-beam-ray data-delay="0" d="M 150 48 C 190 48, 192 118, 228 118"/>
+            <path class="beam-ray" data-beam-ray data-delay="250" d="M 150 98 C 186 98, 194 124, 228 124"/>
+            <path class="beam-ray" data-beam-ray data-delay="500" d="M 150 148 C 186 148, 194 134, 228 134"/>
+            <path class="beam-ray beam-ray--danger" data-beam-ray data-delay="750" d="M 150 206 C 176 206, 184 182, 196 172"/>
+            <path class="beam-ray beam-ray--ok" data-beam-ray data-delay="1300" d="M 276 130 H 318"/>
 
-            <circle class="beam-anchor" cx="148" cy="48" r="3.5"/>
-            <circle class="beam-anchor" cx="148" cy="98" r="3.5"/>
-            <circle class="beam-anchor" cx="148" cy="148" r="3.5"/>
-            <circle class="beam-anchor beam-anchor--danger" cx="148" cy="202" r="3.5"/>
-            <circle class="beam-anchor beam-anchor--ok" cx="336" cy="130" r="3.5"/>
+            <circle class="beam-anchor" cx="150" cy="48" r="3.5"/>
+            <circle class="beam-anchor" cx="150" cy="98" r="3.5"/>
+            <circle class="beam-anchor" cx="150" cy="148" r="3.5"/>
+            <circle class="beam-anchor beam-anchor--danger" cx="150" cy="206" r="3.5"/>
+            <circle class="beam-anchor beam-anchor--ok" cx="318" cy="130" r="3.5"/>
           </svg>
 
-          <div class="beam-node beam-node--in1"><span>Symptôme</span>Aucun sandbox</div>
-          <div class="beam-node beam-node--in2"><span>Cause</span>Compte Business</div>
-          <div class="beam-node beam-node--in3"><span>Solution</span>Simuler Wave</div>
-          <div class="beam-node beam-node--secret"><span>Secret</span><code>sk_live_8f3…</code></div>
+          <span class="beam-field beam-field--1" data-pulse data-delay="0" data-at="0.08"><span>Symptôme</span>Aucun sandbox</span>
+          <span class="beam-field beam-field--2" data-pulse data-delay="250" data-at="0.08"><span>Cause</span>Compte Business</span>
+          <span class="beam-field beam-field--3" data-pulse data-delay="500" data-at="0.08"><span>Solution</span>Simuler Wave</span>
+          <span class="beam-field beam-field--secret"><span>Secret</span><code>sk_live_8f3…</code></span>
+          <span class="beam-refused" data-pulse data-delay="750">{{ icon("circle-x", size=16) }}Refusé</span>
 
-          <div class="beam-hub beam-hub--shield">
-            {{ icon("lock", size=20) }}
-            <span>Filtre</span>
-          </div>
+          <span class="beam-hub" data-pulse data-delay="500">{{ icon("lock", size=20) }}<span>Filtre</span></span>
 
-          <div class="beam-node beam-node--out">
+          <span class="beam-result" data-pulse data-delay="1300">
             {{ icon("circle-check", size=16) }}
-            <div>
-              <strong>Fiche propre</strong>
-              <span>0 clé privée</span>
-            </div>
-          </div>
+            <span><strong>Fiche propre</strong><span>0 clé privée</span></span>
+          </span>
         </div>
       </div>
     </li>
@@ -174,39 +143,32 @@
         <span class="beam-corner beam-corner--tr"></span>
         <span class="beam-corner beam-corner--bl"></span>
         <span class="beam-corner beam-corner--br"></span>
-        <div class="beam-stage beam-stage--review" data-beam-stage>
+        <div class="beam-stage" data-beam-stage>
           <svg class="beam-svg" viewBox="0 0 440 260" fill="none">
-            <defs>
-              <linearGradient id="beam-grad-review" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stop-color="#ff6819" stop-opacity="0"/>
-                <stop offset="55%" stop-color="#ff6819" stop-opacity="1"/>
-                <stop offset="100%" stop-color="#047857" stop-opacity="1"/>
-              </linearGradient>
-            </defs>
-            <path class="beam-track" d="M 88 74 V 104 Q 88 122 106 122 H 184 Q 202 122 202 140 V 156"/>
-            <path class="beam-track" d="M 220 56 V 156"/>
-            <path class="beam-track" d="M 352 74 V 104 Q 352 122 334 122 H 256 Q 238 122 238 140 V 156"/>
+            <path class="beam-track" d="M 88 76 V 104 Q 88 122 106 122 H 184 Q 202 122 202 140 V 160"/>
+            <path class="beam-track" d="M 220 60 V 160"/>
+            <path class="beam-track" d="M 352 76 V 104 Q 352 122 334 122 H 256 Q 238 122 238 140 V 160"/>
 
-            <path class="beam-ray" data-beam-ray data-delay="0" d="M 88 74 V 104 Q 88 122 106 122 H 184 Q 202 122 202 140 V 156" stroke="url(#beam-grad-review)"/>
-            <path class="beam-ray" data-beam-ray data-delay="400" d="M 220 56 V 156" stroke="url(#beam-grad-review)"/>
-            <path class="beam-ray" data-beam-ray data-delay="800" d="M 352 74 V 104 Q 352 122 334 122 H 256 Q 238 122 238 140 V 156" stroke="url(#beam-grad-review)"/>
+            <path class="beam-ray beam-ray--ok" data-beam-ray data-delay="0" d="M 88 76 V 104 Q 88 122 106 122 H 184 Q 202 122 202 140 V 160"/>
+            <path class="beam-ray beam-ray--ok" data-beam-ray data-delay="500" d="M 220 60 V 160"/>
+            <path class="beam-ray beam-ray--ok" data-beam-ray data-delay="1000" d="M 352 76 V 104 Q 352 122 334 122 H 256 Q 238 122 238 140 V 160"/>
 
-            <circle class="beam-anchor" cx="88" cy="74" r="3.5"/>
-            <circle class="beam-anchor" cx="220" cy="56" r="3.5"/>
-            <circle class="beam-anchor" cx="352" cy="74" r="3.5"/>
+            <circle class="beam-anchor beam-anchor--ok" cx="88" cy="76" r="3.5"/>
+            <circle class="beam-anchor beam-anchor--ok" cx="220" cy="60" r="3.5"/>
+            <circle class="beam-anchor beam-anchor--ok" cx="352" cy="76" r="3.5"/>
           </svg>
 
-          <div class="beam-pill beam-pill--rev-l">{{ icon("book-open", size=14) }}Source citée</div>
-          <div class="beam-pill beam-pill--rev-c">{{ icon("flask-conical", size=14) }}Preuve testée</div>
-          <div class="beam-pill beam-pill--rev-r">{{ icon("shield-check", size=14) }}Zéro donnée privée</div>
+          <span class="beam-chip beam-chip--check-l" data-pulse data-delay="0" data-at="0.08">{{ icon("book-open", size=14) }}Source citée</span>
+          <span class="beam-chip beam-chip--check-c" data-pulse data-delay="500" data-at="0.08">{{ icon("flask-conical", size=14) }}Preuve testée</span>
+          <span class="beam-chip beam-chip--check-r" data-pulse data-delay="1000" data-at="0.08">{{ icon("shield-check", size=14) }}Aucune donnée privée</span>
 
-          <div class="beam-review-card">
-            <div class="beam-review-card__head">
-              <span class="beam-review-card__user">{{ icon("user", size=16) }}Relecteur humain</span>
-              <span class="art-stamp">{{ icon("shield-check", size=14) }}Publié · Sourcé</span>
-            </div>
-            <p class="beam-review-card__title">Wave Sénégal · Simulation du webhook en local</p>
-          </div>
+          <span class="beam-review">
+            <span class="beam-review__head">
+              <span class="beam-review__user">{{ icon("user", size=16) }}Relecteur humain</span>
+              <span class="beam-stamp">{{ icon("shield-check", size=14) }}Publié · Sourcé</span>
+            </span>
+            <span class="beam-review__title">Wave Sénégal · Simuler le webhook en local</span>
+          </span>
         </div>
       </div>
     </li>
@@ -222,46 +184,35 @@
         <span class="beam-corner beam-corner--tr"></span>
         <span class="beam-corner beam-corner--bl"></span>
         <span class="beam-corner beam-corner--br"></span>
-        <div class="beam-stage beam-stage--mcp" data-beam-stage>
+        <div class="beam-stage" data-beam-stage>
           <svg class="beam-svg" viewBox="0 0 440 260" fill="none">
-            <defs>
-              <linearGradient id="beam-grad-mcp" x1="100%" y1="0%" x2="0%" y2="0%">
-                <stop offset="0%" stop-color="#ff6819" stop-opacity="0"/>
-                <stop offset="50%" stop-color="#ff6819" stop-opacity="1"/>
-                <stop offset="100%" stop-color="#450d05" stop-opacity="0.9"/>
-              </linearGradient>
-            </defs>
-            {# 4 faisceaux courbes entre Gotcha MCP au centre et les agents autour #}
             <path class="beam-track" d="M 118 60 C 164 60, 174 114, 220 122"/>
             <path class="beam-track" d="M 118 188 C 164 188, 174 134, 220 126"/>
             <path class="beam-track" d="M 322 60 C 276 60, 266 114, 220 122"/>
             <path class="beam-track" d="M 322 188 C 276 188, 266 134, 220 126"/>
-            <path class="beam-track" d="M 220 154 V 204"/>
+            <path class="beam-track" d="M 220 152 V 200"/>
 
-            <path class="beam-ray" data-beam-ray data-delay="0" d="M 220 122 C 174 114, 164 60, 118 60" stroke="url(#beam-grad-mcp)"/>
-            <path class="beam-ray" data-beam-ray data-delay="350" d="M 220 126 C 174 134, 164 188, 118 188" stroke="url(#beam-grad-mcp)"/>
-            <path class="beam-ray" data-beam-ray data-delay="700" d="M 220 122 C 266 114, 276 60, 322 60" stroke="url(#beam-grad-mcp)"/>
-            <path class="beam-ray" data-beam-ray data-delay="1050" d="M 220 126 C 266 134, 276 188, 322 188" stroke="url(#beam-grad-mcp)"/>
-            <path class="beam-ray" data-beam-ray data-delay="500" d="M 220 154 V 204" stroke="url(#beam-grad-mcp)"/>
+            <path class="beam-ray" data-beam-ray data-delay="0" d="M 220 122 C 174 114, 164 60, 118 60"/>
+            <path class="beam-ray" data-beam-ray data-delay="300" d="M 220 122 C 266 114, 276 60, 322 60"/>
+            <path class="beam-ray" data-beam-ray data-delay="600" d="M 220 126 C 174 134, 164 188, 118 188"/>
+            <path class="beam-ray" data-beam-ray data-delay="900" d="M 220 126 C 266 134, 276 188, 322 188"/>
+            <path class="beam-ray beam-ray--ok" data-beam-ray data-delay="1400" d="M 220 152 V 200"/>
 
             <circle class="beam-anchor" cx="118" cy="60" r="3.5"/>
             <circle class="beam-anchor" cx="118" cy="188" r="3.5"/>
             <circle class="beam-anchor" cx="322" cy="60" r="3.5"/>
             <circle class="beam-anchor" cx="322" cy="188" r="3.5"/>
-            <circle class="beam-anchor beam-anchor--ok" cx="220" cy="204" r="3.5"/>
+            <circle class="beam-anchor beam-anchor--ok" cx="220" cy="200" r="3.5"/>
           </svg>
 
-          <span class="beam-agent beam-agent--tl" data-spring-tile>{{ icon("bot", size=16) }}Claude Code</span>
-          <span class="beam-agent beam-agent--bl" data-spring-tile>{{ icon("bot", size=16) }}Cursor</span>
-          <span class="beam-agent beam-agent--tr" data-spring-tile>{{ icon("bot", size=16) }}Codex</span>
-          <span class="beam-agent beam-agent--br" data-spring-tile>{{ icon("bot", size=16) }}Gemini CLI</span>
+          <span class="beam-agent beam-agent--tl" data-spring-tile>{{ agent_logo("claude") }}Claude Code</span>
+          <span class="beam-agent beam-agent--tr" data-spring-tile>{{ agent_logo("cursor") }}Cursor</span>
+          <span class="beam-agent beam-agent--bl" data-spring-tile>{{ agent_logo("copilot") }}Copilot</span>
+          <span class="beam-agent beam-agent--br" data-spring-tile>{{ agent_logo("windsurf") }}Windsurf</span>
 
-          <span class="art-hub beam-mcp-hub">
-            <img src="/static/img/logo.svg" alt="" width="30" height="30">
-            <span>Gotcha MCP</span>
-          </span>
+          <span class="beam-mcp"><img src="/static/img/logo.svg" alt="" width="28" height="28"><span>Gotcha MCP</span></span>
 
-          <span class="art-plus beam-mcp-plus">{{ icon("circle-check", size=15) }}+1 confirmation en prod</span>
+          <span class="beam-confirm" data-pulse data-delay="1400">{{ icon("circle-check", size=15) }}+1 confirmation en prod</span>
         </div>
       </div>
     </li>
@@ -295,9 +246,24 @@
           <p><a href="/recherche">Ouvrir la recherche</a></p>
         </div>
         <div class="way__visual">
-          <div class="way__card">
-            <p class="way__search">{{ icon("search", size=16) }}<code>X-Target-Environment</code></p>
-            <p class="way__result"><span class="way__result-label">Piège · MTN MoMo</span><strong>L'en-tête est obligatoire, même dans le bac à sable</strong><span class="way__result-meta">{{ icon("book-open", size=14) }}Sourcé</span></p>
+          <div class="screen" aria-hidden="true">
+            <div class="screen__bar">
+              <span class="demo__dots"><span></span><span></span><span></span></span>
+              <span class="screen__url">{{ icon("lock", size=12) }}app.gotcha.sn/recherche</span>
+            </div>
+            <div class="screen__body">
+              <p class="screen__search">{{ icon("search", size=16) }}<code>X-Target-Environment</code><span class="screen__button">Rechercher</span></p>
+              <p class="screen__count">2 pièges trouvés · MTN MoMo</p>
+              <p class="screen__hit screen__hit--top">
+                <span class="screen__meta"><span class="screen__sev">{{ icon("circle-x", size=13) }}Bloquant</span>MTN MoMo · Erreurs 400, 500</span>
+                <strong>L'en-tête est obligatoire, même dans le bac à sable</strong>
+                <span class="screen__meta">{{ icon("book-open", size=13) }}2 sources · confirmé le 28 octobre</span>
+              </p>
+              <p class="screen__hit">
+                <span class="screen__meta"><span class="screen__sev screen__sev--major">{{ icon("triangle-alert", size=13) }}Important</span>MTN MoMo · Bac à sable</span>
+                <strong>Le bac à sable n'accepte que l'EUR</strong>
+              </p>
+            </div>
           </div>
         </div>
       </article>
@@ -312,14 +278,24 @@
           <p><a href="/#video">Voir l'agent à l'œuvre</a></p>
         </div>
         <div class="way__visual">
-          <div class="way__card">
-            <pre class="way__code"><code>{ "mcpServers": { "gotcha": { "url": "{{ request.base_url }}mcp" } } }</code></pre>
-            <ul class="way__tools">
-              <li><code>search_gotchas</code> chercher un piège</li>
-              <li><code>get_fiche</code> lire une fiche complète</li>
-              <li><code>get_service_status</code> état d'un service en direct</li>
-              <li><code>report_outage</code> signaler une panne</li>
-            </ul>
+          <div class="screen screen--term">
+            <div class="screen__bar" aria-hidden="true">
+              <span class="demo__dots"><span></span><span></span><span></span></span>
+              <span class="screen__url">{{ icon("terminal", size=12) }}terminal · votre agent</span>
+            </div>
+            <div class="screen__body">
+              <p class="screen__file">.mcp.json</p>
+              <pre class="screen__code"><code>{ "mcpServers": { "gotcha": { "url": "{{ request.base_url }}mcp" } } }</code></pre>
+              <p class="screen__prompt" aria-hidden="true"><span>&gt;</span>Mon paiement MTN renvoie 400 en sandbox</p>
+              <p class="screen__call" aria-hidden="true">{{ icon("activity", size=13) }}<span><code>gotcha.search_gotchas</code>(« MTN 400 sandbox »)</span></p>
+              <p class="screen__answer" aria-hidden="true">{{ icon("circle-check", size=13) }}<span>1 piège sourcé : ajoutez l'en-tête <code>X-Target-Environment: sandbox</code>.</span></p>
+              <ul class="screen__tools">
+                <li><code>search_gotchas</code></li>
+                <li><code>get_fiche</code></li>
+                <li><code>get_service_status</code></li>
+                <li><code>report_outage</code></li>
+              </ul>
+            </div>
           </div>
         </div>
       </article>
@@ -334,10 +310,19 @@
           <p><a class="button button--secondary" href="/contribuer">Proposer un piège{{ icon("arrow-right", size=16) }}</a></p>
         </div>
         <div class="way__visual">
-          <div class="way__card">
-            <p class="way__result"><span class="way__result-label">Piège · Wave Sénégal</span><strong>Aucun bac à sable public : on teste avec un vrai compte</strong></p>
-            <p class="way__credit">{{ icon("user", size=14) }}Proposé par <strong>votre pseudo</strong></p>
-            <p class="way__credit">{{ icon("shield-check", size=14) }}Relu par un relecteur · Publié · Sourcé</p>
+          <div class="screen" aria-hidden="true">
+            <div class="screen__bar">
+              <span class="demo__dots"><span></span><span></span><span></span></span>
+              <span class="screen__url">{{ icon("lock", size=12) }}app.gotcha.sn/contribuer</span>
+            </div>
+            <div class="screen__body">
+              <p class="screen__title">Proposer un piège</p>
+              <p class="screen__field"><span>Service</span><span class="screen__input">Wave Sénégal</span></p>
+              <p class="screen__field"><span>Symptôme</span><span class="screen__input">Aucun bac à sable public : on teste avec un vrai compte</span></p>
+              <p class="screen__field"><span>Solution</span><span class="screen__input screen__input--area">Isoler l'appel à Wave pour le simuler dans les tests, puis tester en production avec de petits montants.</span></p>
+              <p class="screen__send"><span class="screen__button">Envoyer pour relecture</span><span class="screen__pending">{{ icon("clock", size=13) }}En attente de relecture</span></p>
+              <p class="screen__meta">{{ icon("user", size=13) }}Proposé par <strong>votre pseudo</strong></p>
+            </div>
           </div>
         </div>
       </article>
@@ -385,7 +370,7 @@
     <ul class="stats">
       <li class="stat" data-reveal><span class="stat__number" data-count="51">51</span><span class="stat__unit">% de coût</span><span class="stat__label">en moins qu'un agent qui cherche sur le web</span></li>
       <li class="stat" data-reveal><span class="stat__number" data-count="5">5</span><span class="stat__unit">sur 5</span><span class="stat__label">pannes en cours signalées au dev par l'agent</span></li>
-      <li class="stat" data-reveal><span class="stat__number" data-count="{{ page.gotcha_total }}">{{ page.gotcha_total }}</span><span class="stat__unit">pièges</span><span class="stat__label">documentés sur {{ page.cards | length }} fiches, avec leurs sources</span></li>
+      <li class="stat" data-reveal><span class="stat__number" data-count="{{ page.gotcha_total }}">{{ page.gotcha_total }}</span><span class="stat__unit">pièges</span><span class="stat__label">documentés sur {{ page.cards | length }} services, avec leurs sources</span></li>
     </ul>
   </div>
 

@@ -9,9 +9,9 @@
   {% if page.meta.noindex %}
   <meta name="robots" content="noindex">
   {% endif %}
-  <link rel="icon" href="/static/img/favicon.svg?v=15" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/css/app.css?v=15">
-  <script src="/static/js/app.js?v=15" defer></script>
+  <link rel="icon" href="/static/img/favicon.svg?v=22" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/css/app.css?v=22">
+  <script src="/static/js/app.js?v=22" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -25,17 +25,7 @@
   <header class="site-header">
     <div class="container site-header__inner">
       <a class="brand" href="/">
-        <svg class="brand__mark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32" aria-hidden="true" focusable="false">
-          <rect width="64" height="64" rx="16" fill="#FF6819"/>
-          <g stroke="#450D05" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.6">
-            <path d="M7.5 16.5 V12 A4.5 4.5 0 0 1 12 7.5 H16.5"/>
-            <path d="M47.5 7.5 H52 A4.5 4.5 0 0 1 56.5 12 V16.5"/>
-            <path d="M7.5 47.5 V52 A4.5 4.5 0 0 0 12 56.5 H16.5"/>
-            <path d="M47.5 56.5 H52 A4.5 4.5 0 0 0 56.5 52 V47.5"/>
-          </g>
-          <path d="M45.8 18.2 A19.5 19.5 0 1 0 51.5 32.5 H39.2 L32.6 39.1 L26.4 32.9" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="32.6" cy="23.4" r="4.5" fill="#450D05"/>
-        </svg>
+        <img class="brand__mark" src="/static/img/logo.svg" alt="" width="32" height="32">
         <span>{{ site.name }}</span>
       </a>
 
@@ -112,9 +102,33 @@
   </main>
 
   <footer class="site-footer">
-    <div class="container">
-      <p class="site-footer__hosting"><strong>{{ site.hosting }}</strong> · <a href="/ou-sont-vos-donnees">Où sont vos données</a></p>
-      <p><a href="/glossaire">Glossaire</a> · {{ site.license }}</p>
+    <div class="container site-footer__inner">
+      <div class="site-footer__about">
+        <a class="brand" href="/"><img src="/static/img/logo.svg" alt="" width="32" height="32">{{ site.name }}</a>
+        <p>Le carnet de terrain des intégrations de paiement mobile et du déploiement cloud : ce que la documentation ne dit pas.</p>
+        <p class="site-footer__hosting">{{ icon("shield-check", size=16) }}<span><strong>{{ site.hosting }}</strong> · <a href="/ou-sont-vos-donnees">Où sont vos données</a></span></p>
+      </div>
+      <nav class="site-footer__nav" aria-label="Pied de page">
+        <div>
+          <p class="site-footer__title">Explorer</p>
+          <ul>
+            <li><a href="/recherche">Rechercher un piège</a></li>
+            <li><a href="/pannes">Pannes en direct</a></li>
+            <li><a href="/glossaire">Glossaire</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="site-footer__title">Participer</p>
+          <ul>
+            <li><a href="/contribuer">Ajouter un retour</a></li>
+            <li><a href="/pannes/signaler">Signaler une panne</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="container site-footer__bottom">
+      <p>{{ site.license }}</p>
+      <p>Fait à Dakar, pour les devs d'Afrique</p>
     </div>
   </footer>
 </body>
