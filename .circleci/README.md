@@ -12,7 +12,7 @@ La CI du projet tourne sur **CircleCI**, plan gratuit : 30 000 crédits par mois
 | --- | --- |
 | `pr-rules` | Titre de PR au format `type(zone): description` (bloquant : il devient le message du commit fusionné) ; taille et nom de branche (avertissements). Script : `scripts/ci_pr_rules.py` |
 | `lint` | `ruff check` (22 familles de règles, dont sécurité et imports interdits pour raison de licence), `ruff format`, `pyright` (types), `scripts/scan_secrets.py` (aucune clé dans le dépôt) |
-| `tests-py3.11`, `tests-py3.12`, `tests-py3.13` | `pytest` sur trois versions de Python, avec **au moins 85 % de couverture** (branches comprises) : tests d'architecture, de contrat, de contenu, de sécurité, liens morts… Résultats détaillés dans l'onglet *Tests* de CircleCI |
+| `tests-py3.11`, `tests-py3.12`, `tests-py3.13` | `pytest` sur trois versions de Python, avec **au moins 85 % de couverture** (branches comprises) : tests d'architecture, de contrat **sur les deux stockages** (une base PostgreSQL 17 jetable par job), de contenu, de sécurité, liens morts… Résultats détaillés dans l'onglet *Tests* de CircleCI |
 | `licences` | Dans un environnement neuf contenant seulement `requirements.txt` : aucune licence GPL, LGPL, AGPL ni MPL |
 | `docker` | L'image se construit et démarre en **mode production** ; l'accueil répond, `/styleguide` et `/relecture` sont fermés, les en-têtes de sécurité sont présents, le serveur MCP répond |
 | `audit` | `pip-audit` : aucune faille connue dans les dépendances |

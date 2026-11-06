@@ -10,6 +10,7 @@ from app.config import Settings
 from app.container import Services, build_services
 from app.domain.errors import InvalidInputError, NotFoundError, SecretDetectedError
 from app.domain.models import (
+    Contribution,
     ContributionInput,
     ContributionStatus,
     Incident,
@@ -71,6 +72,20 @@ async def test_find_falls_back_to_the_fiche_valid_everywhere() -> None:
     assert (await services.fiches.find("demo-host", "CI")).slug == "demo-host"
     with pytest.raises(NotFoundError):
         await services.fiches.find("demo-pay", "KE")
+    # Sans ce garde-fou, le repli sur la fiche sans pays construisait un état
+    # de service avec ce pays, que le modèle refuse : erreur brute pour l'agent.
+    with pytest.raises(NotFoundError):
+        await services.fiches.find("demo-host", "SN\x00")
+    with pytest.raises(NotFoundError):
+        await services.fiches.find("demo-host\x00")
+
+
+async def test_search_with_a_nul_byte_finds_nothing_without_error() -> None:
+    services = await _services()
+    assert await services.fiches.search("jeton")
+    assert await services.fiches.search("jeton\x00") == []
+    assert await services.fiches.search("jeton", service="demo-pay\x00") == []
+    assert await services.fiches.search("jeton", country="SN\x00") == []
 
 
 async def test_submit_stores_a_pending_contribution() -> None:
@@ -104,11 +119,50 @@ async def test_review_once_only() -> None:
         await services.contributions.review(contribution.id, approve=False, reviewer="aziz")
 
 
+async def test_review_note_with_a_nul_byte_is_refused_and_nothing_changes() -> None:
+    services = await _services()
+    contribution = await services.contributions.submit(_input())
+    with pytest.raises(InvalidInputError, match="Note de relecture"):
+        await services.contributions.review(
+            contribution.id, approve=True, reviewer="aziz", note="a\x00b"
+        )
+    assert [c.id for c in await services.contributions.pending()] == [contribution.id]
+
+
+class RacingStore(MemoryStore):
+    """Un autre relecteur refuse la contribution juste après notre lecture."""
+
+    async def get_contribution(self, contribution_id: str) -> Contribution | None:
+        current = await super().get_contribution(contribution_id)
+        if current is not None and current.status is ContributionStatus.PENDING:
+            await self.update_contribution(
+                current.model_copy(update={"status": ContributionStatus.REJECTED})
+            )
+        return current
+
+
+async def test_review_loses_against_a_simultaneous_reviewer() -> None:
+    store = RacingStore(load_fiches(TEST_CONTENT_DIR), load_glossary(TEST_CONTENT_DIR))
+    services = await build_services(
+        Settings(env="test"), clock=FixedClock(NOW), store=store, feeds=[FakeFeed()]
+    )
+    contribution = await services.contributions.submit(_input())
+    with pytest.raises(InvalidInputError):
+        await services.contributions.review(contribution.id, approve=True, reviewer="aziz")
+    saved = await MemoryStore.get_contribution(store, contribution.id)
+    assert saved is not None
+    assert saved.status is ContributionStatus.REJECTED
+
+
 async def test_confirm_checks_the_target() -> None:
     services = await _services()
     await services.contributions.confirm(TargetKind.GOTCHA, "demo-pay-sn.jeton-expire")
     with pytest.raises(NotFoundError):
         await services.contributions.confirm(TargetKind.GOTCHA, "demo-pay-sn.absent")
+    with pytest.raises(NotFoundError):
+        await services.contributions.confirm(TargetKind.FICHE, "demo-pay-sn\x00")
+    with pytest.raises(InvalidInputError):
+        await services.contributions.confirm(TargetKind.FICHE, "demo-pay-sn", pseudo="a\x00b")
 
 
 async def test_report_makes_the_service_degraded() -> None:

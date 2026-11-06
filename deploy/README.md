@@ -22,7 +22,7 @@ Offre Starter (environ 7,35 $ par mois avant remise), dépôt Git connecté, Doc
    | `GOTCHA_REVIEWERS` | voir `scripts/hash_password.py` |
    | `PORT` | celui qu'attend la plateforme, si elle l'impose |
 
-   **Pendant le test A2**, avant que `PostgresStore` soit écrit : ajouter `GOTCHA_STORE=memory` pour que le site démarre sur le contenu des fichiers ; `/healthz?db=1` vérifie quand même la connexion à la base.
+   En production, le site lit tout dans PostgreSQL (`GOTCHA_STORE=postgres`, valeur par défaut quand `GOTCHA_ENV=prod`) : appliquer les migrations et charger le contenu (étape 5) **avant** d'ouvrir le site.
 5. Appliquer le schéma et charger le contenu, depuis un poste qui joint la base :
 
    ```bash

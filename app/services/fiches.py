@@ -3,7 +3,15 @@
 from __future__ import annotations
 
 from app.domain.errors import NotFoundError
-from app.domain.models import Fiche, GlossaryTerm, Gotcha, SearchHit, SearchQuery, Service
+from app.domain.models import (
+    Fiche,
+    GlossaryTerm,
+    Gotcha,
+    SearchHit,
+    SearchQuery,
+    Service,
+    is_storable,
+)
 from app.domain.ports import Clock, FicheStore
 from app.services.freshness import needs_review
 
@@ -26,6 +34,8 @@ class FicheService:
     async def find(self, service_slug: str, country: str | None = None) -> Fiche:
         """La fiche d'un service dans un pays ; à défaut, sa fiche valable dans tous les pays."""
         country = country.upper() if country else None
+        if not is_storable(service_slug) or (country and not is_storable(country)):
+            raise NotFoundError(f"Aucune fiche pour le service {service_slug!r}")
         same_service = [f for f in await self.list() if f.service.slug == service_slug]
         for fiche in same_service:
             if fiche.country == country:
@@ -59,6 +69,10 @@ class FicheService:
         country: str | None = None,
         limit: int = 20,
     ) -> list[SearchHit]:
+        if not all(is_storable(value) for value in (text, service or "", country or "")):
+            # Aucun texte enregistré ne contient ces caractères : rien ne peut correspondre.
+            # Le modèle les refuse, la page de recherche répondrait sinon par une erreur 500.
+            return []
         query = SearchQuery(
             text=text.strip()[:200],
             service=service or None,
