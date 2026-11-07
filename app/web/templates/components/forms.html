@@ -1,7 +1,8 @@
+{% from "components/icons.html" import icon %}
 {# Champs de formulaire. `form` : FormState (values et errors par nom de champ). #}
 
 {% macro field_error(form, name) -%}
-{% if form.errors.get(name) %}<p class="field__error" id="{{ name }}-erreur">{{ form.errors[name] }}</p>{% endif %}
+{% if form.errors.get(name) %}<p class="field__error" id="{{ name }}-erreur">{{ icon("circle-x", size=16) }}{{ form.errors[name] }}</p>{% endif %}
 {%- endmacro %}
 
 {% macro text_field(form, name, label, type="text", required=False, help=None, maxlength=None, autocomplete="off") -%}
@@ -48,6 +49,6 @@
   <label class="visually-hidden" for="q">Rechercher un service, un pays ou un code d'erreur</label>
   <input id="q" name="q" type="search" value="{{ query }}" maxlength="200"
          placeholder="Wave, X-Target-Environment, erreur 400…"{% if autofocus %} autofocus{% endif %}>
-  <button type="submit" class="button">Rechercher</button>
+  <button type="submit" class="button">{{ icon("search") }}Rechercher</button>
 </form>
 {%- endmacro %}

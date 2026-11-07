@@ -1,20 +1,52 @@
 {% extends "base.html" %}
 {% from "components/forms.html" import text_field, textarea_field, select_field %}
 
+{% from "components/icons.html" import icon %}
+
 {% block content %}
-<h1>{{ page.meta.title }}</h1>
-<p>Des paiements échouent ou n'aboutissent pas ? Signalez-le : la fiche passe en « dégradé » pendant quelques heures et les autres devs, ainsi que leurs agents IA, sont prévenus.</p>
+<header class="ph">
+  <div>
+    <nav class="crumbs" aria-label="Fil d'Ariane"><a href="/">Accueil</a><span aria-hidden="true">/</span><a href="/pannes">Pannes</a><span aria-hidden="true">/</span><span aria-current="page">Signaler</span></nav>
+    <h1>{{ page.meta.title }}</h1>
+    <p class="ph__desc">Des paiements échouent ou n'aboutissent pas ? Signalez-le : les autres devs et leurs agents IA sont prévenus.</p>
+  </div>
+</header>
 
-{% if page.form.errors.get("form") %}<p class="flash flash--error" role="alert">{{ page.form.errors["form"] }}</p>{% endif %}
+{% if page.form.errors.get("form") %}<p class="flash flash--error" role="alert">{{ icon("circle-x") }}<span>{{ page.form.errors["form"] }}</span></p>{% endif %}
 
-<form class="form" method="post" action="/pannes/signaler" novalidate>
-  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-  {{ select_field(page.form, "fiche_slug", "Service concerné", page.fiche_options, required=True, placeholder="Choisir une fiche") }}
-  {{ select_field(page.form, "country", "Pays", page.country_options, placeholder="Celui de la fiche") }}
-  {{ textarea_field(page.form, "description", "Ce que vous constatez", required=True, rows=4, maxlength=1000) }}
-  {% if not viewer.pseudo %}
-  {{ text_field(page.form, "pseudo", "Pseudo", maxlength=40, autocomplete="nickname") }}
-  {% endif %}
-  <button type="submit" class="button">Signaler la panne</button>
-</form>
+<div class="split">
+  <form class="box" method="post" action="/pannes/signaler" novalidate>
+    <div class="box__head"><h2>Ce que vous constatez</h2></div>
+    <div class="box__body form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      {{ select_field(page.form, "fiche_slug", "Service concerné", page.fiche_options, required=True, placeholder="Choisir une fiche") }}
+      {{ select_field(page.form, "country", "Pays", page.country_options, placeholder="Celui de la fiche") }}
+      <div class="quick" data-quick-for="description" hidden>
+        <p class="quick__label" id="symptomes">Symptômes fréquents</p>
+        <div class="quick__list" role="group" aria-labelledby="symptomes">
+          {% for t in ["Délais dépassés (HTTP 504)", "Callbacks non reçus", "Paiements en attente qui n'aboutissent pas", "Échec USSD ou STK Push", "Erreurs 500 sur l'API"] %}<button type="button" class="button button--secondary button--small" data-quick="{{ t }}">{{ t }}</button>{% endfor %}
+        </div>
+      </div>
+      {{ textarea_field(page.form, "description", "Description", required=True, rows=4, maxlength=1000, help="Ce qui échoue, depuis quand, avec quel message d'erreur.") }}
+      {% if not viewer.pseudo %}
+      {{ text_field(page.form, "pseudo", "Pseudo", maxlength=40, autocomplete="nickname") }}
+      {% endif %}
+    </div>
+    <div class="box__foot box__foot--actions"><button type="submit" class="button">Signaler la panne</button></div>
+  </form>
+
+  <aside class="split__side split__side--sticky" aria-label="Ce qui se passe">
+    <section class="box" aria-labelledby="effet">
+      <div class="box__head"><h2 id="effet">Ce qui se passe</h2></div>
+      <div class="box__body">
+        <ul class="checks">
+          <li>{{ icon("triangle-alert", size=16) }}<span>Le service passe en « dégradé » sur sa fiche et dans le journal.</span></li>
+          <li>{{ icon("bot", size=16) }}<span>Les agents qui interrogent Gotcha préviennent leur développeur.</span></li>
+          <li>{{ icon("clock", size=16) }}<span>Sans confirmation, le signalement cesse de compter au bout de 6 heures.</span></li>
+        </ul>
+      </div>
+      <ul class="links box__foot-links"><li><a href="/pannes">Voir le journal des pannes{{ icon("arrow-right", size=16) }}</a></li></ul>
+    </section>
+  </aside>
+</div>
 {% endblock %}

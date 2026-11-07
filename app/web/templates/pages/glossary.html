@@ -1,12 +1,41 @@
 {% extends "base.html" %}
+{% from "components/icons.html" import icon %}
 
+{# Glossaire : les termes en lignes (65 %), l'index des initiales collant (35 %). #}
 {% block content %}
-<h1>{{ page.meta.title }}</h1>
-<p>Les mots techniques des fiches, expliqués simplement.</p>
-<dl class="glossary">
-  {% for t in page.terms %}
-  <dt id="{{ t.slug }}">{{ t.term }}</dt>
-  <dd>{{ t.definition }}</dd>
-  {% endfor %}
-</dl>
+<header class="ph">
+  <div>
+    <nav class="crumbs" aria-label="Fil d'Ariane"><a href="/">Accueil</a><span aria-hidden="true">/</span><span aria-current="page">Glossaire</span></nav>
+    <h1>{{ page.meta.title }}</h1>
+    <p class="ph__desc">Les mots techniques des fiches, expliqués simplement. Dans une fiche, touchez un mot souligné pour voir sa définition.</p>
+  </div>
+</header>
+
+<div class="split">
+  <div class="split__main">
+    <section class="box" aria-labelledby="termes">
+      <div class="box__head">
+        <h2 id="termes">Termes <span class="num" data-filter-count>{{ page.terms | length }}</span></h2>
+        <p class="filter-field" data-term-filter hidden><label class="visually-hidden" for="filtre-terme">Filtrer les termes</label><input id="filtre-terme" type="search" placeholder="Filtrer : callback, jeton…" autocomplete="off"></p>
+      </div>
+      <dl class="rows glossary">
+        {% for t in page.terms %}
+        <div class="term" id="{{ t.slug }}">
+          <dt>{{ t.term }}<button type="button" class="icon-button" data-copy-link="#{{ t.slug }}" title="Copier le lien de cette définition" hidden>{{ icon("link", size=16, label="Copier le lien de cette définition") }}</button></dt>
+          <dd>{{ t.definition }}</dd>
+        </div>
+        {% endfor %}
+      </dl>
+      <p class="empty" data-filter-empty hidden>Aucun terme ne correspond.</p>
+    </section>
+  </div>
+
+  <aside class="split__side split__side--sticky" aria-label="Index">
+    {% set seen = namespace(letters="") %}
+    <nav class="box" aria-label="Aller à la lettre">
+      <div class="box__head"><h2>Index</h2></div>
+      <p class="az">{% for t in page.terms %}{% set letter = t.term[:1] | upper %}{% if letter not in seen.letters %}{% set seen.letters = seen.letters ~ letter %}<a href="#{{ t.slug }}">{{ letter }}</a>{% endif %}{% endfor %}</p>
+    </nav>
+  </aside>
+</div>
 {% endblock %}

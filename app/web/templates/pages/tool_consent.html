@@ -1,16 +1,18 @@
 {% extends "base.html" %}
+{% from "components/icons.html" import icon %}
 
+{# Consentement avant de connecter un outil MCP : qui demande, où partira l'accès, deux choix. #}
 {% block content %}
-<section class="message">
-  <h1>Autoriser cet outil ?</h1>
-  <p>L'outil <strong>{{ page.client_name }}</strong> demande à utiliser Gotcha en votre nom, avec votre compte GitHub.</p>
-  <p>Si vous acceptez, il recevra son accès à cette adresse :</p>
-  <p><code>{{ page.redirect_uri }}</code></p>
-  <p>Acceptez seulement si vous venez de lancer cette connexion vous-même, depuis votre éditeur ou votre agent.</p>
-  <form method="post" action="/connexion/outil">
+<section class="auth auth--wide" aria-labelledby="outil-titre">
+  <span class="auth__mark">{{ icon("bot", size=20) }}</span>
+  <h1 id="outil-titre">Autoriser cet outil ?</h1>
+  <p class="auth__desc">L'outil <strong>{{ page.client_name }}</strong> demande à utiliser Gotcha en votre nom, avec votre compte GitHub. Si vous acceptez, il recevra son accès à cette adresse :</p>
+  <p class="auth__uri"><code>{{ page.redirect_uri }}</code></p>
+  <p class="notice">{{ icon("triangle-alert") }}<span>Acceptez seulement si vous venez de lancer cette connexion vous-même, depuis votre éditeur ou votre agent.</span></p>
+  <form class="auth__actions" method="post" action="/connexion/outil">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <input type="hidden" name="demande" value="{{ page.request_id }}">
-    <button class="button" type="submit" name="decision" value="autoriser">Autoriser</button>
+    <button class="button" type="submit" name="decision" value="autoriser">Autoriser {{ page.client_name }}</button>
     <button class="button button--secondary" type="submit" name="decision" value="refuser">Refuser</button>
   </form>
 </section>

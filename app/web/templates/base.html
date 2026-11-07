@@ -1,3 +1,4 @@
+{% from "components/icons.html" import icon -%}
 <!doctype html>
 <html lang="fr">
 <head>
@@ -8,38 +9,117 @@
   {% if page.meta.noindex %}
   <meta name="robots" content="noindex">
   {% endif %}
-  <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/css/app.css">
-  <script src="/static/js/app.js" defer></script>
+  <link rel="icon" href="/static/img/favicon.svg?v=23" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/css/app.css?v=23">
+  {# Styles propres : accueil.css pour l'accueil, pages.css pour les autres pages (poids, D1). #}
+  {% block styles %}<link rel="stylesheet" href="/static/css/pages.css?v=23">{% endblock %}
+  <script src="/static/js/app.js?v=23" defer></script>
+  {% block scripts %}<script src="/static/js/pages.js?v=24" defer></script>{% endblock %}
 </head>
 <body>
   <a class="skip-link" href="#contenu">Aller au contenu</a>
 
+  {% set nav_links = [
+    ("/recherche", "Rechercher", "01"),
+    ("/pannes", "Pannes", "02"),
+    ("/glossaire", "Glossaire", "03"),
+    ("/ou-sont-vos-donnees", "Données", "04"),
+  ] %}
   <header class="site-header">
     <div class="container site-header__inner">
       <a class="brand" href="/">
-        <img src="/static/img/logo.svg" alt="" width="28" height="28">
+        <img class="brand__mark" src="/static/img/logo.svg" alt="" width="32" height="32">
         <span>{{ site.name }}</span>
       </a>
-      <nav aria-label="Navigation principale">
+
+      <nav class="site-nav" aria-label="Navigation principale">
         <ul class="nav">
-          <li><a href="/recherche"{% if request.url.path == "/recherche" %} aria-current="page"{% endif %}>Rechercher</a></li>
-          <li><a href="/pannes"{% if request.url.path.startswith("/pannes") %} aria-current="page"{% endif %}>Pannes</a></li>
-          {% if viewer.can_write or viewer.site_auth %}
-          <li><a href="/contribuer"{% if request.url.path.startswith("/contribuer") %} aria-current="page"{% endif %}>Contribuer</a></li>
-          {% endif %}
-          {% if viewer.pseudo %}
+          {% for href, label, num in nav_links %}
           <li>
-            <form method="post" action="/deconnexion">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-              <button type="submit" class="button button--small button--secondary">Se déconnecter ({{ viewer.pseudo }})</button>
-            </form>
+            <a class="nav__link" href="{{ href }}"{% if request.url.path.startswith(href) %} aria-current="page"{% endif %}>
+              <span class="nav__roller">
+                <span class="nav__text">{{ label }}</span>
+                <span class="nav__text nav__text--clone" aria-hidden="true">{{ label }}</span>
+              </span>
+              <span class="nav__index" aria-hidden="true">{{ num }}</span>
+            </a>
           </li>
-          {% elif viewer.site_auth %}
-          <li><a href="/connexion?retour={{ request.url.path | urlencode }}">Se connecter</a></li>
-          {% endif %}
+          {% endfor %}
         </ul>
       </nav>
+
+      {% set can_contribute = viewer.can_write or viewer.site_auth %}
+      {% set login_url = "/connexion?retour=" ~ (request.url.path | urlencode) %}
+      <div class="site-header__actions">
+        {% if viewer.pseudo %}
+        <form class="account" method="post" action="/deconnexion">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <span class="account__name">{{ icon("user", size=16) }}{{ viewer.pseudo }}</span>
+          <button type="submit" class="account__out" title="Se déconnecter">{{ icon("log-out", size=16, label="Se déconnecter (" ~ viewer.pseudo ~ ")") }}</button>
+        </form>
+        {% elif viewer.site_auth %}
+        <a class="account account__in" href="{{ login_url }}">{{ icon("log-in", size=16) }}Se connecter</a>
+        {% endif %}
+        {% if can_contribute %}
+        <a class="nav-btn nav-btn--secondary" href="/pannes/signaler">
+          <span class="nav__roller">
+            <span class="nav__text">Signaler</span>
+            <span class="nav__text nav__text--clone" aria-hidden="true">Signaler</span>
+          </span>
+        </a>
+        <a class="nav-btn nav-btn--primary" href="/contribuer">
+          <span class="nav-btn__box" aria-hidden="true">
+            <span class="nav-btn__arrows">
+              {{ icon("arrow-right", size=18) }}
+              {{ icon("arrow-right", size=18) }}
+            </span>
+          </span>
+          <span class="nav__roller">
+            <span class="nav__text">Contribuer</span>
+            <span class="nav__text nav__text--clone" aria-hidden="true">Contribuer</span>
+          </span>
+        </a>
+        {% endif %}
+      </div>
+
+      {# Menu mobile sans JavaScript : <details> s'ouvre et se ferme seul, au clavier aussi. #}
+      <details class="nav-mobile">
+        <summary class="nav-mobile__toggle">
+          <span class="nav-mobile__open">{{ icon("menu", size=24) }}</span>
+          <span class="nav-mobile__close">{{ icon("x", size=24) }}</span>
+          <span class="visually-hidden">Menu</span>
+        </summary>
+        <nav class="nav-mobile__panel" aria-label="Navigation mobile">
+          <ul>
+            {% for href, label, num in nav_links %}
+            <li>
+              <a href="{{ href }}"{% if request.url.path.startswith(href) %} aria-current="page"{% endif %}>
+                <span>{{ label }}</span>
+                <span class="nav__index" aria-hidden="true">{{ num }}</span>
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+          <div class="nav-mobile__actions">
+            {% if viewer.pseudo %}
+            <form class="account" method="post" action="/deconnexion">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <span class="account__name">{{ icon("user", size=16) }}{{ viewer.pseudo }}</span>
+              <button type="submit" class="nav-btn nav-btn--secondary">Se déconnecter</button>
+            </form>
+            {% elif viewer.site_auth %}
+            <a class="nav-btn nav-btn--secondary" href="{{ login_url }}">Se connecter avec GitHub</a>
+            {% endif %}
+            {% if can_contribute %}
+            <a class="nav-btn nav-btn--secondary" href="/pannes/signaler">Signaler une panne</a>
+            <a class="nav-btn nav-btn--primary" href="/contribuer">
+              <span class="nav-btn__box" aria-hidden="true">{{ icon("arrow-right", size=18) }}</span>
+              <span>Contribuer</span>
+            </a>
+            {% endif %}
+          </div>
+        </nav>
+      </details>
     </div>
   </header>
 
@@ -49,9 +129,35 @@
   </main>
 
   <footer class="site-footer">
-    <div class="container">
-      <p class="site-footer__hosting"><strong>{{ site.hosting }}</strong> · <a href="/ou-sont-vos-donnees">Où sont vos données</a></p>
-      <p><a href="/glossaire">Glossaire</a> · {{ site.license }}</p>
+    <div class="container site-footer__inner">
+      <div class="site-footer__about">
+        <a class="brand" href="/"><img src="/static/img/logo.svg" alt="" width="32" height="32">{{ site.name }}</a>
+        <p>Le carnet de terrain des intégrations de paiement mobile et du déploiement cloud : ce que la documentation ne dit pas.</p>
+        <p class="site-footer__hosting">{{ icon("shield-check", size=16) }}<span><strong>{{ site.hosting }}</strong> · <a href="/ou-sont-vos-donnees">Où sont vos données</a></span></p>
+      </div>
+      <nav class="site-footer__nav" aria-label="Pied de page">
+        <div>
+          <p class="site-footer__title">Explorer</p>
+          <ul>
+            <li><a href="/recherche">Rechercher un piège</a></li>
+            <li><a href="/pannes">Pannes en direct</a></li>
+            <li><a href="/glossaire">Glossaire</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="site-footer__title">Participer</p>
+          <ul>
+            {% if can_contribute %}
+            <li><a href="/contribuer">Ajouter un retour</a></li>
+            <li><a href="/pannes/signaler">Signaler une panne</a></li>
+            {% endif %}
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="container site-footer__bottom">
+      <p>{{ site.license }}</p>
+      <p>Fait à Dakar, pour les devs d'Afrique</p>
     </div>
   </footer>
 </body>

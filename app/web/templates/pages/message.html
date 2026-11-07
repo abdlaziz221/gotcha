@@ -1,9 +1,11 @@
 {% extends "base.html" %}
+{% from "components/icons.html" import icon %}
 
 {% block content %}
-<section class="message">
-  <h1>{{ page.heading }}</h1>
-  <p>{{ page.message }}</p>
-  <p><a class="button" href="{{ page.back_url }}">{{ page.back_label }}</a></p>
+<section class="auth" aria-labelledby="message-titre">
+  <span class="auth__mark auth__mark--ok">{{ icon("circle-check", size=20) }}</span>
+  <h1 id="message-titre">{{ page.heading }}</h1>
+  <p class="auth__desc">{{ page.message }}</p>
+  <a class="button button--secondary" href="{{ page.back_url }}">{{ page.back_label }}</a>
 </section>
 {% endblock %}

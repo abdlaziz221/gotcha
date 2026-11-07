@@ -1,19 +1,22 @@
-{% from "components/status.html" import status_badge %}
+{% from "components/status.html" import status_text %}
+{% from "components/icons.html" import icon %}
+
+{# Icône de chaque sévérité (DESIGN_SYSTEM.md, section 5). #}
+{% set SEVERITY_ICONS = {"blocking": "circle-x", "major": "triangle-alert", "minor": "info"} %}
 
 {# Carte d'une fiche. `card` : FicheCard. #}
 {% macro fiche_card(card) -%}
 <article class="card">
   <header class="card__header">
     <h3 class="card__title"><a href="{{ card.url }}">{{ card.title }}</a></h3>
-    {{ status_badge(card.status) }}
   </header>
-  <p class="card__meta">{{ card.kind_label }} · {{ card.country_name }}</p>
+  <p class="card__meta">{{ status_text(card.status) }} · {{ card.kind_label }} · {{ card.country_name }}</p>
   <p>{{ card.summary }}</p>
   <p class="card__footer">
     {{ card.gotcha_count }} piège{% if card.gotcha_count > 1 %}s{% endif %}
     · mise à jour le {{ card.last_confirmed_on | date_fr }}
-    {% if card.is_draft %}<span class="tag tag--draft">Brouillon</span>{% endif %}
-    {% if card.needs_review %}<span class="tag tag--review">À revérifier</span>{% endif %}
+    {% if card.is_draft %}· brouillon{% endif %}
+    {% if card.needs_review %}· à revérifier{% endif %}
   </p>
 </article>
 {%- endmacro %}
@@ -23,77 +26,99 @@
 <ul class="sources">
   {% for s in sources %}
   <li>
-    {% if s.url %}<a href="{{ s.url }}" rel="noopener noreferrer nofollow">{{ s.title }}</a>{% else %}{{ s.title }}{% endif %}
+    {% if s.url %}<a href="{{ s.url }}" rel="noopener noreferrer nofollow">{{ s.title }}{{ icon("external-link", label="(lien externe)", size=14) }}</a>{% else %}{{ s.title }}{% endif %}
     {% if s.author %} · par {{ s.author }}{% endif %}
-    {% if s.published_on %}· publié le {{ s.published_on | date_fr }}{% endif %}
+    {% if s.published_on %} · publié le {{ s.published_on | date_fr }}{% endif %}
     · consulté le {{ s.accessed_on | date_fr }}
   </li>
   {% endfor %}
 </ul>
 {%- endmacro %}
 
-{# Carte d'un piège avec le bouton « ça marche encore ». `g` : GotchaView. À importer « with context » (csrf_token). #}
+{# Icône de chaque niveau de confiance (D22) : lu, testé, confirmé en production. #}
+{% set CONFIDENCE_ICONS = {"sourced": "book-open", "reproduced": "flask-conical", "production": "shield-check"} %}
+
+{# Carte d'un piège. `g` : GotchaView. À importer « with context » (csrf_token, viewer).
+   En-tête (titre, métadonnées), corps (symptôme, cause, solution…), pied (sources, relecteur,
+   confirmation). États en texte avec icône, jamais en pastille (DS-19). #}
 {% macro gotcha_card(g, fiche_slug, login_url="/connexion") -%}
-<article class="gotcha gotcha--{{ g.severity.value }}" id="{{ g.anchor }}">
-  <header>
-    <h3 class="gotcha__title">{{ g.title }}</h3>
+<article class="gotcha" id="{{ g.anchor }}" data-severity="{{ g.severity.value }}" data-env="{{ g.environment_labels | join('|') }}">
+  <header class="gotcha__head">
+    <div class="gotcha__top">
+      <h3 class="gotcha__title">{{ g.title }}</h3>
+      <button type="button" class="icon-button" data-copy-link="#{{ g.anchor }}" title="Copier le lien de ce piège" hidden>{{ icon("link", size=16, label="Copier le lien de ce piège") }}</button>
+    </div>
     <p class="gotcha__meta">
-      <span class="tag tag--{{ g.severity.value }}">{{ g.severity_label }}</span>
-      <span class="tag tag--confidence">{{ g.confidence_label }}</span>
-      {% for env in g.environment_labels %}<span class="tag">{{ env }}</span>{% endfor %}
-      {% if g.api_version %}<span class="tag">API {{ g.api_version }}</span>{% endif %}
-      {% for code in g.error_codes %}<code class="tag tag--code">{{ code }}</code>{% endfor %}
-      {% if g.is_draft %}<span class="tag tag--draft">Brouillon, non vérifié</span>{% endif %}
-      {% if g.needs_review %}<span class="tag tag--review">À revérifier</span>{% endif %}
+      <span class="severity severity--{{ g.severity.value }}">{{ icon(SEVERITY_ICONS[g.severity.value], size=16) }}{{ g.severity_label }}</span>
+      <span class="confidence confidence--{{ g.confidence.value }}">{{ icon(CONFIDENCE_ICONS[g.confidence.value], size=16) }}{{ g.confidence_label }}</span>
+      {% if g.environment_labels %}<span>{{ g.environment_labels | join(", ") }}</span>{% endif %}
+      {% if g.api_version %}<span>API {{ g.api_version }}</span>{% endif %}
+      {% if g.error_codes %}<span>{% for code in g.error_codes %}<code>{{ code }}</code>{% if not loop.last %} {% endif %}{% endfor %}</span>{% endif %}
+      {% if g.is_draft %}<span>Brouillon, non vérifié</span>{% endif %}
+      {% if g.needs_review %}<span>À revérifier</span>{% endif %}
     </p>
   </header>
-  <h4>Symptôme</h4>
-  {{ g.symptom_html }}
-  <h4>Cause</h4>
-  {{ g.cause_html }}
-  {% if g.locked %}
-  <p class="notice">La solution est réservée aux membres. Compte gratuit, <a href="{{ login_url }}">connexion avec GitHub</a>.</p>
-  {% else %}
-  <h4>Solution</h4>
-  {{ g.fix_html }}
-  {% if g.failed_attempts_html %}
-  <h4>Pistes qui ont échoué</h4>
-  {{ g.failed_attempts_html }}
-  {% endif %}
-  {% if g.proof_html %}
-  <h4>Preuve</h4>
-  {{ g.proof_html }}
-  {% endif %}
-  {% endif %}
-  <details class="gotcha__sources">
-    <summary>Sources ({{ g.sources | length }})</summary>
-    {{ source_list(g.sources) }}
-  </details>
-  {% if viewer.pseudo %}
-  <details class="confirm">
-    <summary>Ça marche encore ({{ g.confirmations }})</summary>
-    <form class="form" method="post" action="/fiches/{{ fiche_slug }}/confirmer">
+  <div class="gotcha__body">
+    <div class="gotcha__part prose-ui"><h4>Symptôme</h4>{{ g.symptom_html }}</div>
+    <div class="gotcha__part prose-ui"><h4>Cause</h4>{{ g.cause_html }}</div>
+    {% if g.locked %}
+    <div class="locked">
+      {{ icon("lock", size=18) }}
+      <p><strong>Solution réservée aux membres.</strong> Compte gratuit, connexion avec GitHub.</p>
+      <a class="button button--secondary button--small" href="{{ login_url }}">{{ icon("github", size=16) }}Se connecter avec GitHub</a>
+    </div>
+    {% else %}
+    <div class="gotcha__part prose-ui"><h4>Solution</h4>{{ g.fix_html }}</div>
+    {% if g.failed_attempts_html %}<div class="gotcha__part prose-ui"><h4>Pistes qui ont échoué</h4>{{ g.failed_attempts_html }}</div>{% endif %}
+    {% if g.proof_html %}<div class="gotcha__part prose-ui"><h4>Preuve</h4>{{ g.proof_html }}</div>{% endif %}
+    {% endif %}
+    {% if g.audio_url %}
+    <figure class="gotcha__audio">
+      <figcaption>{{ icon("volume-2", size=16) }}<span lang="wo">Explication en wolof</span></figcaption>
+      <audio controls preload="none" src="{{ g.audio_url }}"></audio>
+      {% if g.audio_transcript_html %}
+      <details>
+        <summary>Lire la transcription</summary>
+        <div class="prose-ui" lang="wo">{{ g.audio_transcript_html }}</div>
+      </details>
+      {% endif %}
+      {% if g.audio_credit %}<p class="gotcha__credit">{{ g.audio_credit }}</p>{% endif %}
+    </figure>
+    {% endif %}
+  </div>
+  {% set count_text %}{{ g.confirmations }} confirmation{% if g.confirmations > 1 %}s{% endif %}{% if g.confirmations %} · dernière le {{ g.last_confirmed_on | date_fr }}{% endif %}{% endset %}
+  <footer class="gotcha__foot">
+    <details class="gotcha__sources">
+      <summary>Sources ({{ g.sources | length }})</summary>
+      {{ source_list(g.sources) }}
+    </details>
+    {% if g.verified_by and not g.is_draft %}<p class="gotcha__by">{{ icon("circle-check", size=16) }}Relu par {{ g.verified_by }}</p>{% endif %}
+    {% if viewer.pseudo %}
+    <details class="confirm-form">
+      <summary>Ça marche encore · <span class="confirm__count">{{ count_text }}</span></summary>
+      <form class="form" method="post" action="/fiches/{{ fiche_slug }}/confirmer" data-inplace>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="target_kind" value="gotcha">
+        <input type="hidden" name="target_id" value="{{ g.id }}">
+        <div class="field">
+          <label for="preuve-{{ g.anchor }}">Votre preuve</label>
+          <textarea id="preuve-{{ g.anchor }}" name="proof" rows="3" maxlength="4000" required></textarea>
+          <p class="field__help">Versions, configuration sans secret, étapes et résultat obtenu.</p>
+        </div>
+        <p><button type="submit" class="button button--small">Confirmer avec cette preuve</button></p>
+      </form>
+    </details>
+    {% elif viewer.can_write %}
+    <form class="confirm" method="post" action="/fiches/{{ fiche_slug }}/confirmer" data-inplace>
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <input type="hidden" name="target_kind" value="gotcha">
       <input type="hidden" name="target_id" value="{{ g.id }}">
-      <div class="field">
-        <label for="preuve-{{ g.anchor }}">Votre preuve</label>
-        <textarea id="preuve-{{ g.anchor }}" name="proof" rows="3" maxlength="4000" required></textarea>
-        <p class="field__help">Versions, configuration sans secret, étapes et résultat obtenu.</p>
-      </div>
-      <button type="submit" class="button button--small">Confirmer</button>
+      <span class="confirm__count">{{ count_text }}</span>
+      <button type="submit" class="button button--secondary button--small">Ça marche encore</button>
     </form>
-  </details>
-  {% elif viewer.can_write %}
-  <form class="confirm" method="post" action="/fiches/{{ fiche_slug }}/confirmer">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <input type="hidden" name="target_kind" value="gotcha">
-    <input type="hidden" name="target_id" value="{{ g.id }}">
-    <button type="submit" class="button button--small">Ça marche encore</button>
-    <span class="confirm__count">{{ g.confirmations }} confirmation{% if g.confirmations > 1 %}s{% endif %}{% if g.confirmations %} · dernière le {{ g.last_confirmed_on | date_fr }}{% endif %}</span>
-  </form>
-  {% else %}
-  <p class="confirm__count">{{ g.confirmations }} confirmation{% if g.confirmations > 1 %}s{% endif %}{% if g.confirmations %} · dernière le {{ g.last_confirmed_on | date_fr }}{% endif %}</p>
-  {% endif %}
+    {% else %}
+    <p class="confirm__count">{{ count_text }}</p>
+    {% endif %}
+  </footer>
 </article>
 {%- endmacro %}

@@ -1,41 +1,82 @@
 {% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+
+{# Recherche : barre de filtres, résultats en lignes (65 %), raccourcis par service (35 %). #}
+{% set HIT_ICONS = {"fiche": "book-open", "gotcha": "triangle-alert", "error_code": "terminal"} %}
 
 {% block content %}
-<h1>{{ page.meta.title }}</h1>
+<header class="ph">
+  <div>
+    <nav class="crumbs" aria-label="Fil d'Ariane"><a href="/">Accueil</a><span aria-hidden="true">/</span><span aria-current="page">Recherche</span></nav>
+    <h1>{{ page.meta.title }}</h1>
+    <p class="ph__desc">Collez une erreur, un en-tête HTTP ou un symptôme. La recherche couvre les fiches et chaque piège publié.</p>
+  </div>
+</header>
 
-<form class="search search--filters" method="get" action="/recherche" role="search">
-  <div class="field">
-    <label for="q">Service, en-tête, symptôme ou code d'erreur</label>
-    <input id="q" name="q" type="search" value="{{ page.query }}" maxlength="200" placeholder="X-Target-Environment, jeton expiré, 400…">
-  </div>
-  <div class="field">
-    <label for="service">Service</label>
-    <select id="service" name="service">
-      <option value="">Tous</option>
-      {% for o in page.service_options %}<option value="{{ o.value }}"{% if o.selected %} selected{% endif %}>{{ o.label }}</option>{% endfor %}
-    </select>
-  </div>
-  <div class="field">
-    <label for="pays">Pays</label>
-    <select id="pays" name="pays">
-      <option value="">Tous</option>
-      {% for o in page.country_options %}<option value="{{ o.value }}"{% if o.selected %} selected{% endif %}>{{ o.label }}</option>{% endfor %}
-    </select>
-  </div>
-  <button type="submit" class="button">Rechercher</button>
-</form>
+<div class="split">
+  <div class="split__main">
+    <form class="box searchbar" method="get" action="/recherche" role="search" data-autosubmit>
+      <div class="field">
+        <label for="q">Erreur, en-tête ou symptôme</label>
+        <input id="q" name="q" type="search" value="{{ page.query }}" maxlength="200" placeholder="X-Target-Environment, jeton expiré, 400…">
+      </div>
+      <div class="field">
+        <label for="service">Service</label>
+        <select id="service" name="service">
+          <option value="">Tous</option>
+          {% for o in page.service_options %}<option value="{{ o.value }}"{% if o.selected %} selected{% endif %}>{{ o.label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="pays">Pays</label>
+        <select id="pays" name="pays">
+          <option value="">Tous</option>
+          {% for o in page.country_options %}<option value="{{ o.value }}"{% if o.selected %} selected{% endif %}>{{ o.label }}</option>{% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="button">{{ icon("search") }}Rechercher</button>
+    </form>
 
-{% if page.hits %}
-<ol class="results">
-  {% for hit in page.hits %}
-  <li class="result result--{{ hit.kind.value }}">
-    <span class="tag">{{ hit.kind_label }}</span>
-    <a href="{{ hit.url }}">{{ hit.title }}</a>
-    <p>{{ hit.snippet }}</p>
-  </li>
-  {% endfor %}
-</ol>
-{% elif page.query %}
-<p class="empty">Aucun résultat pour « {{ page.query }} ». {% if viewer.can_write or viewer.site_auth %}Vous connaissez ce piège ? <a href="/contribuer">Ajoutez-le</a>.{% endif %}</p>
-{% endif %}
+    {% if page.query or page.hits %}
+    <section class="box" aria-labelledby="resultats">
+      <div class="box__head"><h2 id="resultats" role="status">{{ page.hits | length }} résultat{% if page.hits | length > 1 %}s{% endif %}{% if page.query %} pour « {{ page.query }} »{% endif %}</h2></div>
+      {% if page.hits %}
+      <ol class="rows" data-highlight="{{ page.query }}">
+        {% for hit in page.hits %}
+        <li class="result result--{{ hit.kind.value }}">
+          <a class="row" href="{{ hit.url }}">
+            <span class="row__title">{{ hit.title }}</span>
+            <span class="row__text">{{ hit.snippet }}</span>
+            <span class="row__aside row__kind">{{ icon(HIT_ICONS.get(hit.kind.value, "book-open"), size=16) }}{{ hit.kind_label }}</span>
+          </a>
+        </li>
+        {% endfor %}
+      </ol>
+      {% else %}
+      <p class="empty">Aucun résultat. {% if viewer.can_write or viewer.site_auth %}Vous connaissez ce piège ? <a href="/contribuer">Ajoutez-le</a>.{% endif %}</p>
+      {% endif %}
+    </section>
+    {% else %}
+    <section class="box" aria-labelledby="frequentes">
+      <div class="box__head"><div><h2 id="frequentes">Recherches fréquentes</h2><p>Les erreurs que les devs collent le plus souvent.</p></div></div>
+      <ul class="rows">
+        {% for q, hint in [("X-Target-Environment", "En-tête obligatoire chez MTN MoMo"), ("bac à sable Wave", "Tester Wave sans bac à sable public"), ("jeton", "Jeton d'accès refusé ou expiré"), ("Daraja", "M-Pesa Kenya : STK Push et callbacks"), ("callback", "Notifications de paiement qui n'arrivent pas ou arrivent deux fois"), ("devise", "Montant ou devise refusés")] %}
+        <li><a class="row" href="/recherche?q={{ q | urlencode }}"><span class="row__title"><code>{{ q }}</code></span><span class="row__text">{{ hint }}</span><span class="row__aside">{{ icon("arrow-right", size=16) }}</span></a></li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+  </div>
+
+  <aside class="split__side" aria-label="Raccourcis">
+    {% if page.service_options %}
+    <section class="box" aria-labelledby="par-service">
+      <div class="box__head"><h2 id="par-service">Par service</h2></div>
+      <ul class="links">
+        {% for o in page.service_options %}<li><a href="/recherche?service={{ o.value | urlencode }}">{{ o.label }}{{ icon("arrow-right", size=16) }}</a></li>{% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+  </aside>
+</div>
 {% endblock %}
