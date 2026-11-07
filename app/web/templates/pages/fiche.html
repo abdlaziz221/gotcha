@@ -109,7 +109,7 @@
       <input type="hidden" name="target_kind" value="fiche">
       <input type="hidden" name="target_id" value="{{ page.slug }}">
       <button type="submit" class="button">Ça marche encore</button>
-      <span class="confirm__count">{{ page.confirmations }} confirmation{% if page.confirmations > 1 %}s{% endif %} · dernière le {{ page.last_confirmed_on | date_fr }}</span>
+      <span class="confirm__count">{{ page.confirmations }} confirmation{% if page.confirmations > 1 %}s{% endif %}{% if page.confirmations %} · dernière le {{ page.last_confirmed_on | date_fr }}{% endif %}</span>
     </form>
     <p><a href="{{ page.contribute_url }}">Ajouter un piège ou corriger cette fiche</a> · <a href="{{ page.report_url }}">Signaler une panne</a></p>
   </section>

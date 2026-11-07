@@ -75,6 +75,9 @@ Chaque tâche a son issue sur GitHub (même identifiant dans le titre). Le READM
 | A11 | Revue de sécurité en production : en-têtes, cookies, quotas derrière le proxy | `app/security/` | mer. 11 |
 | A12 | Dossier de soumission : licences, titularité, déclaration de l'usage de l'IA, rôles | `docs/SUBMISSION.md` | ven. 13 |
 | A13 | Connexion GitHub du serveur MCP : comptes, jetons, quotas (D20) | `app/services/oauth.py`, `app/mcp/oauth.py`, `migrations/` | dim. 8 |
+| A14 | Niveaux de confiance, preuves et dates des sources (D22) | `app/domain/`, `content/` | dim. 8 |
+| A15 | Connexion et aperçu public sur le site, contributions avec compte (D23) | `app/web/`, `app/services/` | dim. 8 |
+| A16 | Outils MCP pour proposer et confirmer un piège, compteurs d'usage (D24) | `app/mcp/`, `app/services/` | lun. 9 |
 
 ### Loum : frontend et design (L)
 
@@ -105,9 +108,9 @@ Chaque tâche a son issue sur GitHub (même identifiant dans le titre). Le READM
 | K5 | Règles d'état (seuils, expiration des signalements), documentées | `app/services/status.py` | jeu. 5 |
 | K6 | Outil `report_outage` : quotas, abus, messages | `app/mcp/` | ven. 6 |
 | K7 | Détection des secrets : vrais formats de clés (Wave, Orange, MTN, Daraja), faux positifs | `app/security/secrets.py` | mer. 4 |
-| K8 | Scénario de démo et test automatisé reproductible de l'agent | `docs/DEMO.md`, `tests/` | ven. 6 |
+| K8 | Test de l'agent sans puis avec Gotcha (tokens, tentatives, temps, réussite) ; scénario de démo et test automatisé reproductible | `docs/DEMO.md`, `tests/` | ven. 6 |
 | K9 | Serveur MCP en ligne sur Datacloud, testé depuis un vrai agent | `app/mcp/`, `deploy/` | sam. 7 |
-| K10 | Contenu MTN MoMo et M-Pesa : une vingtaine de pièges sourcés et vérifiés | `content/` | dim. 8 |
+| K10 | Contenu MTN MoMo et M-Pesa : une dizaine de pièges bien documentés, avec leur niveau de confiance | `content/` | dim. 8 |
 | K11 | Répéter la démo 10 fois ; enregistrer une vidéo de secours | — | jeu. 12 |
 
 ## Chemin critique

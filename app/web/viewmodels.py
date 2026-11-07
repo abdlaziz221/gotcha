@@ -20,6 +20,7 @@ from typing import Literal
 from markupsafe import Markup
 
 from app.domain.models import (
+    ConfidenceLevel,
     EnvDifference,
     ErrorCode,
     GlossaryTerm,
@@ -29,9 +30,10 @@ from app.domain.models import (
     Status,
 )
 
+# D21 : mémoire opérationnelle ; D22 : niveau de confiance affiché, rien de plus promis.
 DEFAULT_DESCRIPTION = (
-    "Les pièges du paiement et du déploiement en Afrique que personne ne documente, "
-    "confirmés par les devs qui les ont vécus."
+    "La mémoire opérationnelle du paiement mobile et du déploiement en Afrique : "
+    "chaque piège cite ses sources et affiche son niveau de confiance."
 )
 
 
@@ -75,6 +77,7 @@ class SourceView:
     url: str | None
     author: str | None
     accessed_on: date
+    published_on: date | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -141,6 +144,10 @@ class GotchaView:
     symptom_html: Markup
     cause_html: Markup
     fix_html: Markup
+    failed_attempts_html: Markup | None
+    proof_html: Markup | None
+    confidence: ConfidenceLevel
+    confidence_label: str
     sources: list[SourceView]
     last_confirmed_on: date
     confirmations: int

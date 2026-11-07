@@ -47,6 +47,14 @@ class Model(BaseModel):
 # --- Énumérations ------------------------------------------------------------
 
 
+class ConfidenceLevel(StrEnum):
+    """Ce qui a été vérifié pour un piège (D22)."""
+
+    SOURCED = "sourced"  # lu dans une source officielle ou recoupé, sans test de notre part
+    REPRODUCED = "reproduced"  # reproduit dans un bac à sable, avec la date et la version
+    PRODUCTION = "production"  # confirmé par un développeur en production
+
+
 class ServiceKind(StrEnum):
     PAYMENT = "payment"
     HOSTING = "hosting"
@@ -113,7 +121,8 @@ class Source(Model):
     title: str = Field(min_length=3)
     url: HttpUrl | None = None
     author: str | None = None  # pseudo du dev, pour un retour de terrain
-    accessed_on: date
+    published_on: date | None = None  # date de publication, si la page la donne
+    accessed_on: date  # le jour où nous l'avons lue
 
     @model_validator(mode="after")
     def _url_or_author(self) -> Self:
@@ -161,6 +170,9 @@ class Gotcha(Model):
     symptom_md: str
     cause_md: str
     fix_md: str
+    failed_attempts_md: str | None = None  # pistes essayées qui n'ont pas marché
+    proof_md: str | None = None  # versions, configuration, étapes, résultat obtenu
+    confidence: ConfidenceLevel = ConfidenceLevel.SOURCED
     severity: Severity
     environments: list[Environment] = Field(min_length=1)
     api_version: str | None = None
@@ -175,6 +187,8 @@ class Gotcha(Model):
     def _published_is_verified(self) -> Self:
         if self.publication is Publication.PUBLISHED and not self.verified_by:
             raise ValueError(f"le piège {self.id} est publié sans verified_by")
+        if self.confidence is not ConfidenceLevel.SOURCED and not self.proof_md:
+            raise ValueError(f"le piège {self.id} est « {self.confidence.value} » sans preuve")
         if not self.id.startswith(f"{self.fiche_slug}."):
             raise ValueError(f"l'id {self.id} doit commencer par '{self.fiche_slug}.'")
         return self

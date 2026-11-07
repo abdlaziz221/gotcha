@@ -11,7 +11,7 @@
   <p>{{ card.summary }}</p>
   <p class="card__footer">
     {{ card.gotcha_count }} piège{% if card.gotcha_count > 1 %}s{% endif %}
-    · confirmé le {{ card.last_confirmed_on | date_fr }}
+    · mise à jour le {{ card.last_confirmed_on | date_fr }}
     {% if card.is_draft %}<span class="tag tag--draft">Brouillon</span>{% endif %}
     {% if card.needs_review %}<span class="tag tag--review">À revérifier</span>{% endif %}
   </p>
@@ -25,6 +25,7 @@
   <li>
     {% if s.url %}<a href="{{ s.url }}" rel="noopener noreferrer nofollow">{{ s.title }}</a>{% else %}{{ s.title }}{% endif %}
     {% if s.author %} · par {{ s.author }}{% endif %}
+    {% if s.published_on %}· publié le {{ s.published_on | date_fr }}{% endif %}
     · consulté le {{ s.accessed_on | date_fr }}
   </li>
   {% endfor %}
@@ -38,6 +39,7 @@
     <h3 class="gotcha__title">{{ g.title }}</h3>
     <p class="gotcha__meta">
       <span class="tag tag--{{ g.severity.value }}">{{ g.severity_label }}</span>
+      <span class="tag tag--confidence">{{ g.confidence_label }}</span>
       {% for env in g.environment_labels %}<span class="tag">{{ env }}</span>{% endfor %}
       {% if g.api_version %}<span class="tag">API {{ g.api_version }}</span>{% endif %}
       {% for code in g.error_codes %}<code class="tag tag--code">{{ code }}</code>{% endfor %}
@@ -51,6 +53,14 @@
   {{ g.cause_html }}
   <h4>Solution</h4>
   {{ g.fix_html }}
+  {% if g.failed_attempts_html %}
+  <h4>Pistes qui ont échoué</h4>
+  {{ g.failed_attempts_html }}
+  {% endif %}
+  {% if g.proof_html %}
+  <h4>Preuve</h4>
+  {{ g.proof_html }}
+  {% endif %}
   <details class="gotcha__sources">
     <summary>Sources ({{ g.sources | length }})</summary>
     {{ source_list(g.sources) }}
@@ -60,7 +70,7 @@
     <input type="hidden" name="target_kind" value="gotcha">
     <input type="hidden" name="target_id" value="{{ g.id }}">
     <button type="submit" class="button button--small">Ça marche encore</button>
-    <span class="confirm__count">{{ g.confirmations }} confirmation{% if g.confirmations > 1 %}s{% endif %} · dernière le {{ g.last_confirmed_on | date_fr }}</span>
+    <span class="confirm__count">{{ g.confirmations }} confirmation{% if g.confirmations > 1 %}s{% endif %}{% if g.confirmations %} · dernière le {{ g.last_confirmed_on | date_fr }}{% endif %}</span>
   </form>
 </article>
 {%- endmacro %}

@@ -1,7 +1,7 @@
 [project]
 name = "gotcha"
 version = "0.1.0"
-description = "Les pièges du paiement et du déploiement en Afrique que personne ne documente."
+description = "La mémoire opérationnelle du paiement mobile et du déploiement en Afrique."
 readme = "README.md"
 requires-python = ">=3.11"
 # Dépendances : requirements.txt (production) et requirements-dev.txt (outils).

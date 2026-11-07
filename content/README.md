@@ -10,7 +10,7 @@
 | Orange Money | `orange-money-sn` (et `orange-money-ci` à créer) | Abdoul Aziz | A9 |
 | Datacloud | `datacloud-sn` | Abdoul Aziz | A10 |
 
-Objectif : **30 pièges sourcés le dimanche 8 novembre**, dont une vingtaine sur MTN MoMo et M-Pesa, 3 à 5 recoupés sur Wave et sur Orange Money, plus la fiche Datacloud.
+Objectif : **au moins 15 pièges bien documentés le dimanche 8 novembre**, avec un niveau de confiance honnête, sur MTN MoMo, M-Pesa, Wave et Orange Money, plus la fiche Datacloud (D21). Mieux vaut 15 pièges vérifiés que 30 présentés à tort comme testés.
 
 ## Le contenu de départ est en brouillon
 
@@ -69,13 +69,15 @@ severity: major                     # blocking, major ou minor
 environments: [sandbox]             # sandbox, production, ou les deux
 api_version: v1_0
 error_codes: ["400"]
+confidence: sourced                 # sourced, reproduced ou production (voir plus bas)
 publication: draft
 verified_by: null                   # pseudo de la personne qui a vérifié (obligatoire pour published)
 last_confirmed_on: 2026-11-02
 sources:
   - title: "Forum MTN MoMo : …"
     url: https://…
-    accessed_on: 2026-11-02
+    published_on: 2026-01-07        # date de publication, si la page la donne
+    accessed_on: 2026-11-02          # le jour où vous l'avez lue
   - title: Retour de terrain           # ou un témoignage
     author: pseudo_du_dev
     accessed_on: 2026-11-02
@@ -92,9 +94,29 @@ Pourquoi ça arrive.
 ## Solution
 
 Comment l'éviter, avec un exemple de code court si utile.
+
+## Pistes qui ont échoué
+
+Ce qui a été essayé sans succès. C'est souvent ce qui fait gagner le plus de temps.
+
+## Preuve
+
+Les versions, la configuration sans secret, les étapes, le résultat attendu et le résultat obtenu.
 ```
 
-Les trois sections **Symptôme**, **Cause** et **Solution** sont obligatoires.
+Les trois sections **Symptôme**, **Cause** et **Solution** sont obligatoires. **Pistes qui ont échoué** et **Preuve** sont facultatives, sauf la preuve dès que le niveau dépasse `sourced`.
+
+### Niveaux de confiance
+
+| `confidence` | Sens | Ce qu'il faut |
+| --- | --- | --- |
+| `sourced` | Lu, sans test de notre part | Une source officielle, ou au moins deux sources recoupées |
+| `reproduced` | Reproduit dans un bac à sable | Une section **Preuve**, avec la date et la version |
+| `production` | Confirmé par un développeur en production | Une section **Preuve** |
+
+Une capture d'écran seule n'est pas une preuve, et un test en bac à sable ne vaut jamais confirmation en production.
+
+Une date récente ne rend pas une source plus sûre : un blog ou un dépôt récent a pu être écrit par un agent. Ne publiez pas sur la seule foi d'une telle source.
 
 ### Glossaire
 
@@ -105,10 +127,10 @@ Dans le texte d'une étape ou d'un piège, `[[webhook]]` ou `[[jeton-acces|jeton
 1. **Chaque piège a au moins une source** : une page publique (URL) ou un retour de terrain (auteur).
 2. **Un piège tiré d'un blog non officiel n'est publié que s'il est recoupé** par une deuxième source ou par notre propre test.
 3. **Réécrire, ne jamais copier** une source : on résume avec nos mots et on cite.
-4. **Aucun contenu inventé ni généré automatiquement** : c'est ce qui fait la valeur de Gotcha.
+4. **Aucun piège inventé** : chaque piège vient d'une source citée ou d'un problème réellement rencontré. Un agent peut préparer un brouillon, mais son développeur l'approuve et un relecteur le vérifie.
 5. Phrases courtes, vocabulaire expliqué (glossaire), un exemple concret par piège quand c'est possible.
 6. **Aucune vraie clé, aucun vrai numéro de téléphone** dans les exemples : `<VOTRE_CLE>`, `+221 77 000 00 00`.
-7. Pour publier : mettre `publication: published` et `verified_by: <votre pseudo>` après avoir **reproduit** le piège ou **recoupé** deux sources ; mettre à jour `last_confirmed_on`.
+7. Pour publier : mettre `publication: published` et `verified_by: <votre pseudo>` après avoir **reproduit** le piège ou **recoupé** deux sources ; mettre à jour `last_confirmed_on` et `confidence`.
 
 ## Tester
 
