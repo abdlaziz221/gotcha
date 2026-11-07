@@ -8,7 +8,7 @@ from typing import Annotated
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
-from starlette.responses import RedirectResponse, Response
+from starlette.responses import FileResponse, RedirectResponse, Response
 
 from app.domain.countries import country_name
 from app.domain.models import Account, Publication, TargetKind, UsageEvent
@@ -49,6 +49,32 @@ def _first_view_today(request: Request, slug: str) -> bool:
     digest = hashlib.sha256(_VIEW_SALT + f"{ip}|{slug}".encode()).hexdigest()
     limiter: RateLimiter = request.app.state.rate_limiter
     return limiter.hit(f"vue-ouverte:{digest}", limit=1, window_seconds=VIEW_WINDOW_SECONDS)
+
+
+AUDIO_TYPES = {".mp3": "audio/mpeg", ".ogg": "audio/ogg", ".m4a": "audio/mp4"}
+
+
+@router.get("/fiches/{slug}/audio/{name}")
+async def gotcha_audio(request: Request, slug: str, name: str, services: ServicesDep) -> Response:
+    """L'explication en wolof d'un piège (D26), avec les mêmes droits que sa solution.
+
+    Jamais par /static, qui est public : l'audio dévoilerait une solution réservée.
+    """
+    fiche = await services.fiches.get(slug)  # brouillon caché en production : 404
+    gotcha = fiche.find_gotcha(f"{fiche.slug}.{name}")
+    if gotcha is None or gotcha.audio is None:
+        raise HTTPException(status_code=404)
+    settings = services.settings
+    if settings.site_auth and current_account(request) is None and not fiche.open_access:
+        raise HTTPException(
+            status_code=403, detail="Connectez-vous pour écouter cette explication."
+        )
+    audio_dir = (settings.content_dir / "fiches" / fiche.slug / "audio").resolve()
+    path = (audio_dir / gotcha.audio.file).resolve()
+    if not path.is_relative_to(audio_dir) or not path.is_file():
+        raise HTTPException(status_code=404)
+    cache = "private, no-store" if settings.site_auth else "public, max-age=3600"
+    return FileResponse(path, media_type=AUDIO_TYPES[path.suffix], headers={"Cache-Control": cache})
 
 
 @router.get("/fiches/{slug}")

@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 from datetime import date, datetime
 from enum import StrEnum
-from typing import Self
+from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
 
@@ -161,6 +161,29 @@ class ErrorCode(Model):
     action: str
 
 
+AUDIO_FILE_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*\.(?:mp3|ogg|m4a)$"
+
+
+class AudioExplanation(Model):
+    """Explication orale d'un piège dans une langue locale (D26), avec sa transcription.
+
+    Le fichier est dans content/fiches/<fiche>/audio/ et n'est servi que par une route
+    qui vérifie les droits de la fiche, jamais par /static. Le français reste la référence.
+    """
+
+    language: Literal["wo"] = "wo"  # wolof, seule langue retenue pour la compétition
+    file: str = Field(pattern=AUDIO_FILE_PATTERN)
+    transcript_md: str = Field(min_length=10)
+    recorded_by: str = Field(min_length=2)
+    reviewed_by: str | None = None  # second locuteur qui a écouté et relu ; requis pour publier
+
+    @model_validator(mode="after")
+    def _reviewed_by_someone_else(self) -> Self:
+        if self.reviewed_by and self.reviewed_by == self.recorded_by:
+            raise ValueError("l'audio doit être relu par un autre locuteur que son auteur")
+        return self
+
+
 class Gotcha(Model):
     """Un piège : ce que la documentation ne dit pas."""
 
@@ -182,11 +205,15 @@ class Gotcha(Model):
     verified_by: str | None = None  # qui l'a vérifié ; obligatoire pour publier
     last_confirmed_on: date
     confirmations: int = Field(default=0, ge=0)
+    audio: AudioExplanation | None = None  # explication en wolof (D26), facultative
 
     @model_validator(mode="after")
     def _published_is_verified(self) -> Self:
         if self.publication is Publication.PUBLISHED and not self.verified_by:
             raise ValueError(f"le piège {self.id} est publié sans verified_by")
+        if self.publication is Publication.PUBLISHED and self.audio and not self.audio.reviewed_by:
+            # Une explication fausse ferait plus de mal que pas d'audio (D26).
+            raise ValueError(f"le piège {self.id} est publié avec un audio non relu")
         if self.confidence is not ConfidenceLevel.SOURCED and not self.proof_md:
             raise ValueError(f"le piège {self.id} est « {self.confidence.value} » sans preuve")
         if not self.id.startswith(f"{self.fiche_slug}."):

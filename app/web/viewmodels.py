@@ -164,6 +164,10 @@ class GotchaView:
     needs_review: bool
     is_draft: bool
     locked: bool = False  # aperçu public : ni solution, ni pistes, ni preuve
+    # Explication en wolof (D26) : adresse de la route protégée, jamais /static.
+    audio_url: str | None = None
+    audio_transcript_html: Markup | None = None
+    audio_credit: str | None = None  # « Enregistré par X, relu par Y »
 
 
 @dataclass(frozen=True, slots=True)

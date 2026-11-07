@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import replace
 from datetime import datetime
+from typing import Any
 
 from markupsafe import Markup
 
@@ -160,7 +161,22 @@ def gotcha_view(
         confirmations=gotcha.confirmations,
         needs_review=needs_review,
         is_draft=gotcha.publication is not Publication.PUBLISHED,
+        **_audio_fields(gotcha, glossary),
     )
+
+
+def _audio_fields(gotcha: Gotcha, glossary: Mapping[str, GlossaryTerm]) -> dict[str, Any]:
+    audio = gotcha.audio
+    if audio is None:
+        return {}
+    credit = f"Enregistré par {audio.recorded_by}"
+    credit += f", relu par {audio.reviewed_by}" if audio.reviewed_by else ", pas encore relu"
+    fiche, name = gotcha.id.split(".", 1)
+    return {
+        "audio_url": f"/fiches/{fiche}/audio/{name}",
+        "audio_transcript_html": render_markdown(audio.transcript_md, glossary),
+        "audio_credit": credit,
+    }
 
 
 def gotcha_preview(
@@ -177,6 +193,9 @@ def gotcha_preview(
         fix_html=Markup(""),
         failed_attempts_html=None,
         proof_html=None,
+        audio_url=None,  # l'explication parle de la solution : réservée, comme elle
+        audio_transcript_html=None,
+        audio_credit=None,
         locked=True,
     )
 
