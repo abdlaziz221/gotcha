@@ -23,7 +23,25 @@
       {{ select_field(page.form, "kind", "Vous voulez partager", page.kind_options, required=True, placeholder="Choisir le type") }}
       {{ select_field(page.form, "fiche_slug", "Fiche concernée", page.fiche_options, required=True, placeholder="Choisir une fiche") }}
       {{ text_field(page.form, "title", "Titre", required=True, maxlength=160, help="Le piège en une phrase, par exemple : « Le bac à sable n'accepte que l'EUR ».") }}
+      {# Aides d'écriture (pages.js) : barre Markdown, aperçu, compteur, alerte de secret en direct.
+         Le serveur reste juge : la détection des secrets y est refaite à l'envoi. #}
+      <div class="md-tools" data-md-for="body_md" hidden>
+        <div class="segmented" role="tablist" aria-label="Mode d'édition">
+          <button type="button" role="tab" aria-selected="true" data-md-tab="write">Écrire</button>
+          <button type="button" role="tab" aria-selected="false" data-md-tab="preview">Aperçu</button>
+        </div>
+        <div class="md-tools__actions" role="toolbar" aria-label="Mise en forme">
+          <button type="button" class="button button--secondary button--small" data-md-insert="template">Insérer le plan</button>
+          <button type="button" class="icon-button" data-md-insert="bold" title="Gras">B</button>
+          <button type="button" class="icon-button" data-md-insert="code" title="Code dans la ligne">{{ icon("terminal", size=16, label="Code dans la ligne") }}</button>
+          <button type="button" class="icon-button" data-md-insert="block" title="Bloc de code">{{ icon("file-code", size=16, label="Bloc de code") }}</button>
+          <button type="button" class="icon-button" data-md-insert="list" title="Liste">{{ icon("menu", size=16, label="Liste") }}</button>
+          <button type="button" class="icon-button" data-md-insert="link" title="Lien">{{ icon("link", size=16, label="Lien") }}</button>
+        </div>
+      </div>
       {{ textarea_field(page.form, "body_md", "Ce qui se passe, pourquoi, et comment l'éviter", required=True, maxlength=10000, help="Markdown accepté. Indiquez le symptôme, la cause, la solution, les pistes qui ont échoué et votre preuve (versions, étapes, résultat).") }}
+      <div class="md-preview prose-ui" data-md-preview="body_md" hidden></div>
+      <p class="field__warn" data-secret-warn="body_md" role="status" hidden>{{ icon("triangle-alert", size=16) }}<span></span></p>
       {{ text_field(page.form, "source_url", "Lien vers une source", type="url", help="Page de documentation, fil de forum, ticket…") }}
       {{ text_field(page.form, "api_version", "Version de l'API concernée", maxlength=40) }}
       {% if viewer.pseudo %}
@@ -50,6 +68,26 @@
           <li>{{ icon("book-open", size=16) }}<span>Une source : documentation, ticket, fil de forum ou votre propre essai.</span></li>
           <li>{{ icon("flask-conical", size=16) }}<span>Une preuve si vous l'avez reproduit : versions, étapes, résultat.</span></li>
         </ul>
+      </div>
+    </section>
+    <section class="box" aria-labelledby="exemple">
+      <div class="box__head"><h2 id="exemple">Exemple de bon piège</h2></div>
+      <div class="box__body">
+<pre class="example"><code>## Symptôme
+POST /requesttopay répond 400,
+sans message clair.
+
+## Cause
+L'en-tête X-Target-Environment
+manque, même en bac à sable.
+
+## Solution
+X-Target-Environment: sandbox
+en test, la valeur de votre
+pays en production.
+
+## Preuve
+API v1_0, testé le 28 oct. 2026.</code></pre>
       </div>
     </section>
     <section class="box" aria-labelledby="ensuite">

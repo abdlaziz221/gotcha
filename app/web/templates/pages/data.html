@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "components/icons.html" import icon %}
 
 {# Où sont vos données : le texte (65 %), l'essentiel en paires clé-valeur (35 %). #}
 {% block content %}
@@ -12,6 +13,15 @@
 
 <div class="split">
   <div class="split__main">
+    <section class="box" aria-labelledby="parcours">
+      <div class="box__head"><h2 id="parcours">Le parcours de vos données</h2></div>
+      <ol class="flow-map">
+        <li><span class="flow-map__icon">{{ icon("user", size=18) }}</span><strong>Vous ou votre agent</strong><span>Navigateur, ou agent IA par MCP</span></li>
+        <li><span class="flow-map__icon flow-map__icon--main">{{ icon("server", size=18) }}</span><strong>Gotcha à Dakar</strong><span>Serveur et base sur Datacloud, au Sénégal</span></li>
+        <li><span class="flow-map__icon">{{ icon("github", size=18) }}</span><strong>GitHub, à la connexion seulement</strong><span>Identifiant et pseudo publics, jeton oublié</span></li>
+      </ol>
+      <p class="box__foot">Aucun traceur tiers, aucune publicité, aucune clé d'API conservée.</p>
+    </section>
     <section class="box" aria-labelledby="dakar">
       <div class="box__head"><h2 id="dakar">Hébergées à Dakar</h2></div>
       <div class="box__body prose-ui"><p>Gotcha et sa base de données sont hébergés au Sénégal, sur la plateforme Datacloud de Systalink. Vos données restent à Dakar. Une seule étape passe par un service hors d'Afrique : la connexion, assurée par GitHub, qui nous donne seulement votre identifiant et votre pseudo publics.</p></div>

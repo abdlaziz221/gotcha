@@ -21,6 +21,12 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       {{ select_field(page.form, "fiche_slug", "Service concerné", page.fiche_options, required=True, placeholder="Choisir une fiche") }}
       {{ select_field(page.form, "country", "Pays", page.country_options, placeholder="Celui de la fiche") }}
+      <div class="quick" data-quick-for="description" hidden>
+        <p class="quick__label" id="symptomes">Symptômes fréquents</p>
+        <div class="quick__list" role="group" aria-labelledby="symptomes">
+          {% for t in ["Délais dépassés (HTTP 504)", "Callbacks non reçus", "Paiements en attente qui n'aboutissent pas", "Échec USSD ou STK Push", "Erreurs 500 sur l'API"] %}<button type="button" class="button button--secondary button--small" data-quick="{{ t }}">{{ t }}</button>{% endfor %}
+        </div>
+      </div>
       {{ textarea_field(page.form, "description", "Description", required=True, rows=4, maxlength=1000, help="Ce qui échoue, depuis quand, avec quel message d'erreur.") }}
       {% if not viewer.pseudo %}
       {{ text_field(page.form, "pseudo", "Pseudo", maxlength=40, autocomplete="nickname") }}

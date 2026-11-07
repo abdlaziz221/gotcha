@@ -42,9 +42,12 @@
    En-tête (titre, métadonnées), corps (symptôme, cause, solution…), pied (sources, relecteur,
    confirmation). États en texte avec icône, jamais en pastille (DS-19). #}
 {% macro gotcha_card(g, fiche_slug, login_url="/connexion") -%}
-<article class="gotcha" id="{{ g.anchor }}">
+<article class="gotcha" id="{{ g.anchor }}" data-severity="{{ g.severity.value }}" data-env="{{ g.environment_labels | join('|') }}">
   <header class="gotcha__head">
-    <h3 class="gotcha__title">{{ g.title }}</h3>
+    <div class="gotcha__top">
+      <h3 class="gotcha__title">{{ g.title }}</h3>
+      <button type="button" class="icon-button" data-copy-link="#{{ g.anchor }}" title="Copier le lien de ce piège" hidden>{{ icon("link", size=16, label="Copier le lien de ce piège") }}</button>
+    </div>
     <p class="gotcha__meta">
       <span class="severity severity--{{ g.severity.value }}">{{ icon(SEVERITY_ICONS[g.severity.value], size=16) }}{{ g.severity_label }}</span>
       <span class="confidence confidence--{{ g.confidence.value }}">{{ icon(CONFIDENCE_ICONS[g.confidence.value], size=16) }}{{ g.confidence_label }}</span>
@@ -93,7 +96,7 @@
     {% if viewer.pseudo %}
     <details class="confirm-form">
       <summary>Ça marche encore · <span class="confirm__count">{{ count_text }}</span></summary>
-      <form class="form" method="post" action="/fiches/{{ fiche_slug }}/confirmer">
+      <form class="form" method="post" action="/fiches/{{ fiche_slug }}/confirmer" data-inplace>
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <input type="hidden" name="target_kind" value="gotcha">
         <input type="hidden" name="target_id" value="{{ g.id }}">
@@ -106,7 +109,7 @@
       </form>
     </details>
     {% elif viewer.can_write %}
-    <form class="confirm" method="post" action="/fiches/{{ fiche_slug }}/confirmer">
+    <form class="confirm" method="post" action="/fiches/{{ fiche_slug }}/confirmer" data-inplace>
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <input type="hidden" name="target_kind" value="gotcha">
       <input type="hidden" name="target_id" value="{{ g.id }}">

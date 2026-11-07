@@ -271,6 +271,16 @@ Outil de travail, pas brochure : sobre, dense, lisible d'un coup d'œil. Styles 
 | Contribuer, Signaler | Formulaire | Avant d'envoyer, ensuite |
 | Relecture | File d'attente | Usage, dernières confirmations |
 
+**Interactions des pages intérieures** (`static/js/pages.js`, jamais chargé par l'accueil ; chaque outil est caché par `hidden` dans le HTML et révélé par le script, la page reste complète sans JavaScript) :
+
+- Fiche : filtres des pièges par sévérité et par environnement (contrôle segmenté), copie du lien d'un piège et des blocs de code, encadré « Dans votre agent » (adresse MCP et appel `get_fiche` à copier), « Ça marche encore » enregistré sans quitter la page.
+- Recherche : relance à chaque changement de filtre, terme surligné (`<mark>`), recherches fréquentes quand le champ est vide.
+- Contribuer : barre Markdown (plan, gras, code, liste, lien), onglet Aperçu, compteur de caractères, alerte de secret en direct (mêmes motifs que `app/security/secrets.py` ; le serveur reste juge).
+- Signaler une panne : symptômes fréquents en un clic. Pannes : durée écoulée à côté de la date.
+- Relecture : liste de contrôle à cocher avant « Approuver et publier », motif obligatoire pour refuser.
+- Glossaire : filtre instantané, copie du lien d'une définition. Données : parcours de la donnée en trois étapes.
+- Partout : `/` ou Ctrl+K (Cmd+K) va au champ de recherche (dans `app.js`).
+
 En-tête du site : « Se connecter » (icône `log-in`) quand la connexion est proposée, ou le pseudo avec un bouton de déconnexion (`log-out`). « Signaler » et « Contribuer » n'apparaissent que si le visiteur peut écrire.
 
 ---

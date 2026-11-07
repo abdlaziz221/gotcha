@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "components/icons.html" import icon %}
 
 {# Glossaire : les termes en lignes (65 %), l'index des initiales collant (35 %). #}
 {% block content %}
@@ -13,15 +14,19 @@
 <div class="split">
   <div class="split__main">
     <section class="box" aria-labelledby="termes">
-      <div class="box__head"><h2 id="termes">Termes <span class="num">{{ page.terms | length }}</span></h2></div>
+      <div class="box__head">
+        <h2 id="termes">Termes <span class="num" data-filter-count>{{ page.terms | length }}</span></h2>
+        <p class="filter-field" data-term-filter hidden><label class="visually-hidden" for="filtre-terme">Filtrer les termes</label><input id="filtre-terme" type="search" placeholder="Filtrer : callback, jeton…" autocomplete="off"></p>
+      </div>
       <dl class="rows glossary">
         {% for t in page.terms %}
         <div class="term" id="{{ t.slug }}">
-          <dt>{{ t.term }}</dt>
+          <dt>{{ t.term }}<button type="button" class="icon-button" data-copy-link="#{{ t.slug }}" title="Copier le lien de cette définition" hidden>{{ icon("link", size=16, label="Copier le lien de cette définition") }}</button></dt>
           <dd>{{ t.definition }}</dd>
         </div>
         {% endfor %}
       </dl>
+      <p class="empty" data-filter-empty hidden>Aucun terme ne correspond.</p>
     </section>
   </div>
 

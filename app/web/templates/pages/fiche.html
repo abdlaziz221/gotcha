@@ -80,7 +80,24 @@
       {% endif %}
 
       <section aria-labelledby="pieges" id="pieges-section" class="stack">
-        <h2 id="pieges" class="stack__title">Pièges <span class="num">{{ page.gotchas | length }}</span></h2>
+        <div class="stack__bar">
+          <h2 id="pieges" class="stack__title">Pièges <span class="num" data-filter-count>{{ page.gotchas | length }}</span></h2>
+          {% if page.gotchas | length > 1 %}
+          {# Filtres : affichés par pages.js seulement, sans JavaScript tous les pièges restent visibles. #}
+          <div class="filters" data-filters hidden>
+            <div class="segmented" role="group" aria-label="Filtrer par sévérité">
+              <button type="button" aria-pressed="true" data-filter="severity" data-value="">Toutes</button>
+              {% for g in page.gotchas | unique(attribute="severity") %}<button type="button" aria-pressed="false" data-filter="severity" data-value="{{ g.severity.value }}">{{ g.severity_label }}</button>{% endfor %}
+            </div>
+            <div class="segmented" role="group" aria-label="Filtrer par environnement">
+              <button type="button" aria-pressed="true" data-filter="env" data-value="">Partout</button>
+              <button type="button" aria-pressed="false" data-filter="env" data-value="Bac à sable">Bac à sable</button>
+              <button type="button" aria-pressed="false" data-filter="env" data-value="Production">Production</button>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+        <p class="box empty" data-filter-empty hidden>Aucun piège pour ces filtres.</p>
         {% for g in page.gotchas %}
           {{ gotcha_card(g, page.slug, page.login_url) }}
         {% else %}
@@ -141,6 +158,18 @@
         <ul class="incidents rows">{% for incident in page.status.incidents %}{{ incident_item(incident) }}{% endfor %}</ul>
       </section>
       {% endif %}
+
+      {# Pour l'agent : l'adresse MCP et l'appel qui lit cette fiche (service et pays déduits de l'adresse de la fiche). #}
+      {% set parts = page.slug.rsplit("-", 1) %}
+      {% set has_country = parts | length == 2 and parts[1] | length == 2 %}
+      {% set call = 'get_fiche("' ~ (parts[0] if has_country else page.slug) ~ '"' ~ ((', country="' ~ parts[1] | upper ~ '"') if has_country else '') ~ ')' %}
+      <section class="box" aria-labelledby="mcp-fiche">
+        <div class="box__head"><div><h2 id="mcp-fiche">Dans votre agent</h2><p>Serveur MCP de Gotcha, puis cet appel.</p></div></div>
+        <div class="box__body copy-list">
+          <p class="copy-field"><code id="mcp-adresse">{{ request.base_url }}mcp</code><button type="button" class="icon-button" data-copy-text="{{ request.base_url }}mcp" title="Copier l'adresse" hidden>{{ icon("copy", size=16, label="Copier l'adresse du serveur MCP") }}</button></p>
+          <p class="copy-field"><code>{{ call }}</code><button type="button" class="icon-button" data-copy-text="{{ call }}" title="Copier l'appel" hidden>{{ icon("copy", size=16, label="Copier l'appel get_fiche") }}</button></p>
+        </div>
+      </section>
 
       <nav class="box" aria-label="Sur cette fiche">
         <div class="box__head"><h2>Sur cette fiche</h2></div>

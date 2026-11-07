@@ -25,9 +25,15 @@
       <div class="box__body">
         <div class="prose-ui">{{ c.body_html }}</div>
         {% if c.source_url %}<p class="row__meta">{{ icon("book-open", size=16) }}<span>Source : <a href="{{ c.source_url }}" rel="noopener noreferrer nofollow">{{ c.source_url }}</a></span></p>{% endif %}
-        <form class="form form--inline" method="post" action="/relecture/{{ c.id }}">
+        <fieldset class="review-checks" data-review-checks hidden>
+          <legend>Avant d'approuver</legend>
+          <label><input type="checkbox" data-check> La source existe et dit bien cela</label>
+          <label><input type="checkbox" data-check> Aucun secret ni donnée personnelle</label>
+          <label><input type="checkbox" data-check> Symptôme, cause et solution sont clairs</label>
+        </fieldset>
+        <form class="form form--inline" method="post" action="/relecture/{{ c.id }}" data-review>
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <label for="note-{{ c.id }}">Note (facultatif)</label>
+          <label for="note-{{ c.id }}">Note au contributeur <span class="field__optional">(obligatoire pour refuser)</span></label>
           <input id="note-{{ c.id }}" name="note" type="text" maxlength="500">
           <button type="submit" name="action" value="reject" class="button button--secondary">Refuser</button>
           <button type="submit" name="action" value="approve" class="button">Approuver et publier</button>

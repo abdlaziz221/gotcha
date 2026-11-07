@@ -15,7 +15,7 @@
 
 <div class="split">
   <div class="split__main">
-    <form class="box searchbar" method="get" action="/recherche" role="search">
+    <form class="box searchbar" method="get" action="/recherche" role="search" data-autosubmit>
       <div class="field">
         <label for="q">Erreur, en-tête ou symptôme</label>
         <input id="q" name="q" type="search" value="{{ page.query }}" maxlength="200" placeholder="X-Target-Environment, jeton expiré, 400…">
@@ -41,7 +41,7 @@
     <section class="box" aria-labelledby="resultats">
       <div class="box__head"><h2 id="resultats" role="status">{{ page.hits | length }} résultat{% if page.hits | length > 1 %}s{% endif %}{% if page.query %} pour « {{ page.query }} »{% endif %}</h2></div>
       {% if page.hits %}
-      <ol class="rows">
+      <ol class="rows" data-highlight="{{ page.query }}">
         {% for hit in page.hits %}
         <li class="result result--{{ hit.kind.value }}">
           <a class="row" href="{{ hit.url }}">
@@ -56,6 +56,15 @@
       <p class="empty">Aucun résultat. {% if viewer.can_write or viewer.site_auth %}Vous connaissez ce piège ? <a href="/contribuer">Ajoutez-le</a>.{% endif %}</p>
       {% endif %}
     </section>
+    {% else %}
+    <section class="box" aria-labelledby="frequentes">
+      <div class="box__head"><div><h2 id="frequentes">Recherches fréquentes</h2><p>Les erreurs que les devs collent le plus souvent.</p></div></div>
+      <ul class="rows">
+        {% for q, hint in [("X-Target-Environment", "En-tête obligatoire chez MTN MoMo"), ("bac à sable Wave", "Tester Wave sans bac à sable public"), ("jeton", "Jeton d'accès refusé ou expiré"), ("Daraja", "M-Pesa Kenya : STK Push et callbacks"), ("callback", "Notifications de paiement qui n'arrivent pas ou arrivent deux fois"), ("devise", "Montant ou devise refusés")] %}
+        <li><a class="row" href="/recherche?q={{ q | urlencode }}"><span class="row__title"><code>{{ q }}</code></span><span class="row__text">{{ hint }}</span><span class="row__aside">{{ icon("arrow-right", size=16) }}</span></a></li>
+        {% endfor %}
+      </ul>
+    </section>
     {% endif %}
   </div>
 
@@ -68,14 +77,6 @@
       </ul>
     </section>
     {% endif %}
-    <section class="box" aria-labelledby="exemples">
-      <div class="box__head"><h2 id="exemples">Exemples de recherche</h2></div>
-      <ul class="links">
-        {% for q in ["bac à sable Wave", "X-Target-Environment", "callback", "jeton expiré"] %}
-        <li><a href="/recherche?q={{ q | urlencode }}">{{ q }}{{ icon("search", size=16) }}</a></li>
-        {% endfor %}
-      </ul>
-    </section>
   </aside>
 </div>
 {% endblock %}

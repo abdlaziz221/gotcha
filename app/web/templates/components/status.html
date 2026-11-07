@@ -21,7 +21,7 @@
   <p class="incident__meta">
     <span class="status status--{{ incident.status.value }}">{{ icon(STATUS_ICONS[incident.status.value], size=16) }}{{ incident.status_label }}</span>
     · {{ incident.service_name }} · {{ incident.country_name }}
-    · depuis le {{ incident.started_at | datetime_fr }}
+    · depuis le <time datetime="{{ incident.started_at.isoformat() }}"{% if incident.is_active %} data-since{% endif %}>{{ incident.started_at | datetime_fr }}</time>
     {% if incident.resolved_at %} · résolue le {{ incident.resolved_at | datetime_fr }}{% endif %}
   </p>
   <p class="incident__source">{{ incident.source_label }}</p>
