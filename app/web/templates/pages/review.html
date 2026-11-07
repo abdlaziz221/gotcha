@@ -8,10 +8,9 @@
 <article class="card contribution">
   <header class="card__header">
     <h2 class="card__title">{{ c.title }}</h2>
-    <span class="tag">{{ c.kind_label }}</span>
   </header>
   <p class="card__meta">
-    <a href="{{ c.fiche_url }}">{{ c.fiche_title }}</a> · par {{ c.pseudo }} · le {{ c.created_at | datetime_fr }}
+    {{ c.kind_label }} · <a href="{{ c.fiche_url }}">{{ c.fiche_title }}</a> · par {{ c.pseudo }} · le {{ c.created_at | datetime_fr }}
     {% if c.api_version %} · API {{ c.api_version }}{% endif %}
   </p>
   {{ c.body_html }}

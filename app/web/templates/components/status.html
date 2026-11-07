@@ -1,6 +1,16 @@
-{# État d'un service. `status` : StatusView. La classe CSS suit status.status (normal, degraded, down, unknown). #}
-{% macro status_badge(status) -%}
-<span class="badge badge--{{ status.status.value }}">{{ status.label }}</span>
+{% from "components/icons.html" import icon %}
+
+{# Icône de chaque état de service (DESIGN_SYSTEM.md, section 5). #}
+{% set STATUS_ICONS = {
+  "normal": "circle-check",
+  "degraded": "triangle-alert",
+  "down": "circle-x",
+  "unknown": "circle-help",
+} %}
+
+{# État d'un service, en texte : icône + libellé dans la couleur de l'état. Pas de pastille. `status` : StatusView. #}
+{% macro status_text(status) -%}
+<span class="status status--{{ status.status.value }}">{{ icon(STATUS_ICONS[status.status.value], size=16) }}{{ status.label }}</span>
 {%- endmacro %}
 
 {% macro incident_item(incident) -%}
@@ -9,7 +19,8 @@
     {% if incident.url %}<a href="{{ incident.url }}" rel="noopener noreferrer nofollow">{{ incident.title }}</a>{% else %}{{ incident.title }}{% endif %}
   </p>
   <p class="incident__meta">
-    {{ incident.service_name }} · {{ incident.country_name }} · {{ incident.status_label }}
+    <span class="status status--{{ incident.status.value }}">{{ icon(STATUS_ICONS[incident.status.value], size=16) }}{{ incident.status_label }}</span>
+    · {{ incident.service_name }} · {{ incident.country_name }}
     · depuis le {{ incident.started_at | datetime_fr }}
     {% if incident.resolved_at %} · résolue le {{ incident.resolved_at | datetime_fr }}{% endif %}
   </p>

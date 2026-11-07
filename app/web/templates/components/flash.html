@@ -1,4 +1,5 @@
 {# Message après une action (?ok=…). Inclus par base.html quand page.flash existe. #}
+{% from "components/icons.html" import icon %}
 {% if page.flash is defined and page.flash %}
-<div class="flash flash--{{ page.flash.kind }}" role="status">{{ page.flash.message }}</div>
+<div class="flash flash--{{ page.flash.kind }}" role="status">{{ icon({"success": "circle-check", "error": "circle-x"}.get(page.flash.kind, "info")) }}<span>{{ page.flash.message }}</span></div>
 {% endif %}
