@@ -161,7 +161,8 @@ Branches, commits, relectures et définition de « terminé » : [CONTRIBUTING.m
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Couches, flux, configuration |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Journal des décisions techniques |
 | [docs/DEMO.md](docs/DEMO.md) | Scénario de la démo du jury |
-| [docs/SUBMISSION.md](docs/SUBMISSION.md) | Liste de contrôle de la soumission |
+| [docs/SUBMISSION.md](docs/SUBMISSION.md) | Dossier de soumission : recevabilité, textes du formulaire, déclarations, jour J |
+| [docs/LICENCES.md](docs/LICENCES.md) | Composants et licences à déclarer (généré par `scripts/check_licenses.py --markdown`) |
 | [deploy/README.md](deploy/README.md) | Déploiement sur Datacloud |
 
 **Licence** : code sous droits réservés à l'équipe en attendant la décision (voir [docs/DECISIONS.md](docs/DECISIONS.md)). Contributions publiées sur le site : CC BY 4.0.

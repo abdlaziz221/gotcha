@@ -11,7 +11,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /srv
 
 COPY requirements.txt ./
-RUN pip install -r requirements.txt
+# pip, setuptools et wheel ne servent qu'à installer : on les retire, avec les copies de
+# ensurepip. pip embarque certifi (MPL-2.0), licence interdite par D3.
+RUN pip install -r requirements.txt \
+ && pip uninstall -y pip setuptools wheel \
+ && rm -rf /usr/local/lib/python3*/ensurepip
 
 COPY app ./app
 COPY content ./content
