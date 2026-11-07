@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import shutil
+import textwrap
 from pathlib import Path
 
 import pytest
@@ -72,3 +73,11 @@ def test_glossary_links_point_to_existing_terms() -> None:
             for match in TERM_LINK_RE.finditer(text):
                 term = match.group(1).strip()
                 assert term in known, f"{fiche.slug} : terme [[{term}]] absent de glossaire.yml"
+
+
+def test_python_examples_in_the_content_compile() -> None:
+    """Un agent peut recopier un exemple tel quel : il doit au moins être du Python valide."""
+    for path in sorted((CONTENT_DIR / "fiches").glob("*/pieges/*.md")):
+        for block in re.findall(r"```(?:python|py)\n(.*?)```", path.read_text("utf-8"), re.S):
+            code = textwrap.dedent(block)
+            compile(code, str(path), "exec")  # SyntaxError : l'exemple est à corriger

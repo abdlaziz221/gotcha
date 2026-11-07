@@ -194,6 +194,18 @@ async def test_refresh_respects_min_interval_and_survives_failures() -> None:
     assert await failing.incidents.refresh_if_stale() == 0
 
 
+async def test_a_service_in_several_countries_lists_them() -> None:
+    from app.config import ROOT_DIR
+
+    store = MemoryStore(load_fiches(ROOT_DIR / "content"), [])
+    services = await build_services(Settings(env="test"), clock=FixedClock(NOW), store=store)
+    if not any(f.service.slug == "orange-money" for f in await services.fiches.list()):
+        pytest.skip("pas de fiche Orange Money dans content/")
+    with pytest.raises(NotFoundError, match=r"précisez le pays.*CI, SN"):
+        await services.fiches.find("orange-money")
+    assert (await services.fiches.find("orange-money", "ci")).country == "CI"
+
+
 def _feed_incident() -> Incident:
     return Incident(
         id="flutterwave:x:SN:wave",
