@@ -9,6 +9,7 @@ title: Wave Sénégal
 summary: Encaisser un paiement Wave au Sénégal avec l'API Wave Business.
 api_version: null
 publication: draft
+open_access: true           # lisible entière sans compte pendant la compétition (D27)
 last_confirmed_on: 2026-10-28
 prerequisites:
   - Un compte Wave Business.

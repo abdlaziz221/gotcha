@@ -102,6 +102,7 @@ CONFIDENCE_LABELS = {
 
 USAGE_LABELS = {
     UsageEvent.READ_FICHE: "Fiches consultées",
+    UsageEvent.READ_OPEN_FICHE: "Fiches ouvertes lues sans compte (1 par jour et par visiteur)",
     UsageEvent.SEARCH_HIT: "Recherches avec résultat",
     UsageEvent.SEARCH_MISS: "Recherches sans résultat",
     UsageEvent.READ_STATUS: "États de service consultés",

@@ -12,7 +12,7 @@ import pytest
 from starlette.testclient import TestClient
 
 from app.config import Settings
-from app.domain.models import Account, ErrorCode
+from app.domain.models import Account, ErrorCode, UsageEvent
 from app.domain.text import plain_snippet
 from app.services.clock import FixedClock
 from app.stores.memory.store import MemoryStore
@@ -462,3 +462,54 @@ async def test_a_failing_usage_counter_never_breaks_a_contribution(
     )
     assert response.status_code == 303, response.text
     assert len(await store.list_contributions()) >= 1
+
+
+# --- A18 : fiches ouvertes sans compte (D27), consultations anonymisées -----------------
+
+
+async def _open_reads(store: MemoryStore) -> int:
+    totals = {t.event: t.count for t in await store.usage_totals(NOW.date())}
+    return totals.get(UsageEvent.READ_OPEN_FICHE, 0)
+
+
+@pytest.mark.anyio
+async def test_the_wave_fiche_is_open_without_an_account(site: TestClient) -> None:
+    page = site.get("/fiches/wave-sn")
+    assert page.status_code == 200
+    assert "Aperçu public" not in page.text  # la fiche entière, pas l'aperçu
+    assert "Aperçu public" in site.get(f"/fiches/{LOCKED}").text
+
+
+@pytest.mark.anyio
+async def test_anonymous_reads_of_open_fiches_are_counted_once_a_day(
+    site: TestClient, store: MemoryStore
+) -> None:
+    for _ in range(3):  # recharger la page ne compte qu'une fois
+        assert site.get("/fiches/wave-sn").status_code == 200
+    assert await _open_reads(store) == 1
+    site.get("/fiches/wave-sn", headers={"X-Forwarded-For": "203.0.113.9"})
+    site.get(f"/fiches/{OPEN}")  # autre fiche ouverte, même visiteur : comptée à part
+    assert await _open_reads(store) == 2
+    site.get(f"/fiches/{LOCKED}")  # fiche en aperçu : pas comptée ici
+    assert await _open_reads(store) == 2
+
+
+@pytest.mark.anyio
+async def test_a_member_reading_an_open_fiche_is_not_counted_as_anonymous(
+    site: TestClient, store: MemoryStore
+) -> None:
+    log_in(site)
+    site.get("/fiches/wave-sn")
+    assert await _open_reads(store) == 0
+    totals = {t.event: t for t in await store.usage_totals(NOW.date())}
+    assert totals[UsageEvent.READ_FICHE].accounts == 1
+
+
+@pytest.mark.anyio
+async def test_nothing_about_the_anonymous_reader_is_stored(
+    site: TestClient, store: MemoryStore
+) -> None:
+    site.get("/fiches/wave-sn", headers={"X-Forwarded-For": "203.0.113.9"})
+    stored = repr(vars(store))  # tout ce que le stockage garde réellement
+    assert "203.0.113.9" not in stored
+    assert "testclient" not in stored
