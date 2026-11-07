@@ -36,6 +36,6 @@
   {% endfor %}
 </ol>
 {% elif page.query %}
-<p class="empty">Aucun résultat pour « {{ page.query }} ». Vous connaissez ce piège ? <a href="/contribuer">Ajoutez-le</a>.</p>
+<p class="empty">Aucun résultat pour « {{ page.query }} ». {% if viewer.can_write or viewer.site_auth %}Vous connaissez ce piège ? <a href="/contribuer">Ajoutez-le</a>.{% endif %}</p>
 {% endif %}
 {% endblock %}

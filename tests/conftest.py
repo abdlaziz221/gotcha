@@ -12,6 +12,8 @@ from starlette.testclient import TestClient
 
 from app.config import ROOT_DIR, Settings
 from app.container import Services, build_services
+from app.domain.errors import IdentityError
+from app.domain.models import ExternalIdentity
 from app.domain.ports import IdentityProvider
 from app.main import create_app
 from app.services.clock import FixedClock
@@ -36,6 +38,19 @@ def clock() -> FixedClock:
 def settings() -> Settings:
     """Comme en développement : vrai contenu, brouillons visibles, données fictives."""
     return Settings(env="test")
+
+
+class FakeIdentity:
+    """Remplace GitHub : le code « mauvais » simule une panne, tout autre identifie Aminata."""
+
+    def authorize_url(self, *, state: str, redirect_uri: str) -> str:
+        return f"https://github.example/authorize?state={state}&redirect_uri={redirect_uri}"
+
+    async def fetch_identity(self, code: str, redirect_uri: str) -> ExternalIdentity:
+        if code == "mauvais":
+            raise IdentityError("échec")
+        assert redirect_uri.endswith("/github/callback")
+        return ExternalIdentity(id="github:42", pseudo="aminata")
 
 
 def make_client(

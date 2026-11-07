@@ -11,6 +11,7 @@ Les services reçoivent le stockage par injection (voir `app/container.py`) et n
 | `fiches.py` | Lire les fiches, chercher, trouver la fiche d'un service dans un pays, glossaire, fraîcheur | Abdoul Aziz |
 | `contributions.py` | Soumettre (avec refus des secrets), relire, confirmer « ça marche encore » | Abdoul Aziz |
 | `freshness.py` | Règle des 90 jours (« à revérifier ») | Abdoul Aziz |
+| `usage.py` | Compteurs d'usage, visibles sur `/relecture` | Abdoul Aziz |
 | `oauth.py` | Connexion au serveur MCP : comptes, codes et jetons opaques, dont seule l'empreinte est stockée | Abdoul Aziz |
 | `clock.py` | Horloge système et horloge figée pour les tests | Abdoul Aziz |
 | `status.py` | **Fonctions pures** : calcul de l'état normal, dégradé ou en panne | Khalifa |

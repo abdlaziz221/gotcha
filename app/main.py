@@ -32,6 +32,7 @@ from app.web.routes import (
     probe,
     review,
 )
+from app.web.session import AccountMiddleware
 from app.web.templating import STATIC_DIR
 
 ServicesFactory = Callable[[Settings], Awaitable[Services]]
@@ -69,6 +70,8 @@ def create_app(
     app.state.settings = settings
     app.state.rate_limiter = RateLimiter()
 
+    if settings.site_auth:
+        app.add_middleware(AccountMiddleware)
     app.add_middleware(CSRFCookieMiddleware, secure=settings.is_prod)
     app.add_middleware(GZipMiddleware, minimum_size=500)
     app.add_middleware(SecurityHeadersMiddleware, hsts=settings.is_prod)

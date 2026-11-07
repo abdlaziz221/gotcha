@@ -104,7 +104,12 @@ def test_client_ip_reads_the_value_added_by_trusted_proxies(
 
 def test_proxy_hops_setting() -> None:
     assert Settings.from_env({}).proxy_hops == 0
-    prod = {"GOTCHA_ENV": "prod", "DATABASE_URL": "postgresql://x", "GOTCHA_MCP_AUTH": "0"}
+    prod = {
+        "GOTCHA_ENV": "prod",
+        "DATABASE_URL": "postgresql://x",
+        "GOTCHA_MCP_AUTH": "0",
+        "GOTCHA_SITE_AUTH": "0",
+    }
     assert Settings.from_env(prod).proxy_hops == 1
     assert Settings.from_env({**prod, "GOTCHA_PROXY_HOPS": "2"}).proxy_hops == 2
     with pytest.raises(ValueError, match="GOTCHA_PROXY_HOPS"):
@@ -124,7 +129,21 @@ def test_production_requires_the_mcp_connection_by_default() -> None:
     settings = Settings.from_env(PROD_WITH_CONNECTION)
     assert settings.mcp_auth
     assert "secret-a-cacher" not in repr(settings)
+    assert settings.site_auth
     assert not Settings.from_env({}).mcp_auth
+    assert not Settings.from_env({}).site_auth
+
+
+def test_site_connection_alone_also_needs_github() -> None:
+    environ = {**PROD_WITH_CONNECTION, "GOTCHA_MCP_AUTH": "0", "GOTCHA_GITHUB_CLIENT_ID": ""}
+    with pytest.raises(ValueError, match="GOTCHA_GITHUB_CLIENT_ID"):
+        Settings.from_env(environ)
+
+
+def test_jury_code_stays_out_of_logs() -> None:
+    settings = Settings.from_env({**PROD_WITH_CONNECTION, "GOTCHA_JURY_CODE": "code-a-cacher"})
+    assert settings.jury_code == "code-a-cacher"
+    assert "code-a-cacher" not in repr(settings)
 
 
 @pytest.mark.parametrize(
@@ -143,7 +162,12 @@ def test_unsafe_mcp_connection_settings_are_refused(change: dict[str, str], mess
 
 def test_production_settings_are_safe() -> None:
     settings = Settings.from_env(
-        {"GOTCHA_ENV": "prod", "DATABASE_URL": "postgresql://x", "GOTCHA_MCP_AUTH": "0"}
+        {
+            "GOTCHA_ENV": "prod",
+            "DATABASE_URL": "postgresql://x",
+            "GOTCHA_MCP_AUTH": "0",
+            "GOTCHA_SITE_AUTH": "0",
+        }
     )
     assert settings.store == "postgres"
     assert not settings.show_drafts
@@ -156,6 +180,7 @@ def test_production_settings_are_safe() -> None:
                 "DATABASE_URL": "x",
                 "GOTCHA_SHOW_DRAFTS": "1",
                 "GOTCHA_MCP_AUTH": "0",
+                "GOTCHA_SITE_AUTH": "0",
             }
         )
     with pytest.raises(ValueError, match="DATABASE_URL"):

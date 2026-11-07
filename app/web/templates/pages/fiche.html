@@ -16,6 +16,9 @@
     {% if page.is_draft %}
     <p class="notice notice--draft">Brouillon : cette fiche n'est pas encore vérifiée par un relecteur.</p>
     {% endif %}
+    {% if page.locked %}
+    <p class="notice">Aperçu public. Les étapes et les solutions sont réservées aux membres. Compte gratuit, <a href="{{ page.login_url }}">connexion avec GitHub</a>.</p>
+    {% endif %}
     {% if page.needs_review %}
     <p class="notice notice--review">À revérifier : personne n'a confirmé cette fiche depuis plus de 90 jours.</p>
     {% endif %}
@@ -61,9 +64,9 @@
   <section aria-labelledby="pieges" id="pieges-section">
     <h2 id="pieges">Pièges ({{ page.gotchas | length }})</h2>
     {% for g in page.gotchas %}
-      {{ gotcha_card(g, page.slug) }}
+      {{ gotcha_card(g, page.slug, page.login_url) }}
     {% else %}
-      <p class="empty">Aucun piège publié pour l'instant. <a href="{{ page.contribute_url }}">Ajoutez le premier</a>.</p>
+      <p class="empty">Aucun piège publié pour l'instant.{% if viewer.can_write or viewer.site_auth %} <a href="{{ page.contribute_url }}">Ajoutez le premier</a>.{% endif %}</p>
     {% endfor %}
   </section>
 
@@ -102,8 +105,22 @@
   </section>
   {% endif %}
 
+  {% if viewer.can_write or viewer.site_auth %}
   <section class="fiche__actions" aria-labelledby="confirmer">
     <h2 id="confirmer">Cette fiche vous a servi ?</h2>
+    {% if viewer.pseudo %}
+    <form class="form" method="post" action="/fiches/{{ page.slug }}/confirmer">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="target_kind" value="fiche">
+      <input type="hidden" name="target_id" value="{{ page.slug }}">
+      <div class="field">
+        <label for="preuve-fiche">Votre preuve</label>
+        <textarea id="preuve-fiche" name="proof" rows="3" maxlength="4000" required></textarea>
+        <p class="field__help">Versions, configuration sans secret, étapes et résultat obtenu.</p>
+      </div>
+      <button type="submit" class="button">Ça marche encore</button>
+    </form>
+    {% elif viewer.can_write %}
     <form class="confirm" method="post" action="/fiches/{{ page.slug }}/confirmer">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <input type="hidden" name="target_kind" value="fiche">
@@ -111,7 +128,11 @@
       <button type="submit" class="button">Ça marche encore</button>
       <span class="confirm__count">{{ page.confirmations }} confirmation{% if page.confirmations > 1 %}s{% endif %}{% if page.confirmations %} · dernière le {{ page.last_confirmed_on | date_fr }}{% endif %}</span>
     </form>
+    {% else %}
+    <p><a class="button" href="{{ page.login_url }}">Se connecter pour confirmer</a></p>
+    {% endif %}
     <p><a href="{{ page.contribute_url }}">Ajouter un piège ou corriger cette fiche</a> · <a href="{{ page.report_url }}">Signaler une panne</a></p>
   </section>
+  {% endif %}
 </article>
 {% endblock %}

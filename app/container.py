@@ -19,6 +19,7 @@ from app.services.contributions import ContributionService
 from app.services.fiches import FicheService
 from app.services.incidents import IncidentService
 from app.services.oauth import OAuthService
+from app.services.usage import UsageService
 from app.stores import create_store
 
 
@@ -31,6 +32,7 @@ class Services:
     incidents: IncidentService
     contributions: ContributionService
     oauth: OAuthService
+    usage: UsageService
 
     async def close(self) -> None:
         await self.store.close()
@@ -67,13 +69,15 @@ async def build_services(
         min_interval=timedelta(minutes=settings.ingest_min_interval_minutes),
     )
     contributions = ContributionService(store, fiches, clock, scan=scan_text)
-    if identity is None and settings.mcp_auth:
+    if identity is None and (settings.mcp_auth or settings.site_auth):
         identity = GitHubIdentity(settings.github_client_id, settings.github_client_secret)
     oauth = OAuthService(
         store,
         clock,
         identity,
         callback_url=f"{settings.site_url}/github/callback",
+        jury_code=settings.jury_code,
         consent_url=f"{settings.site_url}/connexion/outil",
     )
-    return Services(settings, store, clock, fiches, incidents, contributions, oauth)
+    usage = UsageService(store, clock)
+    return Services(settings, store, clock, fiches, incidents, contributions, oauth, usage)

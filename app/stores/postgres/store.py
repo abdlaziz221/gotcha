@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 from collections import defaultdict
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
 import asyncpg
@@ -29,6 +29,8 @@ from app.domain.models import (
     SearchHit,
     SearchQuery,
     TargetKind,
+    UsageEvent,
+    UsageTotal,
     is_storable,
 )
 from app.stores.search import search_fiches, sort_fiches, sort_glossary
@@ -298,8 +300,9 @@ class PostgresStore:
         c = contribution
         await self._pool.execute(
             "INSERT INTO contributions (id, kind, fiche_slug, title, body_md, source_url,"
-            " api_version, pseudo, email, status, created_at, reviewed_at, reviewer, review_note)"
-            " VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
+            " api_version, pseudo, email, status, created_at, reviewed_at, reviewer, review_note,"
+            " account_id)"
+            " VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)",
             c.id,
             c.kind.value,
             c.fiche_slug,
@@ -314,6 +317,7 @@ class PostgresStore:
             c.reviewed_at,
             c.reviewer,
             c.review_note,
+            c.account_id,
         )
 
     async def get_contribution(self, contribution_id: str) -> Contribution | None:
@@ -321,7 +325,7 @@ class PostgresStore:
             return None
         row = await self._pool.fetchrow(
             "SELECT id, kind, fiche_slug, title, body_md, source_url, api_version, pseudo, email,"
-            " status, created_at, reviewed_at, reviewer, review_note"
+            " status, created_at, reviewed_at, reviewer, review_note, account_id"
             " FROM contributions WHERE id = $1",
             contribution_id,
         )
@@ -332,7 +336,7 @@ class PostgresStore:
     ) -> list[Contribution]:
         rows = await self._pool.fetch(
             "SELECT id, kind, fiche_slug, title, body_md, source_url, api_version, pseudo, email,"
-            " status, created_at, reviewed_at, reviewer, review_note FROM contributions"
+            " status, created_at, reviewed_at, reviewer, review_note, account_id FROM contributions"
             " WHERE ($1::text IS NULL OR status = $1) ORDER BY created_at, id",
             status.value if status else None,
         )
@@ -368,13 +372,15 @@ class PostgresStore:
         async with self._pool.acquire() as conn, conn.transaction():
             await conn.execute(
                 "INSERT INTO confirmations (target_kind, target_id, still_works, api_version,"
-                " pseudo, created_at) VALUES ($1, $2, $3, $4, $5, $6)",
+                " pseudo, created_at, account_id, proof) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
                 c.target_kind.value,
                 c.target_id,
                 c.still_works,
                 c.api_version,
                 c.pseudo,
                 c.created_at,
+                c.account_id,
+                c.proof,
             )
             if not c.still_works:
                 return
@@ -386,6 +392,26 @@ class PostgresStore:
                 " last_confirmed_on = GREATEST(last_confirmed_on, $2) WHERE id = $1"
             )
             await conn.execute(table_update, c.target_id, c.created_at.date())
+
+    async def has_recent_confirmation(
+        self, account_id: str, target_id: str, since: datetime, *, still_works: bool
+    ) -> bool:
+        return await self._pool.fetchval(
+            "SELECT EXISTS (SELECT 1 FROM confirmations WHERE account_id = $1"
+            " AND target_id = $2 AND created_at >= $3 AND still_works = $4)",
+            account_id,
+            target_id,
+            since,
+            still_works,
+        )
+
+    async def list_confirmations(self, *, limit: int = 50) -> list[Confirmation]:
+        rows = await self._pool.fetch(
+            "SELECT target_kind, target_id, still_works, api_version, pseudo, account_id, proof,"
+            " created_at FROM confirmations ORDER BY created_at DESC LIMIT $1",
+            limit,
+        )
+        return [Confirmation.model_validate(dict(row)) for row in rows]
 
     # --- AccountStore ---------------------------------------------------------
 
@@ -476,3 +502,28 @@ class PostgresStore:
     async def delete_expired_oauth_grants(self, now: datetime) -> None:
         async with self._pool.acquire() as conn:
             await conn.execute("DELETE FROM oauth_grants WHERE expires_at <= $1", now)
+
+    # --- UsageStore -----------------------------------------------------------
+
+    async def add_usage(self, day: date, event: UsageEvent, account_id: str | None) -> None:
+        await self._pool.execute(
+            """
+            INSERT INTO usage_counters (day, event, account_id, count) VALUES ($1, $2, $3, 1)
+            ON CONFLICT (day, event, account_id)
+            DO UPDATE SET count = usage_counters.count + 1
+            """,
+            day,
+            event.value,
+            account_id or "",
+        )
+
+    async def usage_totals(self, since: date) -> list[UsageTotal]:
+        rows = await self._pool.fetch(
+            """
+            SELECT event, SUM(count)::int AS count,
+                   COUNT(DISTINCT NULLIF(account_id, ''))::int AS accounts
+            FROM usage_counters WHERE day >= $1 GROUP BY event ORDER BY event
+            """,
+            since,
+        )
+        return [UsageTotal.model_validate(dict(row)) for row in rows]

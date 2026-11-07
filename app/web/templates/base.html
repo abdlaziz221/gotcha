@@ -25,7 +25,19 @@
         <ul class="nav">
           <li><a href="/recherche"{% if request.url.path == "/recherche" %} aria-current="page"{% endif %}>Rechercher</a></li>
           <li><a href="/pannes"{% if request.url.path.startswith("/pannes") %} aria-current="page"{% endif %}>Pannes</a></li>
+          {% if viewer.can_write or viewer.site_auth %}
           <li><a href="/contribuer"{% if request.url.path.startswith("/contribuer") %} aria-current="page"{% endif %}>Contribuer</a></li>
+          {% endif %}
+          {% if viewer.pseudo %}
+          <li>
+            <form method="post" action="/deconnexion">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button type="submit" class="button button--small button--secondary">Se déconnecter ({{ viewer.pseudo }})</button>
+            </form>
+          </li>
+          {% elif viewer.site_auth %}
+          <li><a href="/connexion?retour={{ request.url.path | urlencode }}">Se connecter</a></li>
+          {% endif %}
         </ul>
       </nav>
     </div>

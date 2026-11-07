@@ -5,8 +5,13 @@ Responsable : Khalifa. server.py ne fait qu'enregistrer ces fonctions auprès du
 
 from __future__ import annotations
 
+from pydantic import ValidationError
+
 from app.container import Services
+from app.domain.errors import InvalidInputError
 from app.domain.models import (
+    ContributionInput,
+    ContributionKind,
     Fiche,
     Gotcha,
     IncidentSource,
@@ -14,9 +19,11 @@ from app.domain.models import (
     Publication,
     ServiceStatus,
     Status,
+    TargetKind,
 )
 from app.domain.text import strip_term_links
 from app.mcp.schemas import (
+    ConfirmationOut,
     EnvDifferenceOut,
     ErrorCodeOut,
     FicheOut,
@@ -24,6 +31,7 @@ from app.mcp.schemas import (
     GotchaOut,
     IncidentOut,
     OutageReportOut,
+    ProposalOut,
     SearchResultOut,
     ServiceOut,
     StatusOut,
@@ -186,4 +194,87 @@ async def report_outage(
         incident_id=incident.id,
         status=incident.status.value,
         message="Thanks: the outage is recorded and shown on the fiche for a few hours.",
+    )
+
+
+def _proposal_body(
+    symptom: str, cause: str, fix: str, failed_attempts: str | None, proof: str | None
+) -> str:
+    """Même découpage qu'un fichier de pièges : le relecteur n'a plus qu'à le reprendre."""
+    sections = [("Symptôme", symptom), ("Cause", cause), ("Solution", fix)]
+    if failed_attempts:
+        sections.append(("Pistes qui ont échoué", failed_attempts))
+    if proof:
+        sections.append(("Preuve", proof))
+    return "\n\n".join(f"## {title}\n\n{text.strip()}" for title, text in sections)
+
+
+async def propose_gotcha(
+    services: Services,
+    *,
+    subject: str,
+    service: str,
+    title: str,
+    symptom: str,
+    cause: str,
+    fix: str,
+    developer_approved: bool,
+    failed_attempts: str | None = None,
+    proof: str | None = None,
+    country: str | None = None,
+    api_version: str | None = None,
+    source_url: str | None = None,
+) -> ProposalOut:
+    if not developer_approved:
+        raise InvalidInputError(
+            "Show this exact draft to your developer first, then call again with "
+            "developer_approved=true. Never include private code, keys, customer data or prompts."
+        )
+    fiche = await services.fiches.find(service, country)
+    pseudo = await services.oauth.account_pseudo(subject) or "agent"
+    try:
+        data = ContributionInput(
+            kind=ContributionKind.GOTCHA,
+            fiche_slug=fiche.slug,
+            title=title,
+            body_md=_proposal_body(symptom, cause, fix, failed_attempts, proof),
+            source_url=source_url,  # type: ignore[arg-type]  # vérifiée par pydantic
+            api_version=api_version,
+            pseudo=pseudo[:40],
+            account_id=subject,
+        )
+    except ValidationError as exc:
+        fields = ", ".join(str(error["loc"][0]) for error in exc.errors())
+        raise InvalidInputError(f"Invalid proposal: check {fields}.") from exc
+    contribution = await services.contributions.submit(data)
+    return ProposalOut(
+        contribution_id=contribution.id,
+        status=contribution.status.value,
+        message="Thanks: a human reviews this draft before anything is published.",
+    )
+
+
+async def confirm_gotcha(
+    services: Services,
+    *,
+    subject: str,
+    gotcha_id: str,
+    still_works: bool,
+    proof: str,
+    api_version: str | None = None,
+) -> ConfirmationOut:
+    pseudo = await services.oauth.account_pseudo(subject)
+    await services.contributions.confirm(
+        TargetKind.GOTCHA,
+        gotcha_id,
+        still_works=still_works,
+        api_version=api_version,
+        pseudo=pseudo[:40] if pseudo else None,
+        account_id=subject,
+        proof=proof,
+    )
+    return ConfirmationOut(
+        gotcha_id=gotcha_id,
+        still_works=still_works,
+        message="Thanks: your confirmation and its proof are recorded.",
     )

@@ -205,7 +205,7 @@ jobs:
               || { echo "ÉCHEC : la découverte OAuth ne répond pas"; exit 1; }
             # Plan de secours : lecture libre, aucun outil d'écriture.
             docker run -d --name secours --network gotcha -p 8001:8000 \
-              -e GOTCHA_ENV=prod -e GOTCHA_INGEST_LIVE=false -e GOTCHA_MCP_AUTH=false \
+              -e GOTCHA_ENV=prod -e GOTCHA_INGEST_LIVE=false -e GOTCHA_MCP_AUTH=false -e GOTCHA_SITE_AUTH=false \
               -e DATABASE_URL=postgresql://gotcha:gotcha@db:5432/gotcha \
               -e GOTCHA_SITE_URL=http://localhost:8001 \
               gotcha:ci

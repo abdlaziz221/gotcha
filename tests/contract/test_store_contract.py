@@ -9,7 +9,7 @@ import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -28,6 +28,7 @@ from app.domain.models import (
     SearchQuery,
     Status,
     TargetKind,
+    UsageEvent,
 )
 from app.domain.ports import Store
 from app.stores.content_files import load_fiches, load_glossary
@@ -58,7 +59,8 @@ async def _postgres_store() -> Store:
         await apply_migrations(conn, ROOT_DIR / "migrations")
         await conn.execute(
             "TRUNCATE fiches, gotchas, fiche_revisions, glossary_terms, confirmations,"
-            " contributions, incidents, ingest_runs, accounts, oauth_clients, oauth_grants CASCADE"
+            " contributions, incidents, ingest_runs, accounts, oauth_clients, oauth_grants,"
+            " usage_counters CASCADE"
         )
     finally:
         await conn.close()
@@ -390,6 +392,86 @@ async def test_expired_oauth_grants_are_deleted(store: Store) -> None:
     assert (
         await store.take_oauth_grant(OAuthGrantKind.LOGIN, "vieux", T0 - timedelta(hours=1)) is None
     )
+
+
+async def test_contribution_with_an_account_has_no_email(store: Store) -> None:
+    contribution = Contribution(
+        id="avec-compte",
+        kind=ContributionKind.GOTCHA,
+        fiche_slug="demo-pay-sn",
+        title="Un titre de test",
+        body_md="Un corps de test assez long.",
+        pseudo="awa",
+        account_id="github:1",
+        created_at=T0,
+    )
+    await store.add_contribution(contribution)
+    assert await store.get_contribution("avec-compte") == contribution
+    listed = await store.list_contributions(status=ContributionStatus.PENDING)
+    assert contribution in listed
+    updated = contribution.model_copy(update={"status": ContributionStatus.APPROVED})
+    await store.update_contribution(updated)
+    saved = await store.get_contribution("avec-compte")
+    assert saved is not None
+    assert saved.account_id == "github:1"
+
+
+async def test_recent_confirmations_are_found_by_account(store: Store) -> None:
+    confirmation = Confirmation(
+        target_kind=TargetKind.FICHE,
+        target_id="demo-pay-sn",
+        account_id="github:1",
+        pseudo="awa",
+        proof="API v1, appel réussi.",
+        created_at=T0,
+    )
+    await store.add_confirmation(confirmation)
+
+    def has(account: str, target: str, since: datetime, *, still_works: bool = True) -> Any:
+        return store.has_recent_confirmation(account, target, since, still_works=still_works)
+
+    assert await has("github:1", "demo-pay-sn", T0 - timedelta(days=1))
+    assert not await has("github:1", "demo-pay-sn", T0 + timedelta(days=1))
+    assert not await has("github:2", "demo-pay-sn", T0 - timedelta(days=1))
+    assert not await has("github:1", "autre", T0 - timedelta(days=1))
+    # « Ça ne marche plus » après « ça marche » : une autre réponse, jamais bloquée.
+    assert not await has("github:1", "demo-pay-sn", T0 - timedelta(days=1), still_works=False)
+    later = confirmation.model_copy(update={"created_at": T0 + timedelta(hours=1)})
+    await store.add_confirmation(later)
+    listed = await store.list_confirmations(limit=1)
+    assert listed == [later]
+
+
+async def test_open_access_is_kept(store: Store) -> None:
+    fiche = await store.get_fiche("demo-pay-sn", include_drafts=True)
+    assert fiche is not None
+    assert not fiche.open_access
+    await store.upsert_fiche(fiche.model_copy(update={"open_access": True}))
+    saved = await store.get_fiche("demo-pay-sn", include_drafts=True)
+    assert saved is not None
+    assert saved.open_access
+
+
+async def test_session_grants_can_be_stored(store: Store) -> None:
+    await store.add_oauth_grant(
+        OAuthGrantKind.SESSION, "k", {"subject": "x"}, T0 + timedelta(days=1)
+    )
+    assert await store.get_oauth_grant(OAuthGrantKind.SESSION, "k", T0) == {"subject": "x"}
+
+
+async def test_usage_is_counted_by_event_and_account(store: Store) -> None:
+    today = T0.date()
+    await store.add_usage(today, UsageEvent.READ_FICHE, "github:1")
+    await store.add_usage(today, UsageEvent.READ_FICHE, "github:1")
+    await store.add_usage(today, UsageEvent.READ_FICHE, "github:2")
+    await store.add_usage(today, UsageEvent.READ_FICHE, None)
+    await store.add_usage(today - timedelta(days=40), UsageEvent.READ_FICHE, "github:3")
+    await store.add_usage(today, UsageEvent.SEARCH_MISS, None)
+    totals = await store.usage_totals(today - timedelta(days=30))
+    assert [(t.event, t.count, t.accounts) for t in totals] == [
+        (UsageEvent.READ_FICHE, 4, 2),
+        (UsageEvent.SEARCH_MISS, 1, 0),
+    ]
 
 
 async def test_fiche_deleted_from_content_leaves_production(store: Store) -> None:

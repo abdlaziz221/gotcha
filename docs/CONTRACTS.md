@@ -23,12 +23,12 @@ Objets immuables (Pydantic), champs inconnus refusés. Les valeurs des énuméra
 | Objet | Rôle | Champs principaux |
 | --- | --- | --- |
 | `Service` | Un opérateur ou un hébergeur | `slug` (`mtn-momo`), `name`, `kind` (`payment` ou `hosting`), `operator`, `docs_url` |
-| `Fiche` | Un service dans un pays | `slug` (`orange-money-sn`), `service`, `country` (code ISO ou vide = tous les pays), `title`, `summary`, `prerequisites`, `steps`, `gotchas`, `differences`, `error_codes`, `sources`, `publication`, `last_confirmed_on`, `confirmations` |
+| `Fiche` | Un service dans un pays | `slug` (`orange-money-sn`), `service`, `country` (code ISO ou vide = tous les pays), `title`, `summary`, `prerequisites`, `steps`, `gotchas`, `differences`, `error_codes`, `sources`, `publication`, `open_access` (fiche entière sans compte, D27), `last_confirmed_on`, `confirmations` |
 | `Gotcha` | Un piège | `id` (`<fiche>.<fichier>`), `title`, `symptom_md`, `cause_md`, `fix_md`, `severity` (`blocking`, `major`, `minor`), `confidence` (`sourced`, `reproduced`, `production`), `failed_attempts_md?`, `proof_md?` (obligatoire au-dessus de `sourced`), `environments` (`sandbox`, `production`), `api_version`, `error_codes`, `sources` (au moins une), `publication`, `verified_by`, `last_confirmed_on`, `confirmations` |
 | `Source` | D'où vient une information | `title`, `url` ou `author`, `published_on?` (date de publication, si la page la donne), `accessed_on` |
 | `GlossaryTerm` | Un terme expliqué | `slug`, `term`, `definition` |
-| `ContributionInput` / `Contribution` | Une proposition à relire | `kind` (`gotcha`, `step`, `correction`), `fiche_slug`, `title`, `body_md`, `source_url`, `api_version`, `pseudo`, `email` (**privé**), `status` (`pending`, `approved`, `rejected`) |
-| `Confirmation` | Un clic « ça marche encore » | `target_kind` (`fiche` ou `gotcha`), `target_id`, `still_works`, `api_version`, `pseudo`, `created_at` |
+| `ContributionInput` / `Contribution` | Une proposition à relire | `kind` (`gotcha`, `step`, `correction`), `fiche_slug`, `title`, `body_md`, `source_url`, `api_version`, `pseudo`, `email?` (**privé** ; obligatoire seulement sans compte), `account_id?` (compte connecté), `status` (`pending`, `approved`, `rejected`) |
+| `Confirmation` | Un clic « ça marche encore » | `target_kind` (`fiche` ou `gotcha`), `target_id`, `still_works`, `api_version`, `pseudo`, `account_id?` (compte connecté), `proof?` (obligatoire avec un compte), `created_at` |
 | `Incident` | Une panne | `id`, `source` (`flutterwave`, `community`, `agent`), `service_slug` (vide = tout le Mobile Money du pays), `country`, `status` (`degraded`, `down`), `title`, `started_at`, `resolved_at` |
 | `OutageReport` | Un signalement | `service_slug`, `country`, `description`, `reported_by`, `source` |
 | `ServiceStatus` | État calculé | `status` (`normal`, `degraded`, `down`, `unknown`), `since`, `active_incidents`, `checked_at` |
@@ -45,7 +45,7 @@ Règles garanties par le modèle :
 
 ## 2. Ports de stockage
 
-`Store` réunit quatre interfaces : `FicheStore`, `IncidentStore`, `ContributionStore`, `AccountStore`. Deux implémentations : `MemoryStore` (référence, fichiers) et `PostgresStore` (production). Les tests de `tests/contract/` tournent sur les deux.
+`Store` réunit cinq interfaces : `FicheStore`, `IncidentStore`, `ContributionStore`, `AccountStore`, `UsageStore`. Deux implémentations : `MemoryStore` (référence, fichiers) et `PostgresStore` (production). Les tests de `tests/contract/` tournent sur les deux.
 
 | Méthode | Comportement promis |
 | --- | --- |
@@ -63,6 +63,8 @@ Règles garanties par le modèle :
 | `update_contribution(contribution)` | Enregistre une relecture ; renvoie `False` sans rien changer si la contribution n'existe pas ou n'est plus en attente (deux relecteurs simultanés : le premier gagne) |
 | `list_contributions(status)` | De la plus ancienne à la plus récente (file de relecture) |
 | `add_confirmation(c)` | Si `still_works` : le compteur de la cible augmente de 1 et sa date de dernière confirmation devient celle du jour, sans jamais reculer |
+| `has_recent_confirmation(account_id, target_id, since, still_works)` / `list_confirmations(limit)` | Évite qu'un compte redonne la même réponse sur la même cible (« ça ne marche plus » reste possible) ; dernières confirmations d'abord |
+| `add_usage(day, event, account_id)` / `usage_totals(since)` | Compteurs par jour, événement et compte ; aucun texte de recherche n'est conservé |
 | `save_account(account)` / `get_account(id)` | Création ou remplacement ; un blocage déjà posé est conservé |
 | `save_oauth_client(id, data)` / `get_oauth_client(id)` | Outils MCP enregistrés |
 | `add_oauth_grant`, `get_oauth_grant`, `take_oauth_grant`, `delete_expired_oauth_grants` | Autorisations retrouvées par l'empreinte de leur jeton. Expirée = absente. `take` renvoie et supprime en une seule opération : deux appels ne peuvent pas réussir |
@@ -103,6 +105,8 @@ Transport HTTP « streamable », sans état, réponses JSON, point d'entrée `PO
 | `search_gotchas` | `query`, `service?`, `country?` | `list[SearchResultOut]` | 10 résultats au plus |
 | `get_service_status` | `service`, `country?` | `StatusOut` | Avec un conseil (`advice`) pour l'agent |
 | `report_outage` | `service`, `description`, `country?` | `OutageReportOut` | Seul outil qui écrit ; 10 signalements par heure et par compte. Absent en production sans connexion |
+| `propose_gotcha` | `service`, `title`, `symptom`, `cause`, `fix`, `developer_approved`, `failed_attempts?`, `proof?`, `country?`, `api_version?`, `source_url?` | `ProposalOut` | Avec connexion seulement. Refusé sans l'accord du développeur. Reste en attente de relecture. 10 par heure et par compte |
+| `confirm_gotcha` | `gotcha_id`, `still_works`, `proof`, `api_version?` | `ConfirmationOut` | Avec connexion seulement. Preuve obligatoire. Compte une fois par mois. 30 par heure et par compte |
 
 Erreurs : un service ou une fiche inconnus renvoient une erreur d'outil lisible (`isError: true`), jamais une exception brute. Les textes des pièges sont renvoyés sans la syntaxe `[[terme]]` du glossaire.
 
