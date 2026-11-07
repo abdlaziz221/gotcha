@@ -30,6 +30,7 @@ Chaque route appelle les services, construit **un** objet de `viewmodels.py` et 
 | `routes/review.py` | `/relecture` (relecteurs) |
 | `routes/dev.py` | `/styleguide` (développement seulement) |
 | `routes/health.py` | `/healthz` |
+| `routes/probe.py` | `/_sonde/…` : mesures de l'hébergeur, seulement avec `GOTCHA_PROBE=1` (tâche A2) |
 
 ## Ajouter une page
 
