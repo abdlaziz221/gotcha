@@ -49,6 +49,25 @@ commands:
           paths:
             - ~/.cache/pip
 
+  wait-ready:
+    description: Attendre que le conteneur réponde, base PostgreSQL comprise
+    steps:
+      - run:
+          name: Attente du site (/healthz?db=1)
+          command: |
+            for i in $(seq 1 60); do
+              # Sortie dans un fichier, puis grep : avec pipefail, « … | grep -q » peut échouer
+              # quand grep s'arrête au premier résultat (SIGPIPE pour l'émetteur).
+              curl -fsS 'http://localhost:8000/healthz?db=1' > /tmp/health.json 2>/dev/null || true
+              if grep -q '"database":"ok"' /tmp/health.json; then
+                echo "Site prêt après ${i} s"
+                exit 0
+              fi
+              sleep 1
+            done
+            echo "ÉCHEC : le site ne répond pas après 60 s"
+            exit 1
+
 jobs:
   pr-rules:
     executor: python
@@ -132,21 +151,35 @@ jobs:
           name: Construction de l'image
           command: docker build --pull -t gotcha:ci .
       - run:
-          name: Démarrage en mode production
+          name: Base PostgreSQL jetable, comme la base managée de Datacloud
           command: |
-            docker run -d --name gotcha -p 8000:8000 \
-              -e GOTCHA_ENV=prod -e GOTCHA_STORE=memory -e GOTCHA_INGEST_LIVE=false \
-              -e GOTCHA_SITE_URL=http://localhost:8000 \
-              gotcha:ci
-            for i in $(seq 1 30); do
-              if curl -fsS http://localhost:8000/healthz > /dev/null 2>&1; then
-                echo "Conteneur prêt après ${i} s"
+            docker network create gotcha
+            docker run -d --name db --network gotcha \
+              -e POSTGRES_USER=gotcha -e POSTGRES_PASSWORD=gotcha -e POSTGRES_DB=gotcha \
+              postgres:17-alpine
+            # Par TCP : pendant son initialisation, le serveur n'écoute que sur un socket local.
+            for i in $(seq 1 60); do
+              if docker exec db pg_isready -h 127.0.0.1 -U gotcha -d gotcha > /dev/null 2>&1; then
+                echo "Base prête après ${i} s"
                 exit 0
               fi
               sleep 1
             done
-            echo "ÉCHEC : le conteneur ne répond pas après 30 s"
+            echo "ÉCHEC : la base ne répond pas après 60 s"
             exit 1
+      - run:
+          name: Démarrage en mode production (migrations et contenu chargés au démarrage)
+          command: |
+            docker run -d --name gotcha --network gotcha -p 8000:8000 \
+              -e GOTCHA_ENV=prod -e GOTCHA_INGEST_LIVE=false \
+              -e DATABASE_URL=postgresql://gotcha:gotcha@db:5432/gotcha \
+              -e GOTCHA_SITE_URL=http://localhost:8000 \
+              gotcha:ci
+      - wait-ready
+      - run:
+          name: Redémarrage (deuxième mise en service, sans rien casser)
+          command: docker restart gotcha
+      - wait-ready
       - run:
           name: Vérifications en mode production
           command: |
@@ -158,13 +191,19 @@ jobs:
             if docker run --rm gotcha:ci python -c "import pip" 2>/dev/null; then
               echo "ÉCHEC : pip est encore dans l'image (il embarque certifi, sous MPL-2.0)"; exit 1
             fi
-            headers="$(curl -sI http://localhost:8000/)"
+            test "$(code /_sonde/requete)" = 404 || { echo "ÉCHEC : la sonde doit être éteinte"; exit 1; }
+            # Sorties dans des fichiers, puis grep (voir wait-ready : pipefail et SIGPIPE).
+            docker logs gotcha > /tmp/gotcha.log 2>&1
+            grep -q "la base est à jour" /tmp/gotcha.log \
+              || { echo "ÉCHEC : le redémarrage aurait dû trouver la base à jour"; exit 1; }
+            curl -sI http://localhost:8000/ > /tmp/headers.txt
             for header in content-security-policy strict-transport-security x-content-type-options x-frame-options; do
-              printf '%s' "$headers" | grep -qi "^$header:" || { echo "ÉCHEC : en-tête $header absent"; exit 1; }
+              grep -qi "^$header:" /tmp/headers.txt || { echo "ÉCHEC : en-tête $header absent"; exit 1; }
             done
-            curl -fsS -X POST http://localhost:8000/mcp \
+            curl -fsS -X POST http://localhost:8000/mcp -o /tmp/tools.json \
               -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
-              -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | grep -q '"get_fiche"' \
+              -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' || true
+            grep -q '"get_fiche"' /tmp/tools.json \
               || { echo "ÉCHEC : le serveur MCP ne répond pas"; exit 1; }
             echo "Accueil, pages cachées, en-têtes de sécurité et serveur MCP : OK"
       - run:

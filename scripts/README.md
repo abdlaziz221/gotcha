@@ -8,8 +8,10 @@
 | `ci_pr_rules.py` | lancé par la CI (`PR_TITLE=… python scripts/ci_pr_rules.py` en local) | Vérifie le titre de PR (bloquant), la taille et le nom de branche |
 | `scan_secrets.py` | `python scripts/scan_secrets.py` | En CI, dans pre-commit ; cherche des clés dans les fichiers suivis par git |
 | `check_licenses.py` | `python scripts/check_licenses.py` (`--list` pour tout afficher, `--markdown` pour écrire `docs/LICENCES.md`) | Après chaque ajout de dépendance ; en CI ; avant la soumission |
-| `migrate.py` | `DATABASE_URL=… python scripts/migrate.py` | Avant le premier démarrage en production, puis à chaque nouvelle migration |
-| `seed.py` | `DATABASE_URL=… python scripts/seed.py` | Après `migrate.py`, puis à chaque mise à jour de `content/` (demande A6) |
+| `release.py` | `python scripts/release.py` | Lancé par le `Dockerfile` avant le site : migrations, puis chargement de `content/`, sous verrou (D18) |
+| `migrate.py` | `DATABASE_URL=… python scripts/migrate.py` | À la main, sur une base de développement (en production, `release.py` s'en charge) |
+| `seed.py` | `DATABASE_URL=… python scripts/seed.py` | À la main, après `migrate.py` (en production, `release.py` s'en charge) |
+| `probe_platform.py` | `python scripts/probe_platform.py https://<domaine>` (`--rapide`) | Tâche A2 : mesure les limites de l'hébergeur, site démarré avec `GOTCHA_PROBE=1` (voir `deploy/README.md`) |
 | `hash_password.py` | `python scripts/hash_password.py <pseudo>` | Pour créer un compte relecteur (`GOTCHA_REVIEWERS`) |
 
 ## Contrôle des licences

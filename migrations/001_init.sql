@@ -94,3 +94,11 @@ CREATE TABLE ingest_runs (
     source           text PRIMARY KEY,
     last_success_at  timestamptz NOT NULL
 );
+
+-- Date de construction de l'image dont le contenu est en base (scripts/release.py) :
+-- une image plus ancienne qui redémarre ne recharge pas son ancien contenu.
+CREATE TABLE content_release (
+    id          integer     PRIMARY KEY CHECK (id = 1),
+    built_at    bigint      NOT NULL,  -- secondes Unix, fichier BUILD_TIME de l'image
+    applied_at  timestamptz NOT NULL DEFAULT now()
+);

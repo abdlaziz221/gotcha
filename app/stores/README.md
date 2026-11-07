@@ -9,7 +9,7 @@ Deux implémentations des mêmes ports (`app/domain/ports.py`), choisies au dém
 | `memory/store.py` (`MemoryStore`) | Développement, tests, démo hors ligne | `content/` (fiches) et `fixtures/` (pannes et contributions fictives) ; tout est perdu au redémarrage |
 | `postgres/store.py` (`PostgresStore`) | Production sur Datacloud | Base PostgreSQL managée, schéma dans `migrations/` |
 
-`content_files.py` lit le dossier `content/` ; il sert au stockage mémoire **et** à `scripts/seed.py`.
+`content_files.py` lit le dossier `content/` ; il sert au stockage mémoire **et** au chargement en base. `postgres/release.py` prépare la base à chaque démarrage du conteneur : migrations, puis chargement de `content/`, sous un verrou pour que deux instances ne le fassent pas en même temps (D18).
 
 **`MemoryStore` est la référence de comportement.** `PostgresStore` doit faire exactement pareil : c'est ce que vérifient les tests de `tests/contract/`.
 
