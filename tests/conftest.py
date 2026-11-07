@@ -12,6 +12,7 @@ from starlette.testclient import TestClient
 
 from app.config import ROOT_DIR, Settings
 from app.container import Services, build_services
+from app.domain.ports import IdentityProvider
 from app.main import create_app
 from app.services.clock import FixedClock
 from app.stores.memory.store import MemoryStore
@@ -37,12 +38,18 @@ def settings() -> Settings:
     return Settings(env="test")
 
 
-def make_client(settings: Settings, clock: FixedClock) -> TestClient:
+def make_client(
+    settings: Settings,
+    clock: FixedClock,
+    *,
+    identity: IdentityProvider | None = None,
+    store: MemoryStore | None = None,
+) -> TestClient:
     async def factory(s: Settings) -> Services:
-        store = MemoryStore.from_directories(
+        memory = store or MemoryStore.from_directories(
             s.content_dir, s.fixtures_dir if s.load_fixtures else None, now=clock.now()
         )
-        return await build_services(s, clock=clock, store=store)
+        return await build_services(s, clock=clock, store=memory, identity=identity)
 
     return TestClient(create_app(settings, services_factory=factory))
 

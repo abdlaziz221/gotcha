@@ -337,3 +337,30 @@ class SearchHit(Model):
     snippet: str
     anchor: str | None = None  # ancre dans la page de la fiche, ex. "piege-sandbox-eur"
     score: float = 0.0
+
+
+# --- Comptes -----------------------------------------------------------------
+
+
+class OAuthGrantKind(StrEnum):
+    LOGIN = "login"  # connexion en cours chez GitHub
+    CODE = "code"  # code d'autorisation, à usage unique
+    ACCESS = "access"  # jeton d'accès au serveur MCP
+    REFRESH = "refresh"  # jeton de renouvellement, remplacé à chaque usage
+
+
+class ExternalIdentity(Model):
+    """Ce que le fournisseur d'identité nous apprend sur le développeur."""
+
+    id: str = Field(min_length=3)  # "github:<identifiant numérique>"
+    pseudo: str = Field(min_length=1, max_length=100)
+
+
+class Account(Model):
+    """Un développeur connecté. Aucun mot de passe ni jeton GitHub n'est conservé."""
+
+    id: str = Field(min_length=3)
+    pseudo: str = Field(min_length=1, max_length=100)
+    created_at: datetime
+    last_login_at: datetime
+    blocked: bool = False

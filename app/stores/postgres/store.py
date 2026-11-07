@@ -16,6 +16,7 @@ from typing import Any
 import asyncpg
 
 from app.domain.models import (
+    Account,
     Confirmation,
     Contribution,
     ContributionStatus,
@@ -24,6 +25,7 @@ from app.domain.models import (
     Gotcha,
     Incident,
     IncidentSource,
+    OAuthGrantKind,
     SearchHit,
     SearchQuery,
     TargetKind,
@@ -384,3 +386,93 @@ class PostgresStore:
                 " last_confirmed_on = GREATEST(last_confirmed_on, $2) WHERE id = $1"
             )
             await conn.execute(table_update, c.target_id, c.created_at.date())
+
+    # --- AccountStore ---------------------------------------------------------
+
+    async def save_account(self, account: Account) -> None:
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO accounts (id, pseudo, created_at, last_login_at, blocked)
+                VALUES ($1, $2, $3, $4, $5)
+                ON CONFLICT (id) DO UPDATE SET
+                    pseudo = EXCLUDED.pseudo,
+                    last_login_at = EXCLUDED.last_login_at,
+                    blocked = accounts.blocked OR EXCLUDED.blocked
+                """,
+                account.id,
+                account.pseudo,
+                account.created_at,
+                account.last_login_at,
+                account.blocked,
+            )
+
+    async def get_account(self, account_id: str) -> Account | None:
+        if not is_storable(account_id):
+            return None
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT id, pseudo, created_at, last_login_at, blocked FROM accounts WHERE id = $1",
+                account_id,
+            )
+        return Account(**dict(row)) if row else None
+
+    async def save_oauth_client(self, client_id: str, data: dict[str, Any]) -> None:
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO oauth_clients (client_id, data) VALUES ($1, $2)
+                ON CONFLICT (client_id) DO UPDATE SET data = EXCLUDED.data
+                """,
+                client_id,
+                data,
+            )
+
+    async def get_oauth_client(self, client_id: str) -> dict[str, Any] | None:
+        if not is_storable(client_id):
+            return None
+        async with self._pool.acquire() as conn:
+            return await conn.fetchval(
+                "SELECT data FROM oauth_clients WHERE client_id = $1", client_id
+            )
+
+    async def add_oauth_grant(
+        self, kind: OAuthGrantKind, key_hash: str, data: dict[str, Any], expires_at: datetime
+    ) -> None:
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                "INSERT INTO oauth_grants (kind, key_hash, data, expires_at)"
+                " VALUES ($1, $2, $3, $4)",
+                kind.value,
+                key_hash,
+                data,
+                expires_at,
+            )
+
+    async def get_oauth_grant(
+        self, kind: OAuthGrantKind, key_hash: str, now: datetime
+    ) -> dict[str, Any] | None:
+        async with self._pool.acquire() as conn:
+            return await conn.fetchval(
+                "SELECT data FROM oauth_grants"
+                " WHERE kind = $1 AND key_hash = $2 AND expires_at > $3",
+                kind.value,
+                key_hash,
+                now,
+            )
+
+    async def take_oauth_grant(
+        self, kind: OAuthGrantKind, key_hash: str, now: datetime
+    ) -> dict[str, Any] | None:
+        async with self._pool.acquire() as conn:
+            return await conn.fetchval(
+                "DELETE FROM oauth_grants WHERE kind = $1 AND key_hash = $2 AND expires_at > $3"
+                " RETURNING data",
+                kind.value,
+                key_hash,
+                now,
+            )
+
+    async def delete_expired_oauth_grants(self, now: datetime) -> None:
+        async with self._pool.acquire() as conn:
+            await conn.execute("DELETE FROM oauth_grants WHERE expires_at <= $1", now)

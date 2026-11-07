@@ -20,6 +20,7 @@ Offre Starter : 7,35 $ par mois avant remise, 512 Mo de mémoire, 0,5 processeur
    | `GOTCHA_SITE_URL` | `https://<domaine public>` |
    | `GOTCHA_ALLOWED_HOSTS` | `<domaine public>` |
    | `GOTCHA_REVIEWERS` | voir `scripts/hash_password.py` |
+   | `GOTCHA_GITHUB_CLIENT_ID` et `GOTCHA_GITHUB_CLIENT_SECRET` | Application OAuth GitHub de production, voir « Connexion du serveur MCP » |
    | `GOTCHA_PROXY_HOPS` | `1` (valeur par défaut en production), à confirmer avec la sonde |
    | `GOTCHA_PROBE` | `1` le temps des mesures ci-dessous, puis à retirer |
    | `GOTCHA_PROBE_TOKEN` | avec `GOTCHA_PROBE` : un jeton aléatoire de 24 caractères au moins (`python -c "import secrets; print(secrets.token_urlsafe(24))"`), à retirer ensuite |
@@ -95,3 +96,21 @@ Le port 8000 n'écoute que sur la machine : tout passe par le proxy, sinon un vi
 - [ ] Un agent joint `https://<domaine>/mcp`
 
 Ce qu'on apprend ici nourrit la **fiche Datacloud** (`content/fiches/datacloud-sn/`, tâche A10) : chaque difficulté rencontrée est un piège à documenter.
+
+## Connexion du serveur MCP
+
+Par défaut, la production demande une connexion GitHub pour tout appel à `/mcp` (D20).
+
+1. Créer une application OAuth sur <https://github.com/settings/developers>. **Une par adresse** : celle des essais locaux ne sert pas en production.
+   - Homepage URL : `https://<domaine public>`
+   - Redirect URI : `https://<domaine public>/github/callback`
+   - Allow wildcard matching et Device Flow : décochés
+2. Générer le secret et le placer seulement dans la console Datacloud, dans `GOTCHA_GITHUB_CLIENT_SECRET`.
+3. Vérifier que la base PostgreSQL est branchée : l'application refuse de démarrer sinon, car le stockage `memory` perdrait les comptes et les connexions à chaque redémarrage.
+4. Depuis un outil MCP compatible, ajouter `https://<domaine public>/mcp`, se connecter, puis faire lire une fiche.
+
+Pour bloquer un compte : `UPDATE accounts SET blocked = true WHERE pseudo = '<pseudo>';`. L'accès est coupé tout de suite.
+
+**Plan de secours :** `GOTCHA_MCP_AUTH=false` laisse la lecture libre et retire les outils d'écriture.
+
+**Essai local :** avec une application dont la Redirect URI est `http://localhost:8799/github/callback`, définir `GOTCHA_MCP_AUTH=true`, `GOTCHA_SITE_URL=http://localhost:8799` et les deux valeurs GitHub, puis lancer uvicorn sur le port 8799.

@@ -13,6 +13,8 @@ from collections.abc import Callable, Mapping
 
 from fastapi import HTTPException, Request
 from starlette.datastructures import Headers
+from starlette.responses import JSONResponse
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 
 class RateLimiter:
@@ -95,3 +97,26 @@ def rate_limit(name: str, *, limit: int, window_seconds: float) -> Callable[[Req
             raise HTTPException(status_code=429, detail="Trop de demandes : réessayez plus tard.")
 
     return dependency
+
+
+class PathQuotaMiddleware:
+    """Quotas par adresse IP pour des routes qui ne sont pas les nôtres (routes OAuth du SDK)."""
+
+    def __init__(self, app: ASGIApp, *, quotas: Mapping[str, tuple[int, float]]) -> None:
+        self.app = app
+        self.quotas = quotas
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        quota = self.quotas.get(scope["path"]) if scope["type"] == "http" else None
+        if quota is not None:
+            request = Request(scope)
+            peer = request.client.host if request.client else None
+            ip = client_ip(request.headers, peer, proxy_hops=request.app.state.settings.proxy_hops)
+            limit, window = quota
+            if not request.app.state.rate_limiter.hit(
+                f"oauth{scope['path']}:{ip}", limit=limit, window_seconds=window
+            ):
+                response = JSONResponse({"error": "too_many_requests"}, status_code=429)
+                await response(scope, receive, send)
+                return
+        await self.app(scope, receive, send)

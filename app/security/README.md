@@ -10,6 +10,7 @@
 | `csrf.py` | Jeton CSRF par double soumission : cookie `gotcha_csrf` (`__Host-gotcha_csrf` en production) + champ caché ; dépendance `verify_csrf` sur chaque POST |
 | `ratelimit.py` | Quotas par IP, en mémoire ; dépendance `rate_limit(nom, limit=…, window_seconds=…)` ; `client_ip` lit l'adresse du visiteur selon `GOTCHA_PROXY_HOPS` |
 | `auth.py` | Relecteurs : HTTP Basic, mots de passe hachés avec scrypt, 10 essais ratés par adresse et par quart d'heure ; dépendance `require_reviewer` |
+| `github.py` | Identification par GitHub : aucune permission demandée, jeton oublié après lecture du profil public, erreurs sans aucun secret |
 | `secrets.py` | Détection des clés et jetons dans les contributions (règles maison) |
 
 ## Tâches

@@ -28,7 +28,8 @@ pytestmark = [pytest.mark.anyio, pytest.mark.postgres]
 
 DROP_ALL = (
     "DROP TABLE IF EXISTS schema_migrations, fiches, gotchas, fiche_revisions, glossary_terms,"
-    " confirmations, contributions, incidents, ingest_runs, content_release CASCADE"
+    " confirmations, contributions, incidents, ingest_runs, accounts, oauth_clients,"
+    " oauth_grants, content_release CASCADE"
 )
 
 
@@ -51,7 +52,7 @@ async def _release(url: str) -> ReleaseReport:
 
 async def test_first_release_creates_schema_and_loads_content(empty_database: str) -> None:
     report = await _release(empty_database)
-    assert report.migrations == ["001_init"]
+    assert report.migrations == ["001_init", "002_comptes_oauth"]
     assert report.seed == SeedReport(fiches=2, gotchas=2, terms=2)
 
     again = await _release(empty_database)
@@ -61,7 +62,7 @@ async def test_first_release_creates_schema_and_loads_content(empty_database: st
 
 async def test_instances_starting_together_do_not_collide(empty_database: str) -> None:
     reports = await asyncio.gather(*(_release(empty_database) for _ in range(3)))
-    assert sorted(len(r.migrations) for r in reports) == [0, 0, 1]
+    assert sorted(len(r.migrations) for r in reports) == [0, 0, 2]
     conn = await asyncpg.connect(empty_database)
     try:
         assert await conn.fetchval("SELECT count(*) FROM fiches") == 2

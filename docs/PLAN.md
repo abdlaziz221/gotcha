@@ -74,6 +74,7 @@ Chaque tâche a son issue sur GitHub (même identifiant dans le titre). Le READM
 | A10 | Fiche Datacloud (F2) réécrite à partir de notre déploiement réel, puis publiée | `content/fiches/datacloud-sn/` | dim. 8 |
 | A11 | Revue de sécurité en production : en-têtes, cookies, quotas derrière le proxy | `app/security/` | mer. 11 |
 | A12 | Dossier de soumission : licences, titularité, déclaration de l'usage de l'IA, rôles | `docs/SUBMISSION.md` | ven. 13 |
+| A13 | Connexion GitHub du serveur MCP : comptes, jetons, quotas (D20) | `app/services/oauth.py`, `app/mcp/oauth.py`, `migrations/` | dim. 8 |
 
 ### Loum : frontend et design (L)
 

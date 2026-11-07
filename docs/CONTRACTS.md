@@ -45,7 +45,7 @@ Règles garanties par le modèle :
 
 ## 2. Ports de stockage
 
-`Store` réunit trois interfaces : `FicheStore`, `IncidentStore`, `ContributionStore`. Deux implémentations : `MemoryStore` (référence, fichiers) et `PostgresStore` (production). Les tests de `tests/contract/` tournent sur les deux.
+`Store` réunit quatre interfaces : `FicheStore`, `IncidentStore`, `ContributionStore`, `AccountStore`. Deux implémentations : `MemoryStore` (référence, fichiers) et `PostgresStore` (production). Les tests de `tests/contract/` tournent sur les deux.
 
 | Méthode | Comportement promis |
 | --- | --- |
@@ -63,6 +63,9 @@ Règles garanties par le modèle :
 | `update_contribution(contribution)` | Enregistre une relecture ; renvoie `False` sans rien changer si la contribution n'existe pas ou n'est plus en attente (deux relecteurs simultanés : le premier gagne) |
 | `list_contributions(status)` | De la plus ancienne à la plus récente (file de relecture) |
 | `add_confirmation(c)` | Si `still_works` : le compteur de la cible augmente de 1 et sa date de dernière confirmation devient celle du jour, sans jamais reculer |
+| `save_account(account)` / `get_account(id)` | Création ou remplacement ; un blocage déjà posé est conservé |
+| `save_oauth_client(id, data)` / `get_oauth_client(id)` | Outils MCP enregistrés |
+| `add_oauth_grant`, `get_oauth_grant`, `take_oauth_grant`, `delete_expired_oauth_grants` | Autorisations retrouvées par l'empreinte de leur jeton. Expirée = absente. `take` renvoie et supprime en une seule opération : deux appels ne peuvent pas réussir |
 
 ## 3. Pages et contextes
 
@@ -91,7 +94,7 @@ Chaque formulaire POST contient `<input type="hidden" name="csrf_token" value="{
 
 ## 4. Outils MCP
 
-Transport HTTP « streamable », sans état, réponses JSON, point d'entrée `POST /mcp`. Réponses structurées décrites dans `app/mcp/schemas.py`.
+Transport HTTP « streamable », sans état, réponses JSON, point d'entrée `POST /mcp`. En production, tout appel demande une connexion GitHub : sans jeton, le serveur répond 401 et l'outil MCP compatible ouvre le navigateur (D20). Réponses structurées décrites dans `app/mcp/schemas.py`.
 
 | Outil | Entrées | Sortie | Notes |
 | --- | --- | --- | --- |
@@ -99,7 +102,7 @@ Transport HTTP « streamable », sans état, réponses JSON, point d'entrée `PO
 | `get_fiche` | `service`, `country?` | `FicheOut` | Étapes, pièges, écarts, codes d'erreur, état ; `warning` si des pièges ne sont pas vérifiés |
 | `search_gotchas` | `query`, `service?`, `country?` | `list[SearchResultOut]` | 10 résultats au plus |
 | `get_service_status` | `service`, `country?` | `StatusOut` | Avec un conseil (`advice`) pour l'agent |
-| `report_outage` | `service`, `description`, `country?` | `OutageReportOut` | Seul outil qui écrit ; 10 signalements par heure et par IP |
+| `report_outage` | `service`, `description`, `country?` | `OutageReportOut` | Seul outil qui écrit ; 10 signalements par heure et par compte. Absent en production sans connexion |
 
 Erreurs : un service ou une fiche inconnus renvoient une erreur d'outil lisible (`isError: true`), jamais une exception brute. Les textes des pièges sont renvoyés sans la syntaxe `[[terme]]` du glossaire.
 
