@@ -53,7 +53,7 @@ Règles garanties par le modèle :
 | `get_fiche(slug, include_drafts)` | La fiche, ou `None` (y compris pour un brouillon quand `include_drafts` est faux) |
 | `search(query, include_drafts)` (logique commune : `app/stores/search.py`) | Résultats triés par score décroissant, au plus `query.limit`, insensibles à la casse et aux accents, filtrés par service et pays ; un code d'erreur exact donne un résultat `error_code` |
 | `list_glossary()` | Termes triés par terme |
-| `upsert_fiche(fiche)` | Création ou remplacement (utilisé par `scripts/seed.py`). Les pièges retirés disparaissent, leur ordre est conservé ; les **compteurs de confirmation déjà enregistrés sont gardés**, même si une confirmation arrive pendant le chargement, et `last_confirmed_on` garde la date la plus récente (une date future est donc refusée au chargement de `content/`) |
+| `upsert_fiche(fiche)` | Création ou remplacement (utilisé au chargement de `content/`, à chaque démarrage en production). Les pièges retirés disparaissent, leur ordre est conservé ; les **compteurs de confirmation déjà enregistrés sont gardés**, même si une confirmation arrive pendant le chargement, et `last_confirmed_on` garde la date la plus récente (une date future est donc refusée au chargement de `content/`) |
 | `retire_fiches(keep)` | Repasse en brouillon les fiches publiées absentes de `keep`, sans effacer leur historique ; renvoie leurs slugs |
 | `upsert_glossary(terms)` | Remplace tout le glossaire : les termes absents disparaissent |
 | `list_incidents(service_slug, country, active_only, limit)` | Pannes de la plus récente à la plus ancienne |
