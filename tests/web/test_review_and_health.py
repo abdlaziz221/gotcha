@@ -89,3 +89,12 @@ def test_successful_pages_do_not_use_up_the_attempts(clock: FixedClock) -> None:
         for _ in range(MAX_FAILURES + 2):
             assert client.get("/relecture", auth=("aziz", PASSWORD)).status_code == 200
         assert client.get("/relecture", auth=("aziz", "faux")).status_code == 401
+
+
+def test_changing_pseudo_at_each_attempt_does_not_avoid_the_block(clock: FixedClock) -> None:
+    with make_client(_prod_settings(f"aziz:{hash_password(PASSWORD)}"), clock) as client:
+        codes = [client.get("/relecture", auth=(f"x{n}", "faux")).status_code for n in range(12)]
+        assert codes[:MAX_FAILURES] == [401] * MAX_FAILURES
+        assert codes[MAX_FAILURES:] == [429] * (12 - MAX_FAILURES)
+        # Le vrai relecteur garde son propre compteur.
+        assert client.get("/relecture", auth=("aziz", PASSWORD)).status_code == 200
