@@ -12,6 +12,7 @@
 | `migrate.py` | `DATABASE_URL=… python scripts/migrate.py` | À la main, sur une base de développement (en production, `release.py` s'en charge) |
 | `seed.py` | `DATABASE_URL=… python scripts/seed.py` | À la main, après `migrate.py` (en production, `release.py` s'en charge) |
 | `probe_platform.py` | `python scripts/probe_platform.py https://<domaine>` (`--rapide`) | Tâche A2 : mesure les limites de l'hébergeur, site démarré avec `GOTCHA_PROBE=1` (voir `deploy/README.md`) |
+| `export_contributions.py` | `DATABASE_URL=… python scripts/export_contributions.py` | Après une séance de relecture : écrit les contributions approuvées en brouillons dans `content/` (voir `content/README.md`) |
 | `hash_password.py` | `python scripts/hash_password.py <pseudo>` | Pour créer un compte relecteur (`GOTCHA_REVIEWERS`) |
 
 ## Contrôle des licences
