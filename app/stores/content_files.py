@@ -19,6 +19,12 @@ from app.domain.models import Fiche, GlossaryTerm, Gotcha, Step
 
 _FRONTMATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---\s*\n?(.*)\Z", re.DOTALL)
 _SECTION_FIELDS = {"symptome": "symptom_md", "cause": "cause_md", "solution": "fix_md"}
+_OPTIONAL_SECTION_FIELDS = {
+    "pistes qui ont echoue": "failed_attempts_md",
+    "preuve": "proof_md",
+}
+# La transcription de l'audio (D26) va dans le champ audio, avec les métadonnées de l'en-tête.
+_TRANSCRIPT_SECTION = "transcription en wolof"
 
 
 class ContentError(ValueError):
@@ -73,13 +79,30 @@ def _load_gotcha(fiche_slug: str, path: Path) -> Gotcha:
     meta = yaml.safe_load(match.group(1)) or {}
     sections = _split_sections(match.group(2))
     fields: dict[str, Any] = {}
+    transcript = None
     for heading, body in sections.items():
-        key = _SECTION_FIELDS.get(_normalize(heading))
+        name = _normalize(heading)
+        if name == _TRANSCRIPT_SECTION:
+            transcript = body
+            continue
+        key = _SECTION_FIELDS.get(name) or _OPTIONAL_SECTION_FIELDS.get(name)
         if key is None:
             raise ContentError(
-                f"{path} : section inconnue « {heading} » (Symptôme, Cause, Solution)"
+                f"{path} : section inconnue « {heading} » "
+                "(Symptôme, Cause, Solution, Pistes qui ont échoué, Preuve, Transcription en wolof)"
             )
         fields[key] = body
+    audio = meta.get("audio")
+    if (audio is None) != (transcript is None):
+        raise ContentError(
+            f"{path} : l'audio (en-tête « audio ») et la section « Transcription en wolof »"
+            " vont ensemble"
+        )
+    if isinstance(audio, dict):
+        audio_file = path.parent.parent / "audio" / str(audio.get("file", ""))
+        if not audio_file.is_file():
+            raise ContentError(f"{path} : fichier audio introuvable : {audio_file}")
+        meta = {**meta, "audio": {**audio, "transcript_md": transcript}}
     missing = [h for h, key in _SECTION_FIELDS.items() if key not in fields]
     if missing:
         raise ContentError(f"{path} : sections manquantes : {', '.join(missing)}")

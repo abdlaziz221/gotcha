@@ -2,7 +2,7 @@
 
 | Document | À lire quand |
 | --- | --- |
-| [PLAN.md](PLAN.md) | Chaque matin : qui fait quoi aujourd'hui, prochains jalons |
+| [PLAN.md](PLAN.md) | Chaque matin : priorités, qui fait quoi aujourd'hui, prochains jalons |
 | [CONTRACTS.md](CONTRACTS.md) | Avant de toucher au modèle, au stockage, aux pages ou au MCP |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Pour comprendre comment les morceaux s'emboîtent |
 | [DECISIONS.md](DECISIONS.md) | Avant de remettre en cause un choix technique ; après en avoir pris un |

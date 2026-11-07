@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal, cast
 
@@ -40,11 +40,22 @@ class Settings:
     reviewers: str = ""
     # Valeurs autorisées pour l'en-tête Host du serveur MCP (protection DNS rebinding).
     allowed_hosts: tuple[str, ...] = ("localhost:*", "127.0.0.1:*", "testserver")
-    # Derrière le proxy de Datacloud : lire l'adresse du client dans X-Forwarded-For.
-    trust_proxy: bool = False
+    # Proxys de confiance devant le site (Datacloud : 1). Chacun ajoute à la fin de
+    # X-Forwarded-For l'adresse qu'il a vue ; 0 : l'en-tête est ignoré (voir client_ip).
+    proxy_hops: int = 0
     site_url: str = "http://localhost:8000"
     # Sonde des limites de l'hébergeur (/_sonde/…), le temps du test A2 seulement.
     probe: bool = False
+    # Connexion GitHub obligatoire pour le serveur MCP. Sans elle, la production n'expose
+    # que les outils de lecture : aucune écriture anonyme, même en secours.
+    mcp_auth: bool = False
+    github_client_id: str = ""
+    github_client_secret: str = field(default="", repr=False)
+    # Connexion sur le site : aperçu public, solutions et formulaires réservés aux comptes.
+    # Sans elle, le site se lit librement, et la production n'accepte aucun formulaire.
+    site_auth: bool = False
+    # Code d'accès du jury, donné dans le formulaire de soumission.
+    jury_code: str = field(default="", repr=False)
     # Jeton partagé qu'envoie scripts/probe_platform.py (en-tête X-Sonde-Jeton).
     probe_token: str = ""
 
@@ -81,9 +92,14 @@ class Settings:
                 if hosts
                 else cls.allowed_hosts
             ),
-            trust_proxy=_bool(e.get("GOTCHA_TRUST_PROXY"), default=prod),
+            proxy_hops=int(e.get("GOTCHA_PROXY_HOPS", "1" if prod else "0")),
             site_url=e.get("GOTCHA_SITE_URL", cls.site_url).rstrip("/"),
             probe=_bool(e.get("GOTCHA_PROBE"), default=False),
+            mcp_auth=_bool(e.get("GOTCHA_MCP_AUTH"), default=prod),
+            github_client_id=e.get("GOTCHA_GITHUB_CLIENT_ID", "").strip(),
+            github_client_secret=e.get("GOTCHA_GITHUB_CLIENT_SECRET", "").strip(),
+            site_auth=_bool(e.get("GOTCHA_SITE_AUTH"), default=prod),
+            jury_code=e.get("GOTCHA_JURY_CODE", "").strip(),
             probe_token=e.get("GOTCHA_PROBE_TOKEN", ""),
         )
         settings.validate()
@@ -92,6 +108,8 @@ class Settings:
     def validate(self) -> None:
         if self.store == "postgres" and not self.database_url:
             raise ValueError("GOTCHA_STORE=postgres demande DATABASE_URL")
+        if self.proxy_hops < 0:
+            raise ValueError("GOTCHA_PROXY_HOPS doit être positif ou nul")
         if self.is_prod and self.show_drafts:
             raise ValueError("les brouillons ne doivent jamais être affichés en production")
         if self.probe and len(self.probe_token) < PROBE_TOKEN_MIN_LENGTH:
@@ -99,3 +117,19 @@ class Settings:
                 f"GOTCHA_PROBE demande GOTCHA_PROBE_TOKEN ({PROBE_TOKEN_MIN_LENGTH} caractères"
                 " au moins) : la sonde n'est jamais ouverte à tous"
             )
+        if self.mcp_auth or self.site_auth:
+            self._validate_connection()
+
+    def _validate_connection(self) -> None:
+        if not (self.github_client_id and self.github_client_secret):
+            raise ValueError(
+                "la connexion demande GOTCHA_GITHUB_CLIENT_ID et GOTCHA_GITHUB_CLIENT_SECRET "
+                "(ou GOTCHA_MCP_AUTH=false et GOTCHA_SITE_AUTH=false)"
+            )
+        if self.is_prod and self.store == "memory":
+            raise ValueError(
+                "la connexion demande PostgreSQL en production : le stockage memory perdrait "
+                "les comptes et les connexions à chaque redémarrage"
+            )
+        if self.is_prod and not self.site_url.startswith("https://"):
+            raise ValueError("la connexion demande un GOTCHA_SITE_URL en https en production")

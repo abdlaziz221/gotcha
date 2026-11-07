@@ -75,18 +75,21 @@ Une seule application Python (FastAPI) sert le site web et le serveur MCP. Pages
 | `/styleguide` | visible | visible | 404 |
 | `/relecture` sans relecteur configuré | ouvert (« dev ») | ouvert | 404 |
 | HSTS, cookie `Secure` | non | non | oui |
+| `GOTCHA_PROXY_HOPS` (proxys de confiance) | 0 | 0 | 1 |
+| `GOTCHA_MCP_AUTH` (connexion GitHub pour le serveur MCP) | faux | faux | vrai |
+| `GOTCHA_SITE_AUTH` (aperçu public, compte pour le reste) | faux | faux | vrai |
 
 Toutes les variables sont décrites dans `.env.example`.
 
 ## Sécurité
 
 - **CSP stricte** : aucun script ni style en ligne ; tout vient du site.
-- **CSRF** par double soumission : cookie `gotcha_csrf` (HttpOnly, SameSite=Lax) recopié dans chaque formulaire.
-- **Quotas** en mémoire par IP (5 contributions, 30 confirmations, 5 signalements par heure ; 10 signalements MCP).
+- **CSRF** par double soumission : cookie `gotcha_csrf` (HttpOnly, SameSite=Lax) recopié dans chaque formulaire ; en production `__Host-gotcha_csrf`, que les autres sous-domaines de l'hébergeur ne peuvent ni poser ni écraser.
+- **Quotas** en mémoire par IP (5 contributions, 30 confirmations, 5 signalements par heure ; 10 signalements MCP). L'adresse est la valeur ajoutée par le dernier proxy de confiance dans `X-Forwarded-For`, jamais la première, que le visiteur peut inventer (D19).
 - **Markdown** sans HTML brut, nettoyé par nh3 avec une liste blanche de balises.
 - **Secrets** refusés dans les contributions, jamais stockés ni journalisés.
-- **Relecteurs** authentifiés en HTTP Basic, mots de passe hachés avec scrypt.
-- **Serveur MCP** : en lecture seule, sauf `report_outage` limité par quota ; protection contre le DNS rebinding (`GOTCHA_ALLOWED_HOSTS`).
+- **Relecteurs** authentifiés en HTTP Basic, mots de passe hachés avec scrypt ; 10 essais ratés par adresse et par quart d'heure, puis blocage.
+- **Serveur MCP** : connexion GitHub obligatoire en production (D20), jetons stockés sous forme d'empreinte, quotas sur les routes OAuth ; les outils d'écriture (`report_outage`, `propose_gotcha`, `confirm_gotcha`) ont un quota par compte et ne publient rien sans relecture humaine ; protection contre le DNS rebinding (`GOTCHA_ALLOWED_HOSTS`).
 
 ## Pourquoi ces choix
 

@@ -10,6 +10,7 @@ last_confirmed_on: 2026-10-28
 sources:
   - title: "Les pièges de l'API Daraja (M-Pesa)"
     url: https://ml.co.ke/posts/mpesa-daraja-api-pitfalls/
+    published_on: 2026-09-03
     accessed_on: 2026-10-28
   - title: "Les erreurs courantes de l'API M-Pesa"
     url: https://sellio.co.ke/blog/common-mpesa-api-errors-and-solutions

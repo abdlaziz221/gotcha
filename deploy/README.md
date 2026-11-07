@@ -20,6 +20,9 @@ Offre Starter : 7,35 $ par mois avant remise, 512 Mo de mémoire, 0,5 processeur
    | `GOTCHA_SITE_URL` | `https://<domaine public>` |
    | `GOTCHA_ALLOWED_HOSTS` | `<domaine public>` |
    | `GOTCHA_REVIEWERS` | voir `scripts/hash_password.py` |
+   | `GOTCHA_GITHUB_CLIENT_ID` et `GOTCHA_GITHUB_CLIENT_SECRET` | Application OAuth GitHub de production, voir « Connexion » |
+   | `GOTCHA_JURY_CODE` | Code d'accès du jury, choisi le jour de la soumission |
+   | `GOTCHA_PROXY_HOPS` | `1` (valeur par défaut en production), à confirmer avec la sonde |
    | `GOTCHA_PROBE` | `1` le temps des mesures ci-dessous, puis à retirer |
    | `GOTCHA_PROBE_TOKEN` | avec `GOTCHA_PROBE` : un jeton aléatoire de 24 caractères au moins (`python -c "import secrets; print(secrets.token_urlsafe(24))"`), à retirer ensuite |
    | `PORT` | celui qu'attend la plateforme, si elle l'impose |
@@ -56,7 +59,7 @@ En une dizaine de minutes, le script répond aux questions ci-dessous et imprime
 - [ ] Le Serverless joint-il la base managée (réseau, SSL), et en combien de temps ?
 - [ ] Le site joint-il Internet (flux de pannes Flutterwave) ?
 - [ ] Démarrage à froid : relancer le script après 30 minutes sans visite, puis lire « Premier appel »
-- [ ] En-tête `X-Forwarded-For` : le proxy le remplace-t-il ou l'ajoute-t-il ? (quotas par adresse IP, A11)
+- [ ] En-tête `X-Forwarded-For` : le proxy le remplace-t-il ou l'ajoute-t-il ? La ligne du compte rendu donne la valeur de `GOTCHA_PROXY_HOPS` (quotas par adresse IP, A11). Vérifier ensuite la ligne « IP retenue » : ce doit être l'adresse publique du poste qui lance le script.
 
 À relever dans l'interface de Datacloud, que le script ne voit pas :
 
@@ -77,10 +80,10 @@ docker build -t gotcha .
 ```
 
 ```bash
-docker run -d --name gotcha --restart unless-stopped --env-file /etc/gotcha.env -p 8000:8000 gotcha
+docker run -d --name gotcha --restart unless-stopped --env-file /etc/gotcha.env -p 127.0.0.1:8000:8000 gotcha
 ```
 
-Comme sur le Serverless, le conteneur prépare la base à son démarrage. Puis : un proxy HTTPS devant le port 8000 (Caddy ou Nginx, licences permissives), et une tâche planifiée pour les pannes :
+Le port 8000 n'écoute que sur la machine : tout passe par le proxy, sinon un visiteur pourrait choisir son adresse dans `X-Forwarded-For` et contourner les quotas (`GOTCHA_PROXY_HOPS=1` derrière un seul proxy). Comme sur le Serverless, le conteneur prépare la base à son démarrage. Puis : un proxy HTTPS devant le port 8000 (Caddy ou Nginx, licences permissives), et une tâche planifiée pour les pannes :
 
 ```bash
 */10 * * * * docker exec gotcha python -m app.ingest
@@ -94,3 +97,23 @@ Comme sur le Serverless, le conteneur prépare la base à son démarrage. Puis :
 - [ ] Un agent joint `https://<domaine>/mcp`
 
 Ce qu'on apprend ici nourrit la **fiche Datacloud** (`content/fiches/datacloud-sn/`, tâche A10) : chaque difficulté rencontrée est un piège à documenter.
+
+## Connexion
+
+Par défaut, la production demande une connexion GitHub pour tout appel à `/mcp` (D20) et pour lire les solutions ou envoyer un formulaire sur le site (D23).
+
+1. Créer une application OAuth sur <https://github.com/settings/developers>. **Une par adresse** : celle des essais locaux ne sert pas en production.
+   - Homepage URL : `https://<domaine public>`
+   - Redirect URI : `https://<domaine public>/github/callback`
+   - Allow wildcard matching et Device Flow : décochés
+2. Générer le secret et le placer seulement dans la console Datacloud, dans `GOTCHA_GITHUB_CLIENT_SECRET`.
+3. Vérifier que la base PostgreSQL est branchée : l'application refuse de démarrer sinon, car le stockage `memory` perdrait les comptes et les connexions à chaque redémarrage.
+4. Depuis un outil MCP compatible, ajouter `https://<domaine public>/mcp`, se connecter, puis faire lire une fiche.
+
+Pour bloquer un compte : `UPDATE accounts SET blocked = true WHERE pseudo = '<pseudo>';`. L'accès est coupé tout de suite.
+
+**Plans de secours :**
+- `GOTCHA_MCP_AUTH=false` : lecture MCP libre, sans aucun outil d'écriture. La connexion du site reste active.
+- `GOTCHA_MCP_AUTH=false` et `GOTCHA_SITE_AUTH=false` : tout se lit librement et aucun formulaire n'est accepté. C'est le seul mode possible avec le stockage `memory`.
+
+**Essai local :** avec une application dont la Redirect URI est `http://localhost:8799/github/callback`, définir `GOTCHA_MCP_AUTH=true`, `GOTCHA_SITE_AUTH=true`, `GOTCHA_SITE_URL=http://localhost:8799` et les deux valeurs GitHub, puis lancer uvicorn sur le port 8799.

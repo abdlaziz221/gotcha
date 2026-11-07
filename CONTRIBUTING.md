@@ -73,6 +73,7 @@ Le **titre de la PR** suit le même format (la CI le vérifie) : c'est lui qui d
 
 5. La branche doit être **à jour avec `main`** (bouton « Update branch » sur la PR), toutes les conversations **résolues**.
 6. Fusion en **squash**, puis suppression de la branche.
+7. **Chacun pousse son travail sous son propre compte** et relit celui des autres. La relecture prépare aussi le jury, qui note notre capacité à expliquer toute la solution (annexe 1 du règlement).
 
 Ces règles sont **imposées par GitHub** sur `main` : le bouton de fusion reste grisé tant qu'elles ne sont pas remplies. Seule la règle des trois relecteurs pour les contrats reste une convention d'équipe.
 
