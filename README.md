@@ -6,7 +6,41 @@
 
 Gotcha est la mémoire opérationnelle du paiement mobile (**Wave, Orange Money, MTN MoMo, M-Pesa**) et du déploiement sur **Datacloud**. Quand un développeur résout un problème difficile avec son agent, celui-ci prépare un résumé. Le développeur l'approuve, un relecteur le vérifie et le publie, puis les agents suivants le retrouvent par un serveur MCP et confirment, preuve à l'appui, s'il marche encore. Gotcha ne prétend pas avoir toutes les réponses : il permet de ne plus perdre les solutions que les développeurs découvrent.
 
-Projet de l'équipe pour le concours **CADEV 2026** (Systalink). Gel des fonctions le **10 novembre**, soumission le **14 novembre**.
+**Les développeurs partagent. Les agents retrouvent. L'expérience reste.**
+
+Projet de l'équipe pour le concours **CADEV 2026** (Systalink). Gel des fonctions le **10 novembre**, soumission le **14 novembre**, date limite le **15 novembre à 17 h GMT**.
+
+---
+
+## Priorités jusqu'à la soumission
+
+Le positionnement et l'architecture ne changent plus ([D29](docs/DECISIONS.md)). Ce qui compte maintenant, c'est la qualité de la livraison.
+
+| Ordre | Priorité | Ce qu'il faut faire | Niveau |
+| --- | --- | --- | --- |
+| 1 | Relectures et fusion des PR | Dans l'ordre : 43, 45, 47, 49 à 54, puis 44, 46 et 48 | Bloquant |
+| 2 | Recevabilité | Droits, origine du code, licences, comptes Datacloud, inscription de l'équipe | Bloquant |
+| 3 | Déploiement | HTTPS, PostgreSQL, persistance, accès public | Bloquant |
+| 4 | Contenu | Au moins 15 pièges relus et publiés, avec leur vrai niveau de confiance | Important |
+| 5 | Démonstration | Wave sans puis avec Gotcha, panne en direct, courte séquence en wolof | Important |
+| 6 | Audio en wolof | 3 à 5 explications audio, seulement si le socle est en ligne le 8 novembre | Conditionnel |
+
+Le détail est dans [docs/PLAN.md](docs/PLAN.md).
+
+## Comment le projet est jugé
+
+1. **Vote des pairs, éliminatoire (15 et 16 novembre) :** chaque membre reçoit jusqu'à 10 projets de son pays et vote pour un seul. Les 3 projets les plus votés de chaque pays sont retenus. Si un seul d'entre nous ne vote pas, le projet est exclu.
+2. **Note finale (annexe 1 du règlement) :**
+
+| Critère | Évaluateur | Poids |
+| --- | --- | --- |
+| Qualité technique : architecture, robustesse, sécurité, code, maîtrise par l'équipe, licences | Jury | 30 % |
+| Pertinence et utilité au regard du sujet | Jury | 25 % |
+| Expérience utilisateur et ergonomie | Jury | 20 % |
+| Innovation et originalité | Jury | 15 % |
+| Vote du public | Public | 10 % au plus |
+
+Datacloud est une condition de recevabilité, pas un critère de notation. Le jury note aussi notre capacité à expliquer toute la solution, y compris les parties produites à l'aide de l'IA. La liste de contrôle est dans [docs/SUBMISSION.md](docs/SUBMISSION.md).
 
 ---
 
@@ -46,7 +80,7 @@ python scripts/check.py
 
 ## Qui fait quoi
 
-| Qui | Rôle déclaré | Dossiers dont il est responsable |
+| Qui | Responsabilité | Dossiers dont il est responsable |
 | --- | --- | --- |
 | **Abdoul Aziz** | Full-Stack : backend, DevOps, intégration | `app/stores/`, `app/services/` (fiches, contributions), `app/web/routes/`, `app/security/`, `migrations/`, `deploy/`, `scripts/` |
 | **Loum** | Frontend et design | `app/web/templates/`, `app/web/static/` |
@@ -54,6 +88,8 @@ python scripts/check.py
 | **Les trois** | Contenu et contrats | `content/`, `app/domain/`, `docs/` |
 
 Le détail des tâches, jour par jour, est dans [docs/PLAN.md](docs/PLAN.md). Chaque dossier a son `README.md` : ce qu'il contient, les tâches, comment les faire et comment avancer sans attendre les autres.
+
+**Chacun pousse son travail sous son propre compte** et participe aux relectures et aux tests. On garde aussi la trace de ce qui n'est pas du code : maquettes, tests, documentation, enregistrements, relectures. Les rôles déclarés dans le formulaire sont écrits d'après le travail réellement fait ([D28](docs/DECISIONS.md)).
 
 ---
 
@@ -92,9 +128,23 @@ Branches, commits, relectures et définition de « terminé » : [CONTRIBUTING.m
 
 ---
 
+## Ce qui est public
+
+| Quoi | Accès |
+| --- | --- |
+| Fiche Datacloud | Entière, sans compte |
+| Fiche Wave | Entière, sans compte et en lecture seule, pendant la compétition ([D27](docs/DECISIONS.md), tâche A18) |
+| Autres fiches | Aperçu public |
+| Serveur MCP | Connexion GitHub obligatoire |
+| Contributions, confirmations, signalements | Connexion GitHub obligatoire |
+
+---
+
 ## Règles non négociables
 
 - **Licences permissives uniquement** (MIT, BSD, Apache, ISC, PSF). Jamais GPL, LGPL, AGPL ni MPL : le projet serait irrecevable. Ni `requests`, ni `httpx`, ni `psycopg`. Vérifier avec `python scripts/check_licenses.py`.
+- **Déclarations exactes** : rôles, titularité, composants et usage des outils d'IA. Une déclaration inexacte entraîne la disqualification (article 10 du règlement).
+- **Origine du code** : tout élément antérieur au concours est identifié et déclaré (article 6). Un projet existant avant le concours ne peut pas être présenté.
 - **Aucun secret dans le dépôt** : ni clé, ni jeton, ni fichier `.env`.
 - **Aucun piège inventé, aucune publication sans relecture humaine.** Chaque piège vient d'une source citée ou d'un problème réellement rencontré, et affiche son niveau de confiance. Un agent peut préparer un brouillon, mais son développeur l'approuve et un relecteur le vérifie.
 - **Rien de « bientôt disponible »** : ce qui n'est pas fini est retiré de l'interface.

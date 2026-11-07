@@ -23,6 +23,8 @@ Les services reçoivent le stockage par injection (voir `app/container.py`) et n
 | --- | --- | --- |
 | A7 | Circuit de relecture en production : une contribution approuvée doit être intégrée au contenu (aujourd'hui par une PR sur `content/`, voir D9) ; automatiser si le temps le permet | Abdoul Aziz |
 | K5 | Ajuster et documenter les règles d'état ci-dessous (seuils, expiration, plusieurs signalements) | Khalifa |
+| A18 | Compter les consultations de façon anonymisée pendant que la fiche Wave est ouverte (D27) | Abdoul Aziz |
+| A19 | Audio en wolof, si le socle est en ligne : champs du piège, route qui vérifie les droits de la fiche, recherche (D26) | Abdoul Aziz |
 
 ## Règles d'état (`status.py`)
 

@@ -10,7 +10,11 @@
 | Orange Money | `orange-money-sn` (et `orange-money-ci` à créer) | Abdoul Aziz | A9 |
 | Datacloud | `datacloud-sn` | Abdoul Aziz | A10 |
 
-Objectif : **au moins 15 pièges bien documentés le dimanche 8 novembre**, avec un niveau de confiance honnête, sur MTN MoMo, M-Pesa, Wave et Orange Money, plus la fiche Datacloud (D21). Mieux vaut 15 pièges vérifiés que 30 présentés à tort comme testés.
+Objectif : **au moins 15 pièges bien documentés le dimanche 8 novembre**, avec un niveau de confiance honnête, sur MTN MoMo, M-Pesa, Wave et Orange Money, plus la fiche Datacloud (D21). Mieux vaut 15 pièges vérifiés que 30 présentés à tort comme testés. Un piège n'est marqué « confirmé en production » qu'avec une preuve de production.
+
+**Fiches ouvertes sans compte :** `datacloud-sn` et, pendant la compétition, `wave-sn` (D27, tâche A18). Elles doivent d'abord être publiées, car un brouillon n'est jamais affiché en production.
+
+**Audio en wolof, si le socle est en ligne le 8 novembre (D26) :** 3 à 5 explications de 30 à 45 secondes, avec les noms techniques conservés. Un second locuteur écoute chaque enregistrement et relit chaque transcription. Le piège en français reste la référence.
 
 ## Le contenu de départ est en brouillon
 
