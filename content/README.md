@@ -7,7 +7,7 @@
 | MTN MoMo | `mtn-momo` | Khalifa | K3, K10 |
 | M-Pesa | `mpesa-ke` | Khalifa | K10 |
 | Wave | `wave-sn` | Loum | L11 |
-| Orange Money | `orange-money-sn` (et `orange-money-ci` à créer) | Abdoul Aziz | A9 |
+| Orange Money | `orange-money-sn`, `orange-money-ci` | Abdoul Aziz | A9 |
 | Datacloud | `datacloud-sn` | Abdoul Aziz | A10 |
 
 Objectif : **au moins 15 pièges bien documentés le dimanche 8 novembre**, avec un niveau de confiance honnête, sur MTN MoMo, M-Pesa, Wave et Orange Money, plus la fiche Datacloud (D21). Mieux vaut 15 pièges vérifiés que 30 présentés à tort comme testés. Un piège n'est marqué « confirmé en production » qu'avec une preuve de production.
