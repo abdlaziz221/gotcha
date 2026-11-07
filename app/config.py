@@ -40,8 +40,9 @@ class Settings:
     reviewers: str = ""
     # Valeurs autorisées pour l'en-tête Host du serveur MCP (protection DNS rebinding).
     allowed_hosts: tuple[str, ...] = ("localhost:*", "127.0.0.1:*", "testserver")
-    # Derrière le proxy de Datacloud : lire l'adresse du client dans X-Forwarded-For.
-    trust_proxy: bool = False
+    # Proxys de confiance devant le site (Datacloud : 1). Chacun ajoute à la fin de
+    # X-Forwarded-For l'adresse qu'il a vue ; 0 : l'en-tête est ignoré (voir client_ip).
+    proxy_hops: int = 0
     site_url: str = "http://localhost:8000"
     # Sonde des limites de l'hébergeur (/_sonde/…), le temps du test A2 seulement.
     probe: bool = False
@@ -81,7 +82,7 @@ class Settings:
                 if hosts
                 else cls.allowed_hosts
             ),
-            trust_proxy=_bool(e.get("GOTCHA_TRUST_PROXY"), default=prod),
+            proxy_hops=int(e.get("GOTCHA_PROXY_HOPS", "1" if prod else "0")),
             site_url=e.get("GOTCHA_SITE_URL", cls.site_url).rstrip("/"),
             probe=_bool(e.get("GOTCHA_PROBE"), default=False),
             probe_token=e.get("GOTCHA_PROBE_TOKEN", ""),
@@ -92,6 +93,8 @@ class Settings:
     def validate(self) -> None:
         if self.store == "postgres" and not self.database_url:
             raise ValueError("GOTCHA_STORE=postgres demande DATABASE_URL")
+        if self.proxy_hops < 0:
+            raise ValueError("GOTCHA_PROXY_HOPS doit être positif ou nul")
         if self.is_prod and self.show_drafts:
             raise ValueError("les brouillons ne doivent jamais être affichés en production")
         if self.probe and len(self.probe_token) < PROBE_TOKEN_MIN_LENGTH:

@@ -12,10 +12,20 @@ import binascii
 import hashlib
 import hmac
 import secrets
+from functools import cache
 
 from fastapi import HTTPException, Request
 
+from app.security.ratelimit import RateLimiter, client_ip
+
 _N, _R, _P = 2**14, 8, 1
+
+# Essais ratés par adresse IP et par pseudo avant blocage : freine la recherche du mot de
+# passe, et chaque essai coûte un calcul scrypt au processeur. Par pseudo : un visiteur qui
+# rate ses essais ne bloque pas les autres relecteurs. Un bon mot de passe reste refusé
+# pendant le blocage, sinon le blocage n'empêcherait plus de deviner.
+MAX_FAILURES = 10
+FAILURE_WINDOW_SECONDS = 15 * 60
 
 
 def hash_password(password: str, *, salt: bytes | None = None) -> str:
@@ -54,6 +64,12 @@ def parse_reviewers(spec: str) -> dict[str, str]:
     return reviewers
 
 
+@cache
+def _unknown_reviewer_hash() -> str:
+    """Empreinte factice : un pseudo inconnu prend autant de temps qu'un mauvais mot de passe."""
+    return hash_password(secrets.token_urlsafe(16))
+
+
 def require_reviewer(request: Request) -> str:
     """Dépendance FastAPI : renvoie le pseudo du relecteur authentifié."""
     settings = request.app.state.settings
@@ -67,11 +83,27 @@ def require_reviewer(request: Request) -> str:
     scheme, _, credentials = request.headers.get("authorization", "").partition(" ")
     if scheme.lower() != "basic" or not credentials:
         raise HTTPException(status_code=401, headers=challenge)
+
     try:
         pseudo, _, password = base64.b64decode(credentials).decode().partition(":")
     except (ValueError, binascii.Error):
-        raise HTTPException(status_code=401, headers=challenge) from None
+        pseudo, password = "", ""
+    limiter: RateLimiter = request.app.state.rate_limiter
+    peer = request.client.host if request.client else None
+    ip = client_ip(request.headers, peer, proxy_hops=settings.proxy_hops)
+    # Pseudo dans la clé seulement s'il existe : tous les pseudos inconnus d'une adresse
+    # partagent un compteur. Sinon, changer de pseudo à chaque essai évitait tout blocage,
+    # et chaque essai coûte un scrypt (environ 24 ms et 16 Mo).
+    who = pseudo if pseudo in reviewers else "?"
+    key = f"relecture-echec:{ip}:{who}"
+    # L'essai est réservé avant le calcul scrypt : des essais simultanés ne peuvent pas
+    # tous passer le contrôle avant que le premier échec soit compté.
+    if not limiter.hit(key, limit=MAX_FAILURES, window_seconds=FAILURE_WINDOW_SECONDS):
+        raise HTTPException(status_code=429, detail="Trop d'essais : réessayez dans 15 minutes.")
     encoded = reviewers.get(pseudo)
-    if encoded is None or not verify_password(password, encoded):
+    valid = verify_password(password, encoded or _unknown_reviewer_hash())
+    if encoded is None or not valid:
         raise HTTPException(status_code=401, headers=challenge)
+    # HTTP Basic renvoie le mot de passe à chaque page : un succès ne consomme pas d'essai.
+    limiter.release(key)
     return pseudo

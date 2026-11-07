@@ -128,15 +128,17 @@ def measure(base: str, *, token: str, max_wait: float) -> list[tuple[str, str]]:
     if failed := impossible(proxy):
         verdict = failed
     elif not forwarded:
-        verdict = "absent : les quotas voient l'adresse du proxy, pas celle du client"
+        verdict = "absent : les quotas voient le proxy ; GOTCHA_PROXY_HOPS=0"
     elif forwarded.strip() == FAKE_CLIENT_IP:
-        verdict = "transmis **tel quel** : le client choisit son adresse (A11)"
+        verdict = "transmis **tel quel**, rien d'ajouté : non fiable ; GOTCHA_PROXY_HOPS=0"
     elif FAKE_CLIENT_IP in forwarded:
-        verdict = "le proxy **ajoute** l'adresse réelle : lire la dernière valeur (A11)"
+        verdict = "le proxy **ajoute** l'adresse vue : GOTCHA_PROXY_HOPS=1 convient"
     else:
-        verdict = "le proxy **remplace** la valeur : fiable pour les quotas"
+        verdict = "le proxy **remplace** la valeur : GOTCHA_PROXY_HOPS=1 convient"
     rows.append(("Proxy : `X-Forwarded-For` reçu", f"`{forwarded}` : {verdict}"))
-    rows.append(("Protocole vu par le site", f"`{proxy.body.get('protocole')}`"))
+    retained = proxy.body.get("ip_retenue_pour_les_quotas")
+    rows.append(("IP retenue pour les quotas", f"`{retained}` : l'adresse publique de ce poste ?"))
+    rows.append(("`X-Forwarded-Proto` reçu", f"`{proxy.body.get('x_forwarded_proto')}`"))
     rows.append(("En-têtes reçus", ", ".join(proxy.body.get("en_tetes", []))))
 
     step("base de données (3 connexions)")
