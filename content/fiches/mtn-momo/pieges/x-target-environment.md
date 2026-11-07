@@ -10,9 +10,11 @@ last_confirmed_on: 2026-10-28
 sources:
   - title: "Forum MTN MoMo : X-Target-Environment et erreur 400"
     url: https://momodevelopercommunity.mtn.com/momo-api-sand-box-q-a-6/x-target-environment-251
+    published_on: 2024-07-24
     accessed_on: 2026-10-28
   - title: "Forum MTN MoMo : clés, bac à sable et production"
     url: https://momodevelopercommunity.mtn.com/how-to-59/understanding-momo-open-api-keys-sandbox-and-production-455
+    published_on: 2026-01-07
     accessed_on: 2026-10-28
 ---
 

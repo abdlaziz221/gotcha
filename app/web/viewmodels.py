@@ -3,6 +3,7 @@
 Chaque gabarit de templates/pages/ reçoit :
 - `page` : un objet d'une des classes ci-dessous (une classe par page) ;
 - `csrf_token` : à recopier dans chaque formulaire POST ;
+- `viewer` : qui regarde la page (voir Viewer) ;
 - `site` : nom, slogan, mentions du pied de page ;
 - `request` : la requête (pour request.url.path, par exemple).
 
@@ -20,6 +21,7 @@ from typing import Literal
 from markupsafe import Markup
 
 from app.domain.models import (
+    ConfidenceLevel,
     EnvDifference,
     ErrorCode,
     GlossaryTerm,
@@ -29,13 +31,23 @@ from app.domain.models import (
     Status,
 )
 
+# D21 : mémoire opérationnelle ; D22 : niveau de confiance affiché, rien de plus promis.
 DEFAULT_DESCRIPTION = (
-    "Les pièges du paiement et du déploiement en Afrique que personne ne documente, "
-    "confirmés par les devs qui les ont vécus."
+    "La mémoire opérationnelle du paiement mobile et du déploiement en Afrique : "
+    "chaque piège cite ses sources et affiche son niveau de confiance."
 )
 
 
 # --- Briques communes --------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class Viewer:
+    """Le visiteur : `pseudo` s'il est connecté, et ce qu'il peut faire."""
+
+    pseudo: str | None
+    site_auth: bool  # la connexion est-elle proposée sur ce site ?
+    can_write: bool  # peut-il envoyer un formulaire maintenant ?
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,6 +87,7 @@ class SourceView:
     url: str | None
     author: str | None
     accessed_on: date
+    published_on: date | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -141,11 +154,20 @@ class GotchaView:
     symptom_html: Markup
     cause_html: Markup
     fix_html: Markup
+    failed_attempts_html: Markup | None
+    proof_html: Markup | None
+    confidence: ConfidenceLevel
+    confidence_label: str
     sources: list[SourceView]
     last_confirmed_on: date
     confirmations: int
     needs_review: bool
     is_draft: bool
+    locked: bool = False  # aperçu public : ni solution, ni pistes, ni preuve
+    # Explication en wolof (D26) : adresse de la route protégée, jamais /static.
+    audio_url: str | None = None
+    audio_transcript_html: Markup | None = None
+    audio_credit: str | None = None  # « Enregistré par X, relu par Y »
 
 
 @dataclass(frozen=True, slots=True)
@@ -216,6 +238,8 @@ class FichePage:
     report_url: str
     step_mode: StepMode | None = None  # renseigné si ?mode=pas-a-pas
     flash: Flash | None = None
+    locked: bool = False  # aperçu public : étapes et solutions réservées aux membres
+    login_url: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -235,6 +259,16 @@ class MessagePage:
     message: str
     back_url: str
     back_label: str
+
+
+@dataclass(frozen=True, slots=True)
+class ToolConsentPage:
+    """Écran de consentement avant de connecter un outil MCP (app/web/routes/auth.py)."""
+
+    meta: PageMeta
+    client_name: str
+    redirect_uri: str  # affichée telle quelle : le développeur voit où partira le code
+    request_id: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -268,11 +302,39 @@ class ContributionView:
 
 
 @dataclass(frozen=True, slots=True)
+class ConfirmationView:
+    target_id: str
+    still_works: bool
+    api_version: str | None
+    pseudo: str | None
+    proof: str | None
+    created_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class UsageView:
+    label: str
+    count: int
+    accounts: int
+
+
+@dataclass(frozen=True, slots=True)
 class ReviewPage:
     meta: PageMeta
     reviewer: str
     pending: list[ContributionView]
     flash: Flash | None = None
+    confirmations: list[ConfirmationView] = field(default_factory=list)
+    usage: list[UsageView] = field(default_factory=list)
+
+
+@dataclass(frozen=True, slots=True)
+class LoginPage:
+    meta: PageMeta
+    github_url: str
+    retour: str
+    jury_enabled: bool
+    form: FormState
 
 
 @dataclass(frozen=True, slots=True)

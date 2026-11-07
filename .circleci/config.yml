@@ -164,7 +164,8 @@ jobs:
             docker run -d --name gotcha --network gotcha -p 8000:8000 \
               -e GOTCHA_ENV=prod -e GOTCHA_INGEST_LIVE=false \
               -e DATABASE_URL=postgresql://gotcha:gotcha@db:5432/gotcha \
-              -e GOTCHA_SITE_URL=http://localhost:8000 \
+              -e GOTCHA_SITE_URL=https://gotcha.example \
+              -e GOTCHA_GITHUB_CLIENT_ID=ci -e GOTCHA_GITHUB_CLIENT_SECRET=ci \
               gotcha:ci
       - wait-ready
       - run:
@@ -188,12 +189,37 @@ jobs:
             for header in content-security-policy strict-transport-security x-content-type-options x-frame-options; do
               grep -qi "^$header:" /tmp/headers.txt || { echo "ÉCHEC : en-tête $header absent"; exit 1; }
             done
-            curl -fsS -X POST http://localhost:8000/mcp -o /tmp/tools.json \
-              -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
-              -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' || true
-            grep -q '"get_fiche"' /tmp/tools.json \
-              || { echo "ÉCHEC : le serveur MCP ne répond pas"; exit 1; }
-            echo "Accueil, pages cachées, en-têtes de sécurité et serveur MCP : OK"
+            # Sorties dans des fichiers, puis grep : avec pipefail, « … | grep -q » peut
+            # échouer quand grep s'arrête au premier résultat (SIGPIPE pour l'émetteur).
+            mcp() {
+              curl -sS -X POST "http://localhost:$1/mcp" -D - \
+                -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
+                -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' || true
+            }
+            mcp 8000 > /tmp/mcp.txt
+            grep -qi '^www-authenticate: bearer' /tmp/mcp.txt \
+              || { echo "ÉCHEC : le serveur MCP doit demander une connexion"; exit 1; }
+            curl -fsS http://localhost:8000/.well-known/oauth-authorization-server \
+              -o /tmp/discovery.json || true
+            grep -q '"issuer":"https://gotcha.example"' /tmp/discovery.json \
+              || { echo "ÉCHEC : la découverte OAuth ne répond pas"; exit 1; }
+            # Plan de secours : lecture libre, aucun outil d'écriture.
+            docker run -d --name secours --network gotcha -p 8001:8000 \
+              -e GOTCHA_ENV=prod -e GOTCHA_INGEST_LIVE=false -e GOTCHA_MCP_AUTH=false -e GOTCHA_SITE_AUTH=false \
+              -e DATABASE_URL=postgresql://gotcha:gotcha@db:5432/gotcha \
+              -e GOTCHA_SITE_URL=http://localhost:8001 \
+              gotcha:ci
+            for _ in $(seq 1 30); do
+              curl -fsS http://localhost:8001/healthz > /dev/null 2>&1 && break
+              sleep 2
+            done
+            mcp 8001 > /tmp/secours.txt
+            grep -q '"get_fiche"' /tmp/secours.txt \
+              || { echo "ÉCHEC : le serveur MCP de secours ne répond pas"; docker logs secours; exit 1; }
+            if grep -q '"report_outage"' /tmp/secours.txt; then
+              echo "ÉCHEC : le plan de secours ne doit exposer aucun outil d'écriture"; exit 1
+            fi
+            echo "Accueil, pages cachées, en-têtes de sécurité, connexion MCP et plan de secours : OK"
       - run:
           name: Journaux du conteneur
           when: always

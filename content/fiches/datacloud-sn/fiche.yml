@@ -9,6 +9,7 @@ title: Datacloud (Systalink)
 summary: Déployer une application sur Datacloud, la plateforme cloud de Systalink à Dakar, en Serverless ou sur un VPS, avec une base PostgreSQL managée.
 api_version: null
 publication: draft
+open_access: true           # lisible entière sans compte (D23)
 last_confirmed_on: 2026-10-28
 prerequisites:
   - Un compte sur platform.systalink.com.

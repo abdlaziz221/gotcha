@@ -41,6 +41,7 @@ def test_get_fiche_gives_gotchas_and_status(client: TestClient) -> None:
     assert "mtn-momo.x-target-environment" in ids
     gotcha = next(g for g in fiche["gotchas"] if g["id"] == "mtn-momo.x-target-environment")
     assert "[[" not in gotcha["cause"]
+    assert gotcha["confidence"] == "sourced"
     assert gotcha["url"].endswith("/fiches/mtn-momo#piege-x-target-environment")
     assert fiche["status"]["status"] in {"normal", "degraded", "down"}
     assert fiche["warning"]  # brouillons : l'agent est prévenu
