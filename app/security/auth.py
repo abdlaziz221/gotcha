@@ -91,7 +91,11 @@ def require_reviewer(request: Request) -> str:
     limiter: RateLimiter = request.app.state.rate_limiter
     peer = request.client.host if request.client else None
     ip = client_ip(request.headers, peer, proxy_hops=settings.proxy_hops)
-    key = f"relecture-echec:{ip}:{pseudo[:64]}"
+    # Pseudo dans la clé seulement s'il existe : tous les pseudos inconnus d'une adresse
+    # partagent un compteur. Sinon, changer de pseudo à chaque essai évitait tout blocage,
+    # et chaque essai coûte un scrypt (environ 24 ms et 16 Mo).
+    who = pseudo if pseudo in reviewers else "?"
+    key = f"relecture-echec:{ip}:{who}"
     # L'essai est réservé avant le calcul scrypt : des essais simultanés ne peuvent pas
     # tous passer le contrôle avant que le premier échec soit compté.
     if not limiter.hit(key, limit=MAX_FAILURES, window_seconds=FAILURE_WINDOW_SECONDS):
