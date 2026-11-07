@@ -10,13 +10,16 @@ from dataclasses import dataclass
 from datetime import timedelta
 
 from app.config import Settings
-from app.domain.ports import Clock, IncidentFeed, Store
+from app.domain.ports import Clock, IdentityProvider, IncidentFeed, Store
 from app.ingest.flutterwave import FlutterwaveFeed
+from app.security.github import GitHubIdentity
 from app.security.secrets import scan_text
 from app.services.clock import SystemClock
 from app.services.contributions import ContributionService
 from app.services.fiches import FicheService
 from app.services.incidents import IncidentService
+from app.services.oauth import OAuthService
+from app.services.usage import UsageService
 from app.stores import create_store
 
 
@@ -28,6 +31,8 @@ class Services:
     fiches: FicheService
     incidents: IncidentService
     contributions: ContributionService
+    oauth: OAuthService
+    usage: UsageService
 
     async def close(self) -> None:
         await self.store.close()
@@ -39,10 +44,11 @@ async def build_services(
     clock: Clock | None = None,
     store: Store | None = None,
     feeds: list[IncidentFeed] | None = None,
+    identity: IdentityProvider | None = None,
 ) -> Services:
     """Construit tous les services.
 
-    Les tests peuvent remplacer l'horloge, le stockage ou les flux de pannes.
+    Les tests peuvent remplacer l'horloge, le stockage, les flux de pannes ou GitHub.
     """
     clock = clock or SystemClock()
     store = store or await create_store(settings)
@@ -63,4 +69,15 @@ async def build_services(
         min_interval=timedelta(minutes=settings.ingest_min_interval_minutes),
     )
     contributions = ContributionService(store, fiches, clock, scan=scan_text)
-    return Services(settings, store, clock, fiches, incidents, contributions)
+    if identity is None and (settings.mcp_auth or settings.site_auth):
+        identity = GitHubIdentity(settings.github_client_id, settings.github_client_secret)
+    oauth = OAuthService(
+        store,
+        clock,
+        identity,
+        callback_url=f"{settings.site_url}/github/callback",
+        jury_code=settings.jury_code,
+        consent_url=f"{settings.site_url}/connexion/outil",
+    )
+    usage = UsageService(store, clock)
+    return Services(settings, store, clock, fiches, incidents, contributions, oauth, usage)

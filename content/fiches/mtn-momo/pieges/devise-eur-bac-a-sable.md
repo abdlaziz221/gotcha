@@ -10,9 +10,11 @@ last_confirmed_on: 2026-10-28
 sources:
   - title: "Forum MTN MoMo : clés, bac à sable et production"
     url: https://momodevelopercommunity.mtn.com/how-to-59/understanding-momo-open-api-keys-sandbox-and-production-455
+    published_on: 2026-01-07
     accessed_on: 2026-10-28
   - title: "McTaba : tutoriel de l'API MTN MoMo pour débutants"
     url: https://mctaba.com/learn/uganda/mtn-momo-api-tutorial-beginners-uganda
+    published_on: 2026-06-04
     accessed_on: 2026-10-28
 ---
 

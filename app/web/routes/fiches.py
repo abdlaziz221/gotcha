@@ -2,26 +2,79 @@
 
 from __future__ import annotations
 
+import hashlib
+import secrets
+from typing import Annotated
+from urllib.parse import urlencode
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
-from starlette.responses import RedirectResponse, Response
+from starlette.responses import FileResponse, RedirectResponse, Response
 
 from app.domain.countries import country_name
-from app.domain.models import Publication, TargetKind
+from app.domain.models import Account, Publication, TargetKind, UsageEvent
 from app.security.csrf import verify_csrf
-from app.security.ratelimit import rate_limit
+from app.security.ratelimit import RateLimiter, client_ip, rate_limit
 from app.web.deps import ServicesDep, flash_from, glossary_map
 from app.web.forms import form_values
 from app.web.presenters import (
     fiche_url,
+    gotcha_preview,
     gotcha_view,
     source_view,
     status_view,
     step_views,
 )
+from app.web.session import current_account, writer_account
 from app.web.templating import render
 from app.web.viewmodels import FichePage, PageMeta, StepMode
 
 router = APIRouter()
+
+
+VIEW_WINDOW_SECONDS = 24 * 3600
+# Sel tiré au démarrage : l'empreinte d'une adresse ne peut pas être recalculée plus tard.
+_VIEW_SALT = secrets.token_bytes(16)
+
+
+def _first_view_today(request: Request, slug: str) -> bool:
+    """Vrai la première fois qu'un visiteur anonyme lit cette fiche en 24 h (D27).
+
+    Rien n'est enregistré sur le visiteur : seule une empreinte salée de son adresse reste
+    en mémoire pendant 24 h, pour ne pas compter deux fois un rechargement. Le compteur
+    en base ne garde que le nombre de lectures par jour.
+    """
+    settings = request.app.state.settings
+    peer = request.client.host if request.client else None
+    ip = client_ip(request.headers, peer, proxy_hops=settings.proxy_hops)
+    digest = hashlib.sha256(_VIEW_SALT + f"{ip}|{slug}".encode()).hexdigest()
+    limiter: RateLimiter = request.app.state.rate_limiter
+    return limiter.hit(f"vue-ouverte:{digest}", limit=1, window_seconds=VIEW_WINDOW_SECONDS)
+
+
+AUDIO_TYPES = {".mp3": "audio/mpeg", ".ogg": "audio/ogg", ".m4a": "audio/mp4"}
+
+
+@router.get("/fiches/{slug}/audio/{name}")
+async def gotcha_audio(request: Request, slug: str, name: str, services: ServicesDep) -> Response:
+    """L'explication en wolof d'un piège (D26), avec les mêmes droits que sa solution.
+
+    Jamais par /static, qui est public : l'audio dévoilerait une solution réservée.
+    """
+    fiche = await services.fiches.get(slug)  # brouillon caché en production : 404
+    gotcha = fiche.find_gotcha(f"{fiche.slug}.{name}")
+    if gotcha is None or gotcha.audio is None:
+        raise HTTPException(status_code=404)
+    settings = services.settings
+    if settings.site_auth and current_account(request) is None and not fiche.open_access:
+        raise HTTPException(
+            status_code=403, detail="Connectez-vous pour écouter cette explication."
+        )
+    audio_dir = (settings.content_dir / "fiches" / fiche.slug / "audio").resolve()
+    path = (audio_dir / gotcha.audio.file).resolve()
+    if not path.is_relative_to(audio_dir) or not path.is_file():
+        raise HTTPException(status_code=404)
+    cache = "private, no-store" if settings.site_auth else "public, max-age=3600"
+    return FileResponse(path, media_type=AUDIO_TYPES[path.suffix], headers={"Cache-Control": cache})
 
 
 @router.get("/fiches/{slug}")
@@ -37,7 +90,10 @@ async def fiche_detail(
     fiche = await services.fiches.get(slug)
     status = await services.incidents.status_for(fiche)
     glossary = await glossary_map(services)
-    steps = step_views(fiche, glossary)
+    settings = services.settings
+    locked = settings.site_auth and current_account(request) is None and not fiche.open_access
+    present_gotcha = gotcha_preview if locked else gotcha_view
+    steps = [] if locked else step_views(fiche, glossary)
 
     step_mode = None
     if mode == "pas-a-pas" and steps:
@@ -62,14 +118,14 @@ async def fiche_detail(
         summary=fiche.summary,
         api_version=fiche.api_version,
         status=status_view(status, {fiche.service.slug: fiche.service.name}),
-        prerequisites=fiche.prerequisites,
+        prerequisites=[] if locked else fiche.prerequisites,
         steps=steps,
         gotchas=[
-            gotcha_view(g, glossary, needs_review=services.fiches.needs_review(g))
+            present_gotcha(g, glossary, needs_review=services.fiches.needs_review(g))
             for g in fiche.gotchas
         ],
-        differences=fiche.differences,
-        error_codes=fiche.error_codes,
+        differences=[] if locked else fiche.differences,
+        error_codes=[] if locked else fiche.error_codes,
         sources=[source_view(s) for s in fiche.sources],
         needs_review=services.fiches.needs_review(fiche),
         is_draft=fiche.publication is not Publication.PUBLISHED,
@@ -79,8 +135,20 @@ async def fiche_detail(
         report_url=f"/pannes/signaler?fiche={slug}",
         step_mode=step_mode,
         flash=flash_from(request),
+        locked=locked,
+        login_url=f"/connexion?{urlencode({'retour': fiche_url(slug)})}",
     )
-    return render(request, "pages/fiche.html", page)
+    account = current_account(request)
+    if account is not None:
+        background.add_task(services.usage.record, UsageEvent.READ_FICHE, account.id)
+    elif fiche.open_access and _first_view_today(request, fiche.slug):
+        background.add_task(services.usage.record, UsageEvent.READ_OPEN_FICHE, None)
+    response = render(request, "pages/fiche.html", page)
+    if settings.site_auth:
+        # La page dépend du visiteur : un cache ne doit jamais servir la vue d'un membre.
+        response.headers["Cache-Control"] = "private, no-store"
+        response.headers["Vary"] = "Cookie"
+    return response
 
 
 @router.post(
@@ -90,9 +158,16 @@ async def fiche_detail(
         Depends(rate_limit("confirmer", limit=30, window_seconds=3600)),
     ],
 )
-async def confirm(request: Request, slug: str, services: ServicesDep) -> Response:
+async def confirm(
+    request: Request,
+    slug: str,
+    services: ServicesDep,
+    account: Annotated[Account | None, Depends(writer_account)],
+) -> Response:
     form = await request.form()
-    values = form_values(form, ("target_kind", "target_id", "still_works", "api_version", "pseudo"))
+    values = form_values(
+        form, ("target_kind", "target_id", "still_works", "api_version", "pseudo", "proof")
+    )
     try:
         kind = TargetKind(values["target_kind"])
     except ValueError:
@@ -106,7 +181,10 @@ async def confirm(request: Request, slug: str, services: ServicesDep) -> Respons
         target_id,
         still_works=values["still_works"] != "0",
         api_version=values["api_version"][:40] or None,
-        pseudo=values["pseudo"][:40] or None,
+        pseudo=account.pseudo[:40] if account is not None else values["pseudo"][:40] or None,
+        account_id=account.id if account is not None else None,
+        proof=values["proof"][:4000] or None,
     )
+    await services.usage.record(UsageEvent.CONFIRM, account.id if account is not None else None)
     anchor = "piege-" + target_id.split(".", 1)[1] if kind is TargetKind.GOTCHA else "confirmer"
     return RedirectResponse(f"{fiche_url(slug)}?ok=confirmation#{anchor}", status_code=303)

@@ -83,7 +83,7 @@ async def request_info(request: Request, services: ServicesDep) -> JSONResponse:
             "x_forwarded_proto": headers.get("x-forwarded-proto"),
             "x_real_ip": headers.get("x-real-ip"),
             "ip_retenue_pour_les_quotas": client_ip(
-                headers, peer, trust_proxy=services.settings.trust_proxy
+                headers, peer, proxy_hops=services.settings.proxy_hops
             ),
             "en_tetes": sorted(headers.keys()),
         }

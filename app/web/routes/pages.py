@@ -6,9 +6,11 @@ from fastapi import APIRouter, BackgroundTasks, Request
 from starlette.responses import Response
 
 from app.domain.countries import country_name
+from app.domain.models import SearchHitKind
 from app.web.deps import ServicesDep, flash_from
 from app.web.labels import SEARCH_HIT_LABELS
 from app.web.presenters import fiche_card, fiche_url, incident_view, service_names
+from app.web.session import current_account
 from app.web.templating import render
 from app.web.viewmodels import (
     GlossaryPage,
@@ -33,7 +35,7 @@ async def home(request: Request, services: ServicesDep, background: BackgroundTa
     recent = await services.incidents.recent(active_only=True, limit=30)
     active = [v for v in (incident_view(i, names, now) for i in recent) if v.is_active]
     page = HomePage(
-        meta=PageMeta(title="Gotcha, les pièges du paiement que personne ne documente", path="/"),
+        meta=PageMeta(title="Gotcha, ce que les devs ont déjà résolu en Afrique", path="/"),
         cards=[
             fiche_card(f, statuses[f.slug], names, needs_review=services.fiches.needs_review(f))
             for f in fiches
@@ -54,6 +56,8 @@ async def search(
     if q or service or pays:
         hits = await services.fiches.search(q, service=service or None, country=pays or None)
     countries = sorted({f.country for f in fiches if f.country}, key=country_name)
+    locked = services.settings.site_auth and current_account(request) is None
+    opened = {f.slug for f in fiches if f.open_access}
     page = SearchPage(
         meta=PageMeta(title="Rechercher un piège", path="/recherche"),
         query=q,
@@ -62,7 +66,11 @@ async def search(
                 kind=h.kind,
                 kind_label=SEARCH_HIT_LABELS[h.kind],
                 title=h.title,
-                snippet=h.snippet,
+                snippet=(
+                    "Réservé aux membres : compte gratuit, connexion avec GitHub."
+                    if locked and h.kind is SearchHitKind.ERROR_CODE and h.fiche_slug not in opened
+                    else h.snippet
+                ),
                 url=fiche_url(h.fiche_slug) + (f"#{h.anchor}" if h.anchor else ""),
             )
             for h in hits

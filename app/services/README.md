@@ -11,6 +11,8 @@ Les services reçoivent le stockage par injection (voir `app/container.py`) et n
 | `fiches.py` | Lire les fiches, chercher, trouver la fiche d'un service dans un pays, glossaire, fraîcheur | Abdoul Aziz |
 | `contributions.py` | Soumettre (avec refus des secrets), relire, confirmer « ça marche encore » | Abdoul Aziz |
 | `freshness.py` | Règle des 90 jours (« à revérifier ») | Abdoul Aziz |
+| `usage.py` | Compteurs d'usage, visibles sur `/relecture` | Abdoul Aziz |
+| `oauth.py` | Connexion au serveur MCP : comptes, codes et jetons opaques, dont seule l'empreinte est stockée | Abdoul Aziz |
 | `clock.py` | Horloge système et horloge figée pour les tests | Abdoul Aziz |
 | `status.py` | **Fonctions pures** : calcul de l'état normal, dégradé ou en panne | Khalifa |
 | `incidents.py` | État des fiches, signalements, rafraîchissement des flux de pannes | Khalifa |
@@ -21,6 +23,8 @@ Les services reçoivent le stockage par injection (voir `app/container.py`) et n
 | --- | --- | --- |
 | A7 | Circuit de relecture en production : **fait**. Une contribution approuvée sur `/relecture` est exportée en brouillon dans `content/` par `scripts/export_contributions.py`, puis complétée et publiée par une PR (décision D9) | Abdoul Aziz |
 | K5 | Ajuster et documenter les règles d'état ci-dessous (seuils, expiration, plusieurs signalements) | Khalifa |
+| A18 | Compter les consultations de façon anonymisée pendant que la fiche Wave est ouverte (D27) | Abdoul Aziz |
+| A19 | Audio en wolof, si le socle est en ligne : champs du piège, route qui vérifie les droits de la fiche, recherche (D26) | Abdoul Aziz |
 
 ## Règles d'état (`status.py`)
 

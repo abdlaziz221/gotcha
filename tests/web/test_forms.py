@@ -6,6 +6,10 @@ from collections.abc import Callable
 
 from starlette.testclient import TestClient
 
+from app.config import Settings
+from app.services.clock import FixedClock
+from tests.conftest import FakeIdentity, make_client
+
 GOOD_CONTRIBUTION = {
     "kind": "gotcha",
     "fiche_slug": "mtn-momo",
@@ -122,5 +126,43 @@ def test_security_headers_and_cookie(client: TestClient) -> None:
     assert "script-src 'self'" in csp
     assert "frame-ancestors 'none'" in csp
     assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["cross-origin-opener-policy"] == "same-origin"
     assert "HttpOnly" in response.headers["set-cookie"]
     assert "SameSite=Lax" in response.headers["set-cookie"]
+
+
+def test_production_csrf_cookie_cannot_be_planted_by_a_sibling_subdomain(
+    prod_client: TestClient,
+) -> None:
+    prod_client.base_url = prod_client.base_url.copy_with(scheme="https")
+    cookie = prod_client.get("/contribuer").headers["set-cookie"]
+    assert cookie.startswith("__Host-gotcha_csrf=")
+    assert "; Secure" in cookie
+    assert "Domain=" not in cookie
+
+    # Un autre site du même hébergeur pose un cookie sans préfixe et soumet sa valeur.
+    planted = "x" * 43
+    prod_client.cookies.clear()
+    prod_client.cookies.set("gotcha_csrf", planted)
+    response = prod_client.post("/contribuer", data={**GOOD_CONTRIBUTION, "csrf_token": planted})
+    assert response.status_code == 403
+
+
+def test_production_form_works_with_the_secure_cookie(clock: FixedClock) -> None:
+    settings = Settings(
+        env="prod",
+        store="memory",
+        show_drafts=False,
+        load_fixtures=False,
+        site_auth=True,
+        github_client_id="identifiant",
+        github_client_secret="secret",
+        jury_code="code",
+        site_url="https://gotcha.test",
+    )
+    with make_client(settings, clock, identity=FakeIdentity()) as client:
+        client.base_url = client.base_url.copy_with(scheme="https")
+        page = client.get("/connexion").text
+        token = page.split('name="csrf_token" value="')[1].split('"')[0]
+        form = {"csrf_token": token, "code": "code", "retour": "/"}
+        assert client.post("/connexion/jury", data=form, follow_redirects=False).status_code == 303

@@ -24,7 +24,9 @@ error_codes: []
 sources:
   - title: "Forum MTN MoMo : clés, bac à sable et production"
     url: https://momodevelopercommunity.mtn.com/how-to-59/understanding-momo-open-api-keys-sandbox-and-production-455
+    published_on: 2026-01-07
     accessed_on: 2026-10-28
   - title: "Forum MTN MoMo : configuration de production"
     url: https://momodevelopercommunity.mtn.com/how-to-59/momo-api-production-configuration-101
+    published_on: 2023-08-02
     accessed_on: 2026-10-28

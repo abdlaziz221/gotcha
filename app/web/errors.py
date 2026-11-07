@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import logging
 from http import HTTPStatus
+from urllib.parse import urlencode
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from starlette.responses import JSONResponse, Response
+from starlette.responses import JSONResponse, RedirectResponse, Response
 
-from app.domain.errors import InvalidInputError, NotFoundError
+from app.domain.errors import InvalidInputError, NotFoundError, SecretDetectedError
+from app.web.session import LoginRequiredError
 from app.web.templating import render
 from app.web.viewmodels import ErrorPage, PageMeta
 
@@ -52,12 +54,21 @@ def install_error_handlers(app: FastAPI) -> None:
             detail = None
         return _error_response(request, exc.status_code, detail, dict(exc.headers or {}))
 
+    @app.exception_handler(LoginRequiredError)
+    async def login_required(_request: Request, exc: LoginRequiredError) -> Response:
+        query = urlencode({"retour": exc.next_url})
+        return RedirectResponse(f"/connexion?{query}", status_code=303)
+
     @app.exception_handler(NotFoundError)
     async def not_found(request: Request, _exc: NotFoundError) -> Response:
         return _error_response(request, 404, None)
 
     @app.exception_handler(InvalidInputError)
     async def invalid_input(request: Request, exc: InvalidInputError) -> Response:
+        return _error_response(request, 400, str(exc))
+
+    @app.exception_handler(SecretDetectedError)
+    async def secret_detected(request: Request, exc: SecretDetectedError) -> Response:
         return _error_response(request, 400, str(exc))
 
     @app.exception_handler(RequestValidationError)

@@ -6,11 +6,14 @@ Tout ce qui est écrit pendant l'exécution est perdu au redémarrage.
 
 from __future__ import annotations
 
+import copy
 import json
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 from app.domain.models import (
+    Account,
     Confirmation,
     Contribution,
     ContributionStatus,
@@ -19,10 +22,13 @@ from app.domain.models import (
     Gotcha,
     Incident,
     IncidentSource,
+    OAuthGrantKind,
     Publication,
     SearchHit,
     SearchQuery,
     TargetKind,
+    UsageEvent,
+    UsageTotal,
 )
 from app.stores.content_files import load_fiches, load_glossary
 from app.stores.search import (
@@ -57,6 +63,10 @@ class MemoryStore:
         self._contributions = {c.id: c for c in contributions or []}
         self._confirmations: list[Confirmation] = []
         self._last_ingest: dict[IncidentSource, datetime] = {}
+        self._accounts: dict[str, Account] = {}
+        self._usage: dict[tuple[date, UsageEvent, str], int] = {}
+        self._oauth_clients: dict[str, dict[str, Any]] = {}
+        self._oauth_grants: dict[tuple[str, str], tuple[dict[str, Any], datetime]] = {}
 
     @classmethod
     def from_directories(
@@ -189,6 +199,76 @@ class MemoryStore:
             for g in fiche.gotchas
         ]
         self._fiches[fiche_slug] = fiche.model_copy(update={"gotchas": gotchas})
+
+    async def has_recent_confirmation(
+        self, account_id: str, target_id: str, since: datetime, *, still_works: bool
+    ) -> bool:
+        return any(
+            c.account_id == account_id
+            and c.target_id == target_id
+            and c.still_works is still_works
+            and c.created_at >= since
+            for c in self._confirmations
+        )
+
+    async def list_confirmations(self, *, limit: int = 50) -> list[Confirmation]:
+        ordered = sorted(self._confirmations, key=lambda c: c.created_at, reverse=True)
+        return ordered[:limit]
+
+    # --- AccountStore ---------------------------------------------------------
+
+    async def save_account(self, account: Account) -> None:
+        existing = self._accounts.get(account.id)
+        blocked = account.blocked or (existing is not None and existing.blocked)
+        self._accounts[account.id] = account.model_copy(update={"blocked": blocked})
+
+    async def get_account(self, account_id: str) -> Account | None:
+        return self._accounts.get(account_id)
+
+    async def save_oauth_client(self, client_id: str, data: dict[str, Any]) -> None:
+        self._oauth_clients[client_id] = copy.deepcopy(data)
+
+    async def get_oauth_client(self, client_id: str) -> dict[str, Any] | None:
+        return copy.deepcopy(self._oauth_clients.get(client_id))
+
+    async def add_oauth_grant(
+        self, kind: OAuthGrantKind, key_hash: str, data: dict[str, Any], expires_at: datetime
+    ) -> None:
+        self._oauth_grants[(kind.value, key_hash)] = (copy.deepcopy(data), expires_at)
+
+    async def get_oauth_grant(
+        self, kind: OAuthGrantKind, key_hash: str, now: datetime
+    ) -> dict[str, Any] | None:
+        grant = self._oauth_grants.get((kind.value, key_hash))
+        return copy.deepcopy(grant[0]) if grant is not None and grant[1] > now else None
+
+    async def take_oauth_grant(
+        self, kind: OAuthGrantKind, key_hash: str, now: datetime
+    ) -> dict[str, Any] | None:
+        grant = self._oauth_grants.pop((kind.value, key_hash), None)
+        return grant[0] if grant is not None and grant[1] > now else None
+
+    async def delete_expired_oauth_grants(self, now: datetime) -> None:
+        self._oauth_grants = {k: g for k, g in self._oauth_grants.items() if g[1] > now}
+
+    # --- UsageStore -----------------------------------------------------------
+
+    async def add_usage(self, day: date, event: UsageEvent, account_id: str | None) -> None:
+        key = (day, event, account_id or "")
+        self._usage[key] = self._usage.get(key, 0) + 1
+
+    async def usage_totals(self, since: date) -> list[UsageTotal]:
+        counts: dict[UsageEvent, int] = {}
+        accounts: dict[UsageEvent, set[str]] = {}
+        for (day, event, account_id), count in self._usage.items():
+            if day >= since:
+                counts[event] = counts.get(event, 0) + count
+                if account_id:
+                    accounts.setdefault(event, set()).add(account_id)
+        return [
+            UsageTotal(event=event, count=counts[event], accounts=len(accounts.get(event, set())))
+            for event in sorted(counts, key=lambda e: e.value)
+        ]
 
     async def close(self) -> None:
         return None

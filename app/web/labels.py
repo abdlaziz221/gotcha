@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from app.domain.models import (
+    ConfidenceLevel,
     ContributionKind,
     Environment,
     IncidentSource,
@@ -10,6 +11,7 @@ from app.domain.models import (
     ServiceKind,
     Severity,
     Status,
+    UsageEvent,
 )
 
 STATUS_LABELS = {
@@ -90,3 +92,21 @@ def datetime_fr(value: object) -> str:
     if hour is None:
         return date_fr(value)
     return f"{date_fr(value)} à {hour} h {value.minute:02d}"  # type: ignore[attr-defined]
+
+
+CONFIDENCE_LABELS = {
+    ConfidenceLevel.SOURCED: "Sourcé",
+    ConfidenceLevel.REPRODUCED: "Reproduit",
+    ConfidenceLevel.PRODUCTION: "Confirmé en production",
+}
+
+USAGE_LABELS = {
+    UsageEvent.READ_FICHE: "Fiches consultées",
+    UsageEvent.READ_OPEN_FICHE: "Fiches ouvertes lues sans compte (1 par jour et par visiteur)",
+    UsageEvent.SEARCH_HIT: "Recherches avec résultat",
+    UsageEvent.SEARCH_MISS: "Recherches sans résultat",
+    UsageEvent.READ_STATUS: "États de service consultés",
+    UsageEvent.REPORT_OUTAGE: "Pannes signalées",
+    UsageEvent.PROPOSE: "Contributions reçues",
+    UsageEvent.CONFIRM: "Confirmations reçues",
+}

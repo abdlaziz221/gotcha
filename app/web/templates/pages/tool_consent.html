@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="message">
+  <h1>Autoriser cet outil ?</h1>
+  <p>L'outil <strong>{{ page.client_name }}</strong> demande à utiliser Gotcha en votre nom, avec votre compte GitHub.</p>
+  <p>Si vous acceptez, il recevra son accès à cette adresse :</p>
+  <p><code>{{ page.redirect_uri }}</code></p>
+  <p>Acceptez seulement si vous venez de lancer cette connexion vous-même, depuis votre éditeur ou votre agent.</p>
+  <form method="post" action="/connexion/outil">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="demande" value="{{ page.request_id }}">
+    <button class="button" type="submit" name="decision" value="autoriser">Autoriser</button>
+    <button class="button button--secondary" type="submit" name="decision" value="refuser">Refuser</button>
+  </form>
+</section>
+{% endblock %}
