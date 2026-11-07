@@ -78,6 +78,6 @@ def test_glossary_links_point_to_existing_terms() -> None:
 def test_python_examples_in_the_content_compile() -> None:
     """Un agent peut recopier un exemple tel quel : il doit au moins être du Python valide."""
     for path in sorted((CONTENT_DIR / "fiches").glob("*/pieges/*.md")):
-        for block in re.findall(r"```python\n(.*?)```", path.read_text("utf-8"), re.S):
+        for block in re.findall(r"```(?:python|py)\n(.*?)```", path.read_text("utf-8"), re.S):
             code = textwrap.dedent(block)
             compile(code, str(path), "exec")  # SyntaxError : l'exemple est à corriger
