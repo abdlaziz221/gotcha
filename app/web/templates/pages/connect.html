@@ -6,12 +6,19 @@
    connexion, et ce que l'agent peut faire. Sans JavaScript, toutes les configurations sont
    affichées l'une sous l'autre ; pages.js les range en onglets. #}
 {% set mcp_url = request.base_url ~ "mcp" %}
+{# Formats relevés dans la documentation officielle de chaque agent (novembre 2026). #}
 {% set agents = [
   ("claude", "Claude Code", "Dans un terminal, à la racine de votre projet", "claude mcp add --transport http gotcha " ~ mcp_url),
+  ("codex", "Codex", "Fichier ~/.codex/config.toml", '[mcp_servers.gotcha]\nurl = "' ~ mcp_url ~ '"'),
   ("cursor", "Cursor", "Fichier .cursor/mcp.json du projet, ou ~/.cursor/mcp.json pour tous vos projets", '{\n  "mcpServers": {\n    "gotcha": { "url": "' ~ mcp_url ~ '" }\n  }\n}'),
   ("copilot", "VS Code et GitHub Copilot", "Fichier .vscode/mcp.json du projet", '{\n  "servers": {\n    "gotcha": { "type": "http", "url": "' ~ mcp_url ~ '" }\n  }\n}'),
   ("windsurf", "Windsurf", "Fichier ~/.codeium/windsurf/mcp_config.json", '{\n  "mcpServers": {\n    "gotcha": { "serverUrl": "' ~ mcp_url ~ '" }\n  }\n}'),
+  ("antigravity", "Antigravity", "Fichier mcp_config.json d'Antigravity (réglages MCP, « View raw config »)", '{\n  "mcpServers": {\n    "gotcha": { "serverUrl": "' ~ mcp_url ~ '" }\n  }\n}'),
   ("gemini", "Gemini CLI", "Fichier ~/.gemini/settings.json", '{\n  "mcpServers": {\n    "gotcha": { "httpUrl": "' ~ mcp_url ~ '" }\n  }\n}'),
+  ("cline", "Cline", "Fichier cline_mcp_settings.json (onglet Remote Servers de Cline)", '{\n  "mcpServers": {\n    "gotcha": { "type": "streamableHttp", "url": "' ~ mcp_url ~ '" }\n  }\n}'),
+  ("opencode", "OpenCode", "Fichier opencode.json du projet", '{\n  "mcp": {\n    "gotcha": { "type": "remote", "url": "' ~ mcp_url ~ '" }\n  }\n}'),
+  ("grok", "Grok CLI", "Dans un terminal", "grok mcp add --transport http gotcha " ~ mcp_url),
+  ("hermes", "Hermes Agent", "Fichier ~/.hermes/config.yaml, puis /reload-mcp", 'mcp_servers:\n  gotcha:\n    url: "' ~ mcp_url ~ '"'),
 ] %}
 
 {% block content %}
@@ -36,17 +43,17 @@
       <div class="box__head">
         <h2 id="config">Configuration de votre agent</h2>
         <div class="segmented segmented--scroll" role="tablist" aria-label="Agents" hidden>
-          {% for key, name, where, snippet in agents %}<button type="button" role="tab" id="onglet-{{ key }}" aria-controls="agent-{{ key }}" aria-selected="{{ 'true' if loop.first else 'false' }}" data-tab="{{ key }}">{{ agent_logo(key, 14) }}{{ name }}</button>{% endfor %}
+          {% for key, name, where, snippet in agents %}<button type="button" role="tab" id="onglet-{{ key }}" aria-controls="agent-{{ key }}" aria-selected="{{ 'true' if loop.first else 'false' }}" data-tab="{{ key }}">{{ agent_logo(key, 14) or icon("bot", size=14) }}{{ name }}</button>{% endfor %}
         </div>
       </div>
       {% for key, name, where, snippet in agents %}
       <div class="agent-config" id="agent-{{ key }}" role="tabpanel" aria-labelledby="onglet-{{ key }}" data-panel="{{ key }}">
-        <h3 class="agent-config__name">{{ agent_logo(key, 18) }}{{ name }}</h3>
+        <h3 class="agent-config__name">{{ agent_logo(key, 18) or icon("bot", size=18) }}{{ name }}</h3>
         <p class="agent-config__where">{{ where }}</p>
         <pre class="agent-config__code"><code>{{ snippet }}</code><button type="button" class="icon-button" data-copy-text="{{ snippet }}" title="Copier" hidden>{{ icon("copy", size=16, label="Copier la configuration " ~ name) }}</button></pre>
       </div>
       {% endfor %}
-      <div class="box__foot"><p>Un autre agent (Codex, Cline, OpenCode…) : ajoutez l'adresse ci-dessus comme serveur MCP HTTP, dans le format de sa documentation.</p></div>
+      <div class="box__foot"><p>Un autre agent : ajoutez l'adresse ci-dessus comme serveur MCP HTTP (« streamable »), dans le format de sa documentation.</p></div>
     </section>
 
     <section class="box" aria-labelledby="premiere">

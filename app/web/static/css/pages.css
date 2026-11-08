@@ -343,7 +343,9 @@ pre.example { margin: 0; font-size: 0.8125rem; line-height: 1.55; white-space: p
 }
 
 /* Brancher votre agent : onglets par agent, configuration à copier. */
-.segmented--scroll { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.segmented--scroll { flex-wrap: wrap; max-width: 100%; }
+
+[data-tabs] > .box__head { flex-direction: column; align-items: flex-start; }
 
 .segmented button { display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap; }
 
