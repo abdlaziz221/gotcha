@@ -18,6 +18,15 @@ Lit le flux public d'incidents de Flutterwave (format Statuspage v2, `https://st
 3. Pays : noms cités dans le texte, sinon devise d'un seul pays (GHS → Ghana, KES → Kenya…). XOF et XAF couvrent plusieurs pays : on n'en déduit rien.
 4. Incident Mobile Money sans opérateur cité : une panne « sans service » par pays, qui concerne tous les services de paiement du pays.
 5. Une panne par couple (service, pays), avec un identifiant stable : `flutterwave:<id>:<pays>:<service>`.
+6. Message qui détaille les canaux par pays (`Senegal: Orange, Wave`) : on garde exactement ces couples, sans croiser tous les opérateurs avec tous les pays.
+7. Sans opérateur cité, le Mobile Money doit être décrit comme touché : une phrase qui dit qu'il est rétabli ou qu'il marche ne compte pas, sauf si elle contient une négation (« not working »).
+8. Pays : les noms longs passent d'abord (« Equatorial Guinea » ne compte pas aussi pour « Guinea »).
+9. Un incident illisible (date absente, texte refusé par le modèle) est ignoré seul et journalisé ; l'octet nul est retiré des textes.
+
+**Limites :**
+
+- Un incident XOF ou XAF sans pays cité devient une panne sans pays, donc affichée partout. Aucun cas réel pour l'instant.
+- La lecture reste celle d'un texte libre : un changement de formulation chez Flutterwave peut demander une nouvelle règle.
 
 **Quand le flux est lu :** à l'ouverture d'une page, en tâche de fond, si la dernière lecture date de plus de 10 minutes (`IncidentService.refresh_if_stale`). Sur un VPS, on peut aussi lancer `python -m app.ingest` toutes les 10 minutes.
 
@@ -29,7 +38,7 @@ Lit le flux public d'incidents de Flutterwave (format Statuspage v2, `https://st
 
 ## Comment faire
 
-- L'extrait réel enregistré est dans `fixtures/flutterwave_incidents.json` (9 incidents d'octobre 2026). Pour en ajouter un : copier l'incident depuis le flux en direct dans ce fichier, puis écrire le test attendu dans `tests/ingest/test_flutterwave.py`.
+- L'extrait réel enregistré est dans `fixtures/flutterwave_incidents.json` (16 incidents d'octobre et novembre 2026). Pour en ajouter un : copier l'incident depuis le flux en direct dans ce fichier, puis écrire le test attendu dans `tests/ingest/test_flutterwave.py`.
 - Pour lire le flux en direct en local : `GOTCHA_INGEST_LIVE=true uvicorn app.main:app --reload`.
 - Lecture réseau avec `urllib` (bibliothèque standard), HTTPS uniquement, délai de 5 secondes : jamais `requests` ni `httpx` (certifi, licence MPL).
 - Une erreur de lecture ne casse jamais une page : elle est journalisée et la lecture est retentée plus tard.

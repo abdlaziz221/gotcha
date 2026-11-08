@@ -7,7 +7,7 @@
 | MTN MoMo | `mtn-momo` | Khalifa | K3, K10 |
 | M-Pesa | `mpesa-ke` | Khalifa | K10 |
 | Wave | `wave-sn` | Loum | L11 |
-| Orange Money | `orange-money-sn` (et `orange-money-ci` à créer) | Abdoul Aziz | A9 |
+| Orange Money | `orange-money-sn`, `orange-money-ci` | Abdoul Aziz | A9 |
 | Datacloud | `datacloud-sn` | Abdoul Aziz | A10 |
 
 Objectif : **au moins 15 pièges bien documentés le dimanche 8 novembre**, avec un niveau de confiance honnête, sur MTN MoMo, M-Pesa, Wave et Orange Money, plus la fiche Datacloud (D21). Mieux vaut 15 pièges vérifiés que 30 présentés à tort comme testés. Un piège n'est marqué « confirmé en production » qu'avec une preuve de production.
@@ -155,6 +155,20 @@ Le chargement refuse un audio sans transcription, une transcription sans audio, 
 5. Phrases courtes, vocabulaire expliqué (glossaire), un exemple concret par piège quand c'est possible.
 6. **Aucune vraie clé, aucun vrai numéro de téléphone** dans les exemples : `<VOTRE_CLE>`, `+221 77 000 00 00`.
 7. Pour publier : mettre `publication: published` et `verified_by: <votre pseudo>` après avoir **reproduit** le piège ou **recoupé** deux sources ; mettre à jour `last_confirmed_on` et `confidence`.
+
+## Contributions venues du site
+
+Une contribution approuvée sur `/relecture` n'est pas publiée telle quelle. Abdoul Aziz lance :
+
+```bash
+DATABASE_URL=… python scripts/export_contributions.py
+```
+
+- un **piège** devient `fiches/<fiche>/pieges/contribution-<id>.md`, en brouillon : son texte est entier dans « Symptôme », à répartir entre Symptôme, Cause et Solution ;
+- une **étape** ou une **correction** devient une note dans `a-integrer/`, à reporter à la main dans la fiche, puis à supprimer.
+- chaque contribution exportée est notée dans `a-integrer/contributions-exportees.txt` : garder ce fichier dans la PR, il empêche de l'exporter une seconde fois après intégration ou suppression du brouillon.
+
+Le contributeur est cité comme source (son pseudo, jamais son e-mail). On relit, on complète, on recoupe la source, puis on publie par une PR `content(<fiche>): …`.
 
 ## Tester
 

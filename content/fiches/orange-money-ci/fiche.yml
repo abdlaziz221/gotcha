@@ -1,0 +1,40 @@
+service:
+  slug: orange-money
+  name: Orange Money
+  kind: payment
+  operator: Orange
+  docs_url: https://developer.orange.com/apis/om-webpay
+country: CI
+title: Orange Money Côte d'Ivoire
+summary: Encaisser un paiement Orange Money en Côte d'Ivoire avec l'API Web Payment d'Orange, du bac à sable à la production.
+api_version: v1
+publication: draft
+last_confirmed_on: 2026-11-03
+prerequisites:
+  - Être marchand Orange Money, inscrit dans une agence Orange de Côte d'Ivoire et conforme aux règles d'identification d'Orange (KYA).
+  - Les documents de l'entreprise demandés par la législation locale, dont le registre du commerce (RCCM).
+  - Une application sur developer.orange.com abonnée à Web Payment, qui donne la consumer key, le consumer secret et la merchant key.
+differences:
+  - topic: Adresse de l'API
+    sandbox: https://api.orange.com/orange-money-webpay/dev/v1
+    production: https://api.orange.com/orange-money-webpay/ci/v1
+  - topic: Devise
+    sandbox: OUV (devise fictive)
+    production: XOF selon une intégration open source, à confirmer au premier paiement réel
+error_codes: []
+sources:
+  - title: "Orange Developer : présentation de Web Payment / M Payment (officiel)"
+    url: https://developer.orange.com/apis/om-webpay
+    accessed_on: 2026-11-03
+  - title: "Orange Developer : questions fréquentes sur Web Payment (officiel)"
+    url: https://developer.orange.com/apis/om-webpay/faq
+    accessed_on: 2026-11-03
+  - title: "SDK PHP Orange Money (Foris-master)"
+    url: https://github.com/Foris-master/orange-money-sdk
+    accessed_on: 2026-11-03
+  - title: "Bow Payment : passerelle Orange Money Côte d'Ivoire"
+    url: https://github.com/bowphp/payment/tree/main/src/Gateway/IvoryCost/Orange
+    accessed_on: 2026-11-03
+  - title: "Centipid Billing : passerelle Orange Money (documentation d'un intégrateur)"
+    url: https://docs.centipidbilling.com/billing/payment-gateways/orange-money
+    accessed_on: 2026-11-03

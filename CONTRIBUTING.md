@@ -114,7 +114,7 @@ Avant d'ajouter une bibliothèque :
 
 1. vérifier sa licence et celles de ses dépendances (MIT, BSD, Apache, ISC ou PSF uniquement) ;
 2. l'ajouter à `requirements.txt` avec sa version figée et sa licence en commentaire ;
-3. lancer `python scripts/check_licenses.py`.
+3. lancer `python scripts/check_licenses.py --markdown` : il contrôle les licences et met à jour [docs/LICENCES.md](docs/LICENCES.md), la liste déclarée à la soumission.
 
 ## Outils d'IA
 
