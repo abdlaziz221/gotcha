@@ -351,7 +351,7 @@ if (player) {
     paused = value;
     if (!paused) player.classList.add("has-started");
     player.classList.toggle("is-paused", paused);
-    label.textContent = paused ? "Lire la vidéo" : "Mettre en pause";
+    label.textContent = paused ? "Lire la démo" : "Mettre en pause";
     resume();
   };
 
@@ -550,15 +550,3 @@ if (stack && "IntersectionObserver" in window && typeof Element.prototype.animat
   }, { threshold: 0.25 });
   stack.querySelectorAll(".stack__card").forEach((card) => playing.observe(card));
 }
-
-// Raccourci « / » ou Ctrl+K (Cmd+K) : aller au champ de recherche, ou à la page Recherche.
-document.addEventListener("keydown", (event) => {
-  const typing = event.target.closest("input, textarea, select, [contenteditable]");
-  const slash = event.key === "/" && !typing;
-  const k = event.key.toLowerCase() === "k" && (event.ctrlKey || event.metaKey);
-  if (!slash && !k) return;
-  const field = document.querySelector('input[type="search"]');
-  event.preventDefault();
-  if (field) field.focus();
-  else location.href = "/recherche";
-});

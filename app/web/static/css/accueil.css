@@ -196,8 +196,6 @@
 
 .win__badge--ok { background-color: var(--color-success-bg); color: var(--color-success); }
 
-.win__badge--warn { background-color: var(--color-warning-bg); color: var(--color-warning); }
-
 .win__body { display: grid; gap: var(--space-3); justify-items: start; padding: var(--space-4) var(--space-5); }
 
 .ide-split { display: grid; grid-template-columns: minmax(0, 1fr); }
@@ -248,13 +246,9 @@
 
 .radar-bars span:nth-child(2n) { height: 100%; }
 
-.radar-bars span.is-warn { height: 45%; background-color: var(--color-warning); }
-
 .scene-checks { display: grid; gap: 0.35rem; width: 100%; font-size: var(--text-small); }
 
 .scene-checks span { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--color-success); font-weight: 500; }
-
-.scene-checks span.is-warn { color: var(--color-warning); }
 
 .flow { display: flex; align-items: center; gap: var(--space-3); width: 100%; }
 
@@ -496,7 +490,6 @@
 
 .player--live .scene.is-active .radar-bars span:nth-child(n+6) { animation-delay: 680ms; }
 
-.player--live .scene.is-active .radar-bars .is-warn { animation-delay: 820ms; }
 
 .node--gotcha { position: relative; }
 

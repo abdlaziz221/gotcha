@@ -279,7 +279,7 @@ Outil de travail, pas brochure : sobre, dense, lisible d'un coup d'œil. Styles 
 - Signaler une panne : symptômes fréquents en un clic. Pannes : durée écoulée à côté de la date.
 - Relecture : liste de contrôle à cocher avant « Approuver et publier », motif obligatoire pour refuser.
 - Glossaire : filtre instantané, copie du lien d'une définition. Données : parcours de la donnée en trois étapes.
-- Partout : `/` ou Ctrl+K (Cmd+K) va au champ de recherche (dans `app.js`).
+- Toutes les pages intérieures : `/` ou Ctrl+K (Cmd+K) va au champ de recherche, ou à la page Recherche. Pas sur l'accueil, dont le champ est déjà en haut (poids).
 
 En-tête du site : « Se connecter » (icône `log-in`) quand la connexion est proposée, ou le pseudo avec un bouton de déconnexion (`log-out`). « Signaler » et « Contribuer » n'apparaissent que si le visiteur peut écrire.
 

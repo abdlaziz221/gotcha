@@ -24,7 +24,7 @@
     <div class="hero__search reveal reveal--4">{{ search_form(autofocus=False) }}</div>
 
     <p class="hero__actions reveal reveal--5">
-      <a class="button button--quiet" href="#video">{{ icon("play", size=16) }}Voir la vidéo</a>
+      <a class="button button--quiet" href="#video">{{ icon("play", size=16) }}Voir la démo</a>
       {% if viewer.can_write or viewer.site_auth %}<a class="button button--secondary" href="/contribuer">Ajouter un piège{{ icon("arrow-right", size=16) }}</a>{% endif %}
     </p>
 
@@ -118,7 +118,7 @@
                 <span class="typing" aria-hidden="true"><span></span><span></span><span></span></span>
                 <p class="bubble bubble--agent">{{ icon("bot", size=16) }}« Je configure d'abord le bac à sable Wave pour tester sans débiter. »</p>
                 <code class="code-line code-line--bad">const BASE = "https://sandbox.wave.com/v1/checkout";</code>
-                <p class="scene-note scene-note--bad">{{ icon("triangle-alert", size=16) }}<span>Domaine inventé par le modèle : <code>sandbox.wave.com</code> n'existe pas.</span></p>
+                <p class="scene-note scene-note--bad">{{ icon("triangle-alert", size=16) }}<span>Le modèle suppose un bac à sable : la documentation Wave n'en mentionne aucun.</span></p>
               </div>
             </div>
           </div>
@@ -130,7 +130,7 @@
             <div class="win">
               <div class="win__head" aria-hidden="true">
                 <span class="win__tab">{{ icon("plug", size=14) }}Appel MCP automatique</span>
-                <span class="win__badge">POST /mcp · 14 ms · Dakar</span>
+                <span class="win__badge">POST /mcp · lecture seule</span>
               </div>
               <div class="win__body">
                 <div class="flow">
@@ -139,7 +139,7 @@
                   <span class="node node--gotcha"><span class="node__ping" aria-hidden="true"></span><img src="/static/img/logo.svg" alt="" width="22" height="22">Gotcha MCP</span>
                 </div>
                 <code class="flow__call" data-type>search_gotchas("wave bac à sable", country="SN")</code>
-                <p class="scene-pills" aria-hidden="true"><span>Lecture seule</span><span>Aucun secret transmis</span><span>5 fiches locales</span></p>
+                <p class="scene-pills" aria-hidden="true"><span>Lecture seule</span><span>Aucun secret transmis</span><span>{{ page.cards | length }} fiches</span></p>
               </div>
             </div>
           </div>
@@ -154,10 +154,10 @@
               <span class="node">{{ icon("bot") }}Agent IA</span>
             </div>
             <div class="answer">
-              <span class="answer__meta"><span class="severity severity--major">{{ icon("triangle-alert", size=16) }}Important</span> · Wave Sénégal · Confirmé par 14 devs</span>
+              <span class="answer__meta"><span class="severity severity--major">{{ icon("triangle-alert", size=16) }}Important</span> · Wave Sénégal · <span class="confidence confidence--sourced">{{ icon("book-open", size=16) }}Sourcé</span></span>
               <strong>Aucun bac à sable public : on teste avec un vrai compte</strong>
-              <span class="answer__body">Cause : la clé d'API est réservée à un compte Wave Business validé. Solution : simuler le webhook en local et tester à 100 FCFA.</span>
-              <span class="answer__by">{{ icon("book-open", size=16) }}Source : documentation officielle Wave, relue le 28 oct. 2026</span>
+              <span class="answer__body">Cause : la documentation officielle ne mentionne aucun bac à sable ; la clé d'API est réservée à un compte Wave Business. Solution : simuler Wave dans les tests, puis tester en production avec de petits montants.</span>
+              <span class="answer__by">{{ icon("book-open", size=16) }}Source : documentation officielle de l'API Wave Business, consultée le 28 oct. 2026</span>
             </div>
           </div>
         </li>
@@ -168,12 +168,12 @@
             <div class="win">
               <div class="win__head" aria-hidden="true">
                 <span class="win__tab">{{ icon("terminal", size=14) }}checkout/wave.ts · Correctif</span>
-                <span class="win__badge win__badge--ok">{{ icon("circle-check", size=14) }}Tests : 4/4 passés</span>
+                <span class="win__badge win__badge--ok">{{ icon("circle-check", size=14) }}Correctif proposé</span>
               </div>
               <div class="win__body">
                 <code class="code-line code-line--bad code-line--removed">- const BASE = "https://sandbox.wave.com";</code>
                 <code class="code-line code-line--good" data-type>+ const BASE = "https://api.wave.com/v1/checkout/sessions";</code>
-                <code class="code-line code-line--good" data-type>+ const verify = mockWaveWebhookSignature(secret); // Simulé en local</code>
+                <code class="code-line code-line--good" data-type>+ const wave = env.TEST ? fakeWave() : realWave(BASE); // Wave simulé dans les tests</code>
               </div>
             </div>
           </div>
@@ -184,18 +184,18 @@
           <div class="scene__art">
             <div class="win">
               <div class="win__head" aria-hidden="true">
-                <span class="win__tab">{{ icon("activity", size=14) }}Radar des services · Afrique de l'Ouest</span>
-                <span class="win__badge win__badge--warn">Alerte en cours</span>
+                <span class="win__tab">{{ icon("activity", size=14) }}État des services en direct</span>
+                <span class="win__badge">Flux d'incidents et signalements</span>
               </div>
               <div class="win__body">
                 <code class="flow__call" data-type>get_service_status("wave", country="SN")</code>
                 <span class="flow__drop" aria-hidden="true"><svg class="sbeam sbeam--v" viewBox="0 0 10 100" preserveAspectRatio="none"><path class="sbeam__track" d="M5 0V100"/><path class="sbeam__ray" d="M5 0V100" pathLength="100"/></svg></span>
                 <div class="radar-card">
-                  <p class="live-status">{{ icon("activity") }}<span>Wave Sénégal · Webhooks</span><span class="status status--degraded">{{ icon("triangle-alert", size=16) }}Dégradé</span></p>
+                  <p class="live-status">{{ icon("activity") }}<span>Wave Sénégal</span><span class="status status--normal">{{ icon("circle-check", size=16) }}Aucune panne signalée</span></p>
                   <div class="radar-bars" aria-hidden="true">
-                    <span></span><span></span><span></span><span></span><span></span><span></span><span class="is-warn"></span><span class="is-warn"></span><span class="is-warn"></span>
+                    <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
                   </div>
-                  <span class="answer__by">Callbacks retardés (~4 min) · signalé par 3 devs à Dakar</span>
+                  <span class="answer__by">Une panne signalée ferait passer le service en « dégradé » : l'agent le dirait au dev.</span>
                 </div>
               </div>
             </div>
@@ -208,14 +208,14 @@
             <div class="win">
               <div class="win__head" aria-hidden="true">
                 <span class="win__tab">{{ icon("bot", size=14) }}Réponse de l'agent</span>
-                <span class="win__badge win__badge--ok">2 vérifications appliquées</span>
+                <span class="win__badge win__badge--ok">Piège et état vérifiés</span>
               </div>
               <div class="win__body">
                 <span class="typing" aria-hidden="true"><span></span><span></span><span></span></span>
-                <p class="bubble bubble--agent">{{ icon("bot", size=16) }}« Wave n'a pas de bac à sable : j'ai créé un simulateur local. Attention, les callbacks Wave sont ralentis à Dakar : attends avant de déployer. »</p>
+                <p class="bubble bubble--agent">{{ icon("bot", size=16) }}« La documentation Wave ne mentionne aucun bac à sable : j'ai isolé l'appel à Wave pour le simuler dans les tests. Aucune panne signalée sur Wave Sénégal : tu pourras tester en production avec de petits montants. »</p>
                 <div class="scene-checks" aria-hidden="true">
-                  <span>{{ icon("circle-check", size=16) }}Simulateur HMAC prêt dans <code>tests/wave.test.ts</code></span>
-                  <span class="is-warn">{{ icon("triangle-alert", size=16) }}Mise en production suspendue pendant la dégradation</span>
+                  <span>{{ icon("circle-check", size=16) }}Wave simulé dans <code>tests/wave.test.ts</code></span>
+                  <span>{{ icon("circle-check", size=16) }}Test en production prévu avec de petits montants</span>
                 </div>
               </div>
             </div>
@@ -228,7 +228,7 @@
             <div class="win">
               <div class="win__head" aria-hidden="true">
                 <span class="win__tab">{{ icon("shield-check", size=14) }}Mémoire opérationnelle partagée</span>
-                <span class="win__badge win__badge--ok">Synchronisé à Dakar</span>
+                <span class="win__badge win__badge--ok">Confirmation avec preuve</span>
               </div>
               <div class="win__body">
                 <div class="flow flow--confirm" aria-hidden="true">
@@ -236,8 +236,8 @@
                   <span class="flow__path" aria-hidden="true"><svg class="sbeam" viewBox="0 0 100 10" preserveAspectRatio="none"><path class="sbeam__track" d="M0 5H100"/><path class="sbeam__ray" d="M0 5H100" pathLength="100"/></svg></span>
                   <span class="node node--gotcha"><img src="/static/img/logo.svg" alt="" width="22" height="22">Fiche Wave</span>
                 </div>
-                <p class="done">{{ icon("circle-check") }}<span>Ça marche encore : <strong class="done__count">+1 confirmation (<span class="roll" aria-hidden="true"><span>14</span><span>15</span></span><span class="visually-hidden">15</span> devs)</strong></span></p>
-                <span class="answer__by">Le prochain dev, et son agent IA, éviteront ce piège en 18 ms.</span>
+                <p class="done">{{ icon("circle-check") }}<span>Ça marche encore : <strong class="done__count">+1 confirmation (<span class="roll" aria-hidden="true"><span>0</span><span>1</span></span><span class="visually-hidden">1</span> au total)</strong></span></p>
+                <span class="answer__by">Le prochain dev, et son agent IA, retrouveront ce piège avec sa preuve.</span>
               </div>
             </div>
           </div>

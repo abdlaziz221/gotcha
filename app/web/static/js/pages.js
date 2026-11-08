@@ -358,3 +358,15 @@ if (termFilter) {
     if (empty) empty.hidden = shown > 0;
   });
 }
+
+// Raccourci « / » ou Ctrl+K (Cmd+K) : aller au champ de recherche, ou à la page Recherche.
+document.addEventListener("keydown", (event) => {
+  const typing = event.target.closest("input, textarea, select, [contenteditable]");
+  const slash = event.key === "/" && !typing;
+  const k = event.key.toLowerCase() === "k" && (event.ctrlKey || event.metaKey);
+  if (!slash && !k) return;
+  const field = document.querySelector('input[type="search"]');
+  event.preventDefault();
+  if (field) field.focus();
+  else location.href = "/recherche";
+});
