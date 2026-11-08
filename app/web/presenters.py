@@ -3,10 +3,15 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import replace
 from datetime import datetime
+from typing import Any
+
+from markupsafe import Markup
 
 from app.domain.countries import country_name
 from app.domain.models import (
+    Confirmation,
     Contribution,
     Fiche,
     GlossaryTerm,
@@ -16,8 +21,10 @@ from app.domain.models import (
     ServiceStatus,
     Source,
 )
+from app.domain.text import first_sentence
 from app.services.status import counts_now
 from app.web.labels import (
+    CONFIDENCE_LABELS,
     CONTRIBUTION_KIND_LABELS,
     ENVIRONMENT_LABELS,
     INCIDENT_SOURCE_LABELS,
@@ -27,6 +34,7 @@ from app.web.labels import (
 )
 from app.web.markdown import render_markdown
 from app.web.viewmodels import (
+    ConfirmationView,
     ContributionView,
     FicheCard,
     GotchaView,
@@ -56,6 +64,7 @@ def source_view(source: Source) -> SourceView:
         title=source.title,
         url=str(source.url) if source.url else None,
         author=source.author,
+        published_on=source.published_on,
         accessed_on=source.accessed_on,
     )
 
@@ -137,11 +146,68 @@ def gotcha_view(
         symptom_html=render_markdown(gotcha.symptom_md, glossary),
         cause_html=render_markdown(gotcha.cause_md, glossary),
         fix_html=render_markdown(gotcha.fix_md, glossary),
+        failed_attempts_html=(
+            render_markdown(gotcha.failed_attempts_md, glossary)
+            if gotcha.failed_attempts_md
+            else None
+        ),
+        proof_html=render_markdown(gotcha.proof_md, glossary) if gotcha.proof_md else None,
+        confidence=gotcha.confidence,
+        # Un brouillon n'a pas encore été recoupé par un relecteur : son niveau reste à confirmer.
+        confidence_label=CONFIDENCE_LABELS[gotcha.confidence]
+        + ("" if gotcha.publication is Publication.PUBLISHED else ", à confirmer à la relecture"),
         sources=[source_view(s) for s in gotcha.sources],
         last_confirmed_on=gotcha.last_confirmed_on,
         confirmations=gotcha.confirmations,
         needs_review=needs_review,
         is_draft=gotcha.publication is not Publication.PUBLISHED,
+        **_audio_fields(gotcha, glossary),
+    )
+
+
+def _audio_fields(gotcha: Gotcha, glossary: Mapping[str, GlossaryTerm]) -> dict[str, Any]:
+    audio = gotcha.audio
+    if audio is None:
+        return {}
+    credit = f"Enregistré par {audio.recorded_by}"
+    credit += f", relu par {audio.reviewed_by}" if audio.reviewed_by else ", pas encore relu"
+    fiche, name = gotcha.id.split(".", 1)
+    return {
+        "audio_url": f"/fiches/{fiche}/audio/{name}",
+        "audio_transcript_html": render_markdown(audio.transcript_md, glossary),
+        "audio_credit": credit,
+    }
+
+
+def gotcha_preview(
+    gotcha: Gotcha, glossary: Mapping[str, GlossaryTerm], *, needs_review: bool
+) -> GotchaView:
+    """Aperçu public : le symptôme, le début de la cause, le niveau et les sources.
+
+    Le reste n'est pas caché par le gabarit : il n'est tout simplement pas envoyé.
+    """
+    view = gotcha_view(gotcha, glossary, needs_review=needs_review)
+    return replace(
+        view,
+        cause_html=Markup("<p>{}</p>").format(first_sentence(gotcha.cause_md)),
+        fix_html=Markup(""),
+        failed_attempts_html=None,
+        proof_html=None,
+        audio_url=None,  # l'explication parle de la solution : réservée, comme elle
+        audio_transcript_html=None,
+        audio_credit=None,
+        locked=True,
+    )
+
+
+def confirmation_view(confirmation: Confirmation) -> ConfirmationView:
+    return ConfirmationView(
+        target_id=confirmation.target_id,
+        still_works=confirmation.still_works,
+        api_version=confirmation.api_version,
+        pseudo=confirmation.pseudo,
+        proof=confirmation.proof,
+        created_at=confirmation.created_at,
     )
 
 

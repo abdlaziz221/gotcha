@@ -3,7 +3,7 @@
 
 {% block content %}
 <h1>{{ page.meta.title }}</h1>
-<p>Pannes signalées par les devs et importées du flux public d'incidents de Flutterwave. <a class="button button--small" href="/pannes/signaler">Signaler une panne</a></p>
+<p>Pannes signalées par les devs et importées du flux public d'incidents de Flutterwave. {% if viewer.can_write or viewer.site_auth %}<a class="button button--small" href="/pannes/signaler">Signaler une panne</a>{% endif %}</p>
 
 <section aria-labelledby="en-cours">
   <h2 id="en-cours">En cours</h2>

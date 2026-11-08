@@ -12,7 +12,7 @@ La CI du projet tourne sur **CircleCI**, plan gratuit : 30 000 crédits par mois
 | --- | --- |
 | `pr-rules` | Titre de PR au format `type(zone): description` (bloquant : il devient le message du commit fusionné) ; taille et nom de branche (avertissements). Script : `scripts/ci_pr_rules.py` |
 | `lint` | `ruff check` (22 familles de règles, dont sécurité et imports interdits pour raison de licence), `ruff format`, `pyright` (types), `scripts/scan_secrets.py` (aucune clé dans le dépôt) |
-| `tests-py3.11`, `tests-py3.12`, `tests-py3.13` | `pytest` sur trois versions de Python, avec **au moins 85 % de couverture** (branches comprises) : tests d'architecture, de contrat, de contenu, de sécurité, liens morts… Résultats détaillés dans l'onglet *Tests* de CircleCI |
+| `tests-py3.11`, `tests-py3.12`, `tests-py3.13` | `pytest` sur trois versions de Python, avec **au moins 85 % de couverture** (branches comprises) : tests d'architecture, de contrat **sur les deux stockages** (une base PostgreSQL 17 jetable par job), de contenu, de sécurité, liens morts… Résultats détaillés dans l'onglet *Tests* de CircleCI |
 | `licences` | Dans un environnement neuf contenant seulement `requirements.txt` : aucune licence GPL, LGPL, AGPL ni MPL |
 | `docker` | L'image se construit et démarre en **mode production** ; l'accueil répond, `/styleguide` et `/relecture` sont fermés, les en-têtes de sécurité sont présents, le serveur MCP répond |
 | `audit` | `pip-audit` : aucune faille connue dans les dépendances |
@@ -37,7 +37,8 @@ python -m pre_commit install --hook-type pre-commit --hook-type pre-push
 
 1. Sur la PR, cliquer sur **Details** à côté du statut `ci/circleci: …` en rouge : la page du job s'ouvre sur CircleCI.
 2. Déplier l'étape en échec ; pour les tests, l'onglet *Tests* liste les tests cassés.
-3. Corriger en local, relancer `python scripts/check.py`, pousser : la CI repart toute seule.
+3. Corriger en local, relancer `python scripts/check.py`, pousser : la CI repart toute seule, à chaque commit poussé, sur toutes les branches (aucun filtre de branche).
+4. **Aucun statut `ci/circleci` après un push** (ni vert, ni rouge, ni en cours) : CircleCI a refusé la configuration et n'a rien lancé. C'est arrivé le 5 novembre avec un here-string (`<<<`) dans une commande. `tests/unit/test_circleci_config.py` le détecte avant le push, ainsi qu'un filtre de branche ou un job qui ne correspond plus aux contrôles exigés sur `main`.
 
 ## Modifier la CI
 

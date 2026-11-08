@@ -32,6 +32,8 @@ Chaque page reçoit `page` (son contexte, décrit dans `app/web/viewmodels.py`),
 | L8 | `pages/review.html` | ven. 6 |
 | L9 | `pages/error.html`, états vides | sam. 7 |
 | L10 | Audit mobile, 3G, accessibilité | dim. 8 |
+| L14 | Lecteur audio et transcription sur la fiche, si le socle est en ligne (D26) | lun. 9 |
+| L15 | Afficher près de chaque piège qui l'a apporté et qui l'a relu | lun. 9 |
 
 ## Comment faire
 

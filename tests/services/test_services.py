@@ -10,6 +10,7 @@ from app.config import Settings
 from app.container import Services, build_services
 from app.domain.errors import InvalidInputError, NotFoundError, SecretDetectedError
 from app.domain.models import (
+    Contribution,
     ContributionInput,
     ContributionStatus,
     Incident,
@@ -18,6 +19,7 @@ from app.domain.models import (
     Status,
     TargetKind,
 )
+from app.domain.ports import IncidentFeed
 from app.services.clock import FixedClock
 from app.stores.content_files import load_fiches, load_glossary
 from app.stores.memory.store import MemoryStore
@@ -70,6 +72,20 @@ async def test_find_falls_back_to_the_fiche_valid_everywhere() -> None:
     assert (await services.fiches.find("demo-host", "CI")).slug == "demo-host"
     with pytest.raises(NotFoundError):
         await services.fiches.find("demo-pay", "KE")
+    # Sans ce garde-fou, le repli sur la fiche sans pays construisait un état
+    # de service avec ce pays, que le modèle refuse : erreur brute pour l'agent.
+    with pytest.raises(NotFoundError):
+        await services.fiches.find("demo-host", "SN\x00")
+    with pytest.raises(NotFoundError):
+        await services.fiches.find("demo-host\x00")
+
+
+async def test_search_with_a_nul_byte_finds_nothing_without_error() -> None:
+    services = await _services()
+    assert await services.fiches.search("jeton")
+    assert await services.fiches.search("jeton\x00") == []
+    assert await services.fiches.search("jeton", service="demo-pay\x00") == []
+    assert await services.fiches.search("jeton", country="SN\x00") == []
 
 
 async def test_submit_stores_a_pending_contribution() -> None:
@@ -103,11 +119,50 @@ async def test_review_once_only() -> None:
         await services.contributions.review(contribution.id, approve=False, reviewer="aziz")
 
 
+async def test_review_note_with_a_nul_byte_is_refused_and_nothing_changes() -> None:
+    services = await _services()
+    contribution = await services.contributions.submit(_input())
+    with pytest.raises(InvalidInputError, match="Note de relecture"):
+        await services.contributions.review(
+            contribution.id, approve=True, reviewer="aziz", note="a\x00b"
+        )
+    assert [c.id for c in await services.contributions.pending()] == [contribution.id]
+
+
+class RacingStore(MemoryStore):
+    """Un autre relecteur refuse la contribution juste après notre lecture."""
+
+    async def get_contribution(self, contribution_id: str) -> Contribution | None:
+        current = await super().get_contribution(contribution_id)
+        if current is not None and current.status is ContributionStatus.PENDING:
+            await self.update_contribution(
+                current.model_copy(update={"status": ContributionStatus.REJECTED})
+            )
+        return current
+
+
+async def test_review_loses_against_a_simultaneous_reviewer() -> None:
+    store = RacingStore(load_fiches(TEST_CONTENT_DIR), load_glossary(TEST_CONTENT_DIR))
+    services = await build_services(
+        Settings(env="test"), clock=FixedClock(NOW), store=store, feeds=[FakeFeed()]
+    )
+    contribution = await services.contributions.submit(_input())
+    with pytest.raises(InvalidInputError):
+        await services.contributions.review(contribution.id, approve=True, reviewer="aziz")
+    saved = await MemoryStore.get_contribution(store, contribution.id)
+    assert saved is not None
+    assert saved.status is ContributionStatus.REJECTED
+
+
 async def test_confirm_checks_the_target() -> None:
     services = await _services()
     await services.contributions.confirm(TargetKind.GOTCHA, "demo-pay-sn.jeton-expire")
     with pytest.raises(NotFoundError):
         await services.contributions.confirm(TargetKind.GOTCHA, "demo-pay-sn.absent")
+    with pytest.raises(NotFoundError):
+        await services.contributions.confirm(TargetKind.FICHE, "demo-pay-sn\x00")
+    with pytest.raises(InvalidInputError):
+        await services.contributions.confirm(TargetKind.FICHE, "demo-pay-sn", pseudo="a\x00b")
 
 
 async def test_report_makes_the_service_degraded() -> None:
@@ -137,3 +192,55 @@ async def test_refresh_respects_min_interval_and_survives_failures() -> None:
 
     failing = await _services(FakeFeed(fail=True))
     assert await failing.incidents.refresh_if_stale() == 0
+
+
+async def test_a_service_in_several_countries_lists_them() -> None:
+    from app.config import ROOT_DIR
+
+    store = MemoryStore(load_fiches(ROOT_DIR / "content"), [])
+    services = await build_services(Settings(env="test"), clock=FixedClock(NOW), store=store)
+    if not any(f.service.slug == "orange-money" for f in await services.fiches.list()):
+        pytest.skip("pas de fiche Orange Money dans content/")
+    with pytest.raises(NotFoundError, match=r"précisez le pays.*CI, SN"):
+        await services.fiches.find("orange-money")
+    assert (await services.fiches.find("orange-money", "ci")).country == "CI"
+
+
+def _feed_incident() -> Incident:
+    return Incident(
+        id="flutterwave:x:SN:wave",
+        source=IncidentSource.FLUTTERWAVE,
+        service_slug="wave",
+        country="SN",
+        status=Status.DEGRADED,
+        title="Panne",
+        started_at=NOW,
+    )
+
+
+async def _services_with_store(store: MemoryStore, feeds: list[IncidentFeed]) -> Services:
+    return await build_services(
+        Settings(env="test"), clock=FixedClock(NOW), store=store, feeds=feeds
+    )
+
+
+async def _database_down(*_args: object, **_kwargs: object) -> None:
+    raise ConnectionError("base injoignable")
+
+
+@pytest.mark.parametrize("method", ["get_last_ingest", "upsert_incident", "set_last_ingest"])
+async def test_refresh_survives_store_failures(
+    method: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = MemoryStore(load_fiches(TEST_CONTENT_DIR), load_glossary(TEST_CONTENT_DIR))
+    monkeypatch.setattr(store, method, _database_down)
+    services = await _services_with_store(store, [FakeFeed([_feed_incident()])])
+    assert await services.incidents.refresh_if_stale() == 0
+
+
+async def test_failed_feed_does_not_stop_the_next_one() -> None:
+    store = MemoryStore(load_fiches(TEST_CONTENT_DIR), load_glossary(TEST_CONTENT_DIR))
+    working = FakeFeed([_feed_incident()])
+    services = await _services_with_store(store, [FakeFeed(fail=True), working])
+    assert await services.incidents.refresh_if_stale() == 1
+    assert working.calls == 1

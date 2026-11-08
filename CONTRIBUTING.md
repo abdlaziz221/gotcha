@@ -73,6 +73,7 @@ Le **titre de la PR** suit le même format (la CI le vérifie) : c'est lui qui d
 
 5. La branche doit être **à jour avec `main`** (bouton « Update branch » sur la PR), toutes les conversations **résolues**.
 6. Fusion en **squash**, puis suppression de la branche.
+7. **Chacun pousse son travail sous son propre compte** et relit celui des autres. La relecture prépare aussi le jury, qui note notre capacité à expliquer toute la solution (annexe 1 du règlement).
 
 Ces règles sont **imposées par GitHub** sur `main` : le bouton de fusion reste grisé tant qu'elles ne sont pas remplies. Seule la règle des trois relecteurs pour les contrats reste une convention d'équipe.
 
@@ -113,7 +114,7 @@ Avant d'ajouter une bibliothèque :
 
 1. vérifier sa licence et celles de ses dépendances (MIT, BSD, Apache, ISC ou PSF uniquement) ;
 2. l'ajouter à `requirements.txt` avec sa version figée et sa licence en commentaire ;
-3. lancer `python scripts/check_licenses.py`.
+3. lancer `python scripts/check_licenses.py --markdown` : il contrôle les licences et met à jour [docs/LICENCES.md](docs/LICENCES.md), la liste déclarée à la soumission.
 
 ## Outils d'IA
 

@@ -7,27 +7,38 @@ from __future__ import annotations
 
 import os
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from app.config import ROOT_DIR
 from app.domain.models import (
+    Account,
     Confirmation,
     Contribution,
     ContributionKind,
     ContributionStatus,
     Incident,
     IncidentSource,
+    OAuthGrantKind,
+    Publication,
     SearchHitKind,
     SearchQuery,
     Status,
     TargetKind,
+    UsageEvent,
 )
 from app.domain.ports import Store
 from app.stores.content_files import load_fiches, load_glossary
 from app.stores.memory.store import MemoryStore
 from tests.conftest import TEST_CONTENT_DIR
+
+if TYPE_CHECKING:
+    import asyncpg
+
+    from app.stores.postgres.store import PostgresStore
 
 pytestmark = pytest.mark.anyio
 
@@ -48,7 +59,8 @@ async def _postgres_store() -> Store:
         await apply_migrations(conn, ROOT_DIR / "migrations")
         await conn.execute(
             "TRUNCATE fiches, gotchas, fiche_revisions, glossary_terms, confirmations,"
-            " contributions, incidents, ingest_runs CASCADE"
+            " contributions, incidents, ingest_runs, accounts, oauth_clients, oauth_grants,"
+            " usage_counters CASCADE"
         )
     finally:
         await conn.close()
@@ -57,6 +69,27 @@ async def _postgres_store() -> Store:
         await store.upsert_fiche(fiche)
     await store.upsert_glossary(load_glossary(TEST_CONTENT_DIR))
     return store
+
+
+async def _postgres_only() -> PostgresStore:
+    """Pour les tests propres à PostgreSQL (accès concurrents, documents JSONB)."""
+    from app.stores.postgres.store import PostgresStore
+
+    store = await _postgres_store()
+    assert isinstance(store, PostgresStore)
+    return store
+
+
+@asynccontextmanager
+async def _sql() -> AsyncIterator[asyncpg.Connection]:
+    """Une connexion à part, comme une autre instance du site ou un relecteur."""
+    import asyncpg
+
+    conn = await asyncpg.connect(os.environ["GOTCHA_TEST_DATABASE_URL"])
+    try:
+        yield conn
+    finally:
+        await conn.close()
 
 
 @pytest.fixture(params=["memory", pytest.param("postgres", marks=pytest.mark.postgres)])
@@ -254,3 +287,302 @@ async def test_confirmation_updates_fiche_unless_negative(store: Store) -> None:
     assert fiche is not None
     assert fiche.confirmations == 1
     assert fiche.last_confirmed_on.isoformat() == "2026-11-02"
+
+
+# --- Rechargement du contenu (scripts/seed.py) ---------------------------------
+
+
+async def test_gotchas_keep_their_order(store: Store) -> None:
+    fiche = await store.get_fiche("demo-pay-sn", include_drafts=True)
+    assert fiche is not None
+    assert [g.id for g in fiche.gotchas] == ["demo-pay-sn.brouillon", "demo-pay-sn.jeton-expire"]
+
+
+async def test_reseeding_keeps_confirmations(store: Store) -> None:
+    day = datetime(2026, 11, 2, 9, 0, tzinfo=UTC)
+    await store.add_confirmation(
+        Confirmation(target_kind=TargetKind.FICHE, target_id="demo-pay-sn", created_at=day)
+    )
+    await store.add_confirmation(
+        Confirmation(
+            target_kind=TargetKind.GOTCHA, target_id="demo-pay-sn.jeton-expire", created_at=day
+        )
+    )
+    reloaded = next(f for f in load_fiches(TEST_CONTENT_DIR) if f.slug == "demo-pay-sn")
+    await store.upsert_fiche(reloaded)
+
+    fiche = await store.get_fiche("demo-pay-sn", include_drafts=True)
+    assert fiche is not None
+    assert fiche.confirmations == 1
+    assert fiche.last_confirmed_on.isoformat() == "2026-11-02"
+    gotcha = fiche.find_gotcha("demo-pay-sn.jeton-expire")
+    assert gotcha is not None
+    assert gotcha.confirmations == 1
+
+
+async def test_reseeding_removes_gotchas_deleted_from_content(store: Store) -> None:
+    fiche = await store.get_fiche("demo-pay-sn", include_drafts=True)
+    assert fiche is not None
+    await store.upsert_fiche(fiche.model_copy(update={"gotchas": fiche.gotchas[1:]}))
+    updated = await store.get_fiche("demo-pay-sn", include_drafts=True)
+    assert updated is not None
+    assert [g.id for g in updated.gotchas] == ["demo-pay-sn.jeton-expire"]
+
+
+# --- Comptes et connexion OAuth --------------------------------------------------
+
+
+async def test_account_is_created_then_updated(store: Store) -> None:
+    assert await store.get_account("github:1") is None
+    account = Account(id="github:1", pseudo="awa", created_at=T0, last_login_at=T0)
+    await store.save_account(account)
+    later = account.model_copy(update={"pseudo": "awa2", "last_login_at": T0 + timedelta(days=1)})
+    await store.save_account(later)
+    saved = await store.get_account("github:1")
+    assert saved is not None
+    assert saved.pseudo == "awa2"
+    assert saved.created_at == T0
+    assert saved.last_login_at == T0 + timedelta(days=1)
+
+
+async def test_a_new_login_does_not_lift_a_block(store: Store) -> None:
+    account = Account(id="github:1", pseudo="awa", created_at=T0, last_login_at=T0)
+    await store.save_account(account.model_copy(update={"blocked": True}))
+    await store.save_account(account)
+    saved = await store.get_account("github:1")
+    assert saved is not None
+    assert saved.blocked
+
+
+async def test_account_and_client_ids_with_a_nul_byte_are_never_found(store: Store) -> None:
+    assert await store.get_account("github:1\x00") is None
+    assert await store.get_oauth_client("c1\x00") is None
+
+
+async def test_oauth_client_round_trip(store: Store) -> None:
+    assert await store.get_oauth_client("c1") is None
+    await store.save_oauth_client("c1", {"client_name": "outil", "redirect_uris": ["http://x"]})
+    assert await store.get_oauth_client("c1") == {
+        "client_name": "outil",
+        "redirect_uris": ["http://x"],
+    }
+
+
+async def test_oauth_grant_expires(store: Store) -> None:
+    await store.add_oauth_grant(OAuthGrantKind.ACCESS, "k", {"a": 1}, T0 + timedelta(hours=1))
+    assert await store.get_oauth_grant(OAuthGrantKind.ACCESS, "k", T0) == {"a": 1}
+    assert await store.get_oauth_grant(OAuthGrantKind.REFRESH, "k", T0) is None
+    later = T0 + timedelta(hours=1)
+    assert await store.get_oauth_grant(OAuthGrantKind.ACCESS, "k", later) is None
+    assert await store.take_oauth_grant(OAuthGrantKind.ACCESS, "k", later) is None
+
+
+async def test_oauth_grant_is_taken_only_once(store: Store) -> None:
+    await store.add_oauth_grant(OAuthGrantKind.CODE, "k", {"a": 1}, T0 + timedelta(hours=1))
+    assert await store.take_oauth_grant(OAuthGrantKind.CODE, "k", T0) == {"a": 1}
+    assert await store.take_oauth_grant(OAuthGrantKind.CODE, "k", T0) is None
+    assert await store.get_oauth_grant(OAuthGrantKind.CODE, "k", T0) is None
+
+
+async def test_expired_oauth_grants_are_deleted(store: Store) -> None:
+    await store.add_oauth_grant(OAuthGrantKind.LOGIN, "vieux", {"a": 1}, T0)
+    await store.add_oauth_grant(OAuthGrantKind.LOGIN, "neuf", {"a": 2}, T0 + timedelta(hours=1))
+    await store.delete_expired_oauth_grants(T0)
+    assert await store.get_oauth_grant(OAuthGrantKind.LOGIN, "neuf", T0) == {"a": 2}
+    assert (
+        await store.take_oauth_grant(OAuthGrantKind.LOGIN, "vieux", T0 - timedelta(hours=1)) is None
+    )
+
+
+async def test_contribution_with_an_account_has_no_email(store: Store) -> None:
+    contribution = Contribution(
+        id="avec-compte",
+        kind=ContributionKind.GOTCHA,
+        fiche_slug="demo-pay-sn",
+        title="Un titre de test",
+        body_md="Un corps de test assez long.",
+        pseudo="awa",
+        account_id="github:1",
+        created_at=T0,
+    )
+    await store.add_contribution(contribution)
+    assert await store.get_contribution("avec-compte") == contribution
+    listed = await store.list_contributions(status=ContributionStatus.PENDING)
+    assert contribution in listed
+    updated = contribution.model_copy(update={"status": ContributionStatus.APPROVED})
+    await store.update_contribution(updated)
+    saved = await store.get_contribution("avec-compte")
+    assert saved is not None
+    assert saved.account_id == "github:1"
+
+
+async def test_recent_confirmations_are_found_by_account(store: Store) -> None:
+    confirmation = Confirmation(
+        target_kind=TargetKind.FICHE,
+        target_id="demo-pay-sn",
+        account_id="github:1",
+        pseudo="awa",
+        proof="API v1, appel réussi.",
+        created_at=T0,
+    )
+    await store.add_confirmation(confirmation)
+
+    def has(account: str, target: str, since: datetime, *, still_works: bool = True) -> Any:
+        return store.has_recent_confirmation(account, target, since, still_works=still_works)
+
+    assert await has("github:1", "demo-pay-sn", T0 - timedelta(days=1))
+    assert not await has("github:1", "demo-pay-sn", T0 + timedelta(days=1))
+    assert not await has("github:2", "demo-pay-sn", T0 - timedelta(days=1))
+    assert not await has("github:1", "autre", T0 - timedelta(days=1))
+    # « Ça ne marche plus » après « ça marche » : une autre réponse, jamais bloquée.
+    assert not await has("github:1", "demo-pay-sn", T0 - timedelta(days=1), still_works=False)
+    later = confirmation.model_copy(update={"created_at": T0 + timedelta(hours=1)})
+    await store.add_confirmation(later)
+    listed = await store.list_confirmations(limit=1)
+    assert listed == [later]
+
+
+async def test_open_access_is_kept(store: Store) -> None:
+    fiche = await store.get_fiche("demo-pay-sn", include_drafts=True)
+    assert fiche is not None
+    assert not fiche.open_access
+    await store.upsert_fiche(fiche.model_copy(update={"open_access": True}))
+    saved = await store.get_fiche("demo-pay-sn", include_drafts=True)
+    assert saved is not None
+    assert saved.open_access
+
+
+async def test_session_grants_can_be_stored(store: Store) -> None:
+    await store.add_oauth_grant(
+        OAuthGrantKind.SESSION, "k", {"subject": "x"}, T0 + timedelta(days=1)
+    )
+    assert await store.get_oauth_grant(OAuthGrantKind.SESSION, "k", T0) == {"subject": "x"}
+
+
+async def test_usage_is_counted_by_event_and_account(store: Store) -> None:
+    today = T0.date()
+    await store.add_usage(today, UsageEvent.READ_FICHE, "github:1")
+    await store.add_usage(today, UsageEvent.READ_FICHE, "github:1")
+    await store.add_usage(today, UsageEvent.READ_FICHE, "github:2")
+    await store.add_usage(today, UsageEvent.READ_FICHE, None)
+    await store.add_usage(today - timedelta(days=40), UsageEvent.READ_FICHE, "github:3")
+    await store.add_usage(today, UsageEvent.SEARCH_MISS, None)
+    totals = await store.usage_totals(today - timedelta(days=30))
+    assert [(t.event, t.count, t.accounts) for t in totals] == [
+        (UsageEvent.READ_FICHE, 4, 2),
+        (UsageEvent.SEARCH_MISS, 1, 0),
+    ]
+
+
+async def test_fiche_deleted_from_content_leaves_production(store: Store) -> None:
+    assert await store.retire_fiches(["demo-host"]) == ["demo-pay-sn"]
+    assert await store.get_fiche("demo-pay-sn", include_drafts=False) is None
+    assert await store.search(SearchQuery(text="jeton"), include_drafts=False) == []
+    retired = await store.get_fiche("demo-pay-sn", include_drafts=True)
+    assert retired is not None
+    assert retired.publication is Publication.DRAFT
+    assert await store.retire_fiches(["demo-host"]) == []
+
+    back = next(f for f in load_fiches(TEST_CONTENT_DIR) if f.slug == "demo-pay-sn")
+    await store.upsert_fiche(back)
+    assert await store.get_fiche("demo-pay-sn", include_drafts=False) is not None
+
+
+async def test_reseeding_replaces_the_whole_glossary(store: Store) -> None:
+    webhook = next(t for t in load_glossary(TEST_CONTENT_DIR) if t.slug == "webhook")
+    await store.upsert_glossary([webhook])
+    assert [t.slug for t in await store.list_glossary()] == ["webhook"]
+
+
+# --- Entrées hostiles et accès simultanés ---------------------------------------
+
+
+async def test_text_with_a_nul_byte_is_never_found(store: Store) -> None:
+    assert await store.get_fiche("demo-pay-sn\x00", include_drafts=True) is None
+    assert await store.get_contribution("c1\x00") is None
+    assert await store.list_incidents(service_slug="demo-pay\x00") == []
+    assert await store.list_incidents(country="S\x00") == []
+
+
+async def test_a_contribution_is_reviewed_only_once(store: Store) -> None:
+    await store.add_contribution(_contribution(1))
+    pending = await store.get_contribution("c1")
+    assert pending is not None
+    approved = pending.model_copy(update={"status": ContributionStatus.APPROVED})
+    rejected = pending.model_copy(update={"status": ContributionStatus.REJECTED})
+    assert await store.update_contribution(approved) is True
+    assert await store.update_contribution(rejected) is False
+    saved = await store.get_contribution("c1")
+    assert saved is not None
+    assert saved.status is ContributionStatus.APPROVED
+    unknown = approved.model_copy(update={"id": "absente"})
+    assert await store.update_contribution(unknown) is False
+    assert await store.get_contribution("absente") is None
+
+
+# --- PostgreSQL seulement -------------------------------------------------------
+
+
+@pytest.mark.postgres
+async def test_postgres_reseeding_keeps_a_confirmation_received_meanwhile() -> None:
+    import asyncio
+
+    store = await _postgres_only()
+    try:
+        async with _sql() as other:
+            # Un clic « ça marche encore » est en cours quand le contenu est rechargé.
+            transaction = other.transaction()
+            await transaction.start()
+            await other.execute(
+                "UPDATE fiches SET confirmations = confirmations + 1 WHERE slug = 'demo-pay-sn'"
+            )
+            reloaded = next(f for f in load_fiches(TEST_CONTENT_DIR) if f.slug == "demo-pay-sn")
+            reseed = asyncio.create_task(store.upsert_fiche(reloaded))
+            await asyncio.sleep(0.3)
+            await transaction.commit()
+            await reseed
+        fiche = await store.get_fiche("demo-pay-sn", include_drafts=True)
+        assert fiche is not None
+        assert fiche.confirmations == 1
+    finally:
+        await store.close()
+
+
+@pytest.mark.postgres
+async def test_postgres_documents_with_an_unknown_field_stay_readable_and_reseedable() -> None:
+    store = await _postgres_only()
+    try:
+        async with _sql() as conn:
+            await conn.execute(
+                "UPDATE fiches SET data = data || '{\"champ_retire\": 1}'"
+                " WHERE slug = 'demo-pay-sn'"
+            )
+            await conn.execute(
+                "UPDATE gotchas SET data = data || '{\"champ_retire\": 1}'"
+                " WHERE fiche_slug = 'demo-pay-sn'"
+            )
+        assert await store.get_fiche("demo-pay-sn", include_drafts=True) is not None
+        reloaded = next(f for f in load_fiches(TEST_CONTENT_DIR) if f.slug == "demo-pay-sn")
+        await store.upsert_fiche(reloaded)
+        async with _sql() as conn:
+            stale = await conn.fetchval(
+                "SELECT (SELECT count(*) FROM fiches WHERE data ? 'champ_retire')"
+                " + (SELECT count(*) FROM gotchas WHERE data ? 'champ_retire')"
+            )
+        assert stale == 0
+    finally:
+        await store.close()
+
+
+@pytest.mark.postgres
+async def test_postgres_retired_fiche_keeps_its_history() -> None:
+    store = await _postgres_only()
+    try:
+        await store.retire_fiches(["demo-host"])
+        async with _sql() as conn:
+            kept = await conn.fetchval(
+                "SELECT count(*) > 0 FROM fiche_revisions WHERE fiche_slug = 'demo-pay-sn'"
+            )
+        assert kept is True
+    finally:
+        await store.close()

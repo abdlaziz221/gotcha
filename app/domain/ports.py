@@ -8,18 +8,23 @@ tests/contract/ vérifient que les deux se comportent exactement pareil.
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Protocol
+from typing import Any, Protocol
 
 from app.domain.models import (
+    Account,
     Confirmation,
     Contribution,
     ContributionStatus,
+    ExternalIdentity,
     Fiche,
     GlossaryTerm,
     Incident,
     IncidentSource,
+    OAuthGrantKind,
     SearchHit,
     SearchQuery,
+    UsageEvent,
+    UsageTotal,
 )
 
 
@@ -58,10 +63,27 @@ class FicheStore(Protocol):
         ...
 
     async def upsert_fiche(self, fiche: Fiche) -> None:
-        """Crée ou remplace une fiche et ses pièges (utilisé par scripts/seed.py)."""
+        """Crée ou remplace une fiche et ses pièges (utilisé par scripts/seed.py).
+
+        Les pièges absents de la nouvelle version sont supprimés, l'ordre des pièges
+        est conservé. Les compteurs de confirmation déjà enregistrés sont gardés
+        (les fichiers de content/ ne les connaissent pas), même si une confirmation
+        arrive pendant le rechargement, et last_confirmed_on garde la date la plus récente.
+        """
         ...
 
-    async def upsert_glossary(self, terms: list[GlossaryTerm]) -> None: ...
+    async def retire_fiches(self, keep: list[str]) -> list[str]:
+        """Repasse en brouillon les fiches publiées dont le slug n'est pas dans keep.
+
+        Utilisé après le chargement de content/ : une fiche retirée des fichiers
+        disparaît de la production, son historique est gardé. Renvoie les slugs
+        retirés, triés.
+        """
+        ...
+
+    async def upsert_glossary(self, terms: list[GlossaryTerm]) -> None:
+        """Remplace tout le glossaire : les termes absents de terms sont supprimés."""
+        ...
 
 
 class IncidentStore(Protocol):
@@ -98,7 +120,13 @@ class ContributionStore(Protocol):
         """Contributions triées de la plus ancienne à la plus récente (file de relecture)."""
         ...
 
-    async def update_contribution(self, contribution: Contribution) -> None: ...
+    async def update_contribution(self, contribution: Contribution) -> bool:
+        """Enregistre la relecture d'une contribution encore en attente.
+
+        Renvoie False, sans rien changer, si la contribution n'existe pas ou a déjà
+        été relue : de deux relecteurs simultanés, seul le premier l'emporte.
+        """
+        ...
 
     async def add_confirmation(self, confirmation: Confirmation) -> None:
         """Enregistre une confirmation.
@@ -109,8 +137,65 @@ class ContributionStore(Protocol):
         """
         ...
 
+    async def has_recent_confirmation(
+        self, account_id: str, target_id: str, since: datetime, *, still_works: bool
+    ) -> bool:
+        """Ce compte a-t-il déjà donné cette même réponse sur cette cible depuis cette date ?
 
-class Store(FicheStore, IncidentStore, ContributionStore, Protocol):
+        La réponse compte : après « ça marche », « ça ne marche plus » reste toujours possible.
+        """
+        ...
+
+    async def list_confirmations(self, *, limit: int = 50) -> list[Confirmation]:
+        """Les plus récentes d'abord."""
+        ...
+
+
+class AccountStore(Protocol):
+    """Comptes et données de connexion OAuth.
+
+    Une autorisation (grant) est retrouvée par l'empreinte de son jeton : jetons et codes
+    ne sont jamais stockés en clair. Une autorisation expirée se comporte comme absente.
+    """
+
+    async def save_account(self, account: Account) -> None:
+        """Création ou remplacement, sur account.id. Conserve un blocage déjà posé."""
+        ...
+
+    async def get_account(self, account_id: str) -> Account | None: ...
+
+    async def save_oauth_client(self, client_id: str, data: dict[str, Any]) -> None: ...
+
+    async def get_oauth_client(self, client_id: str) -> dict[str, Any] | None: ...
+
+    async def add_oauth_grant(
+        self, kind: OAuthGrantKind, key_hash: str, data: dict[str, Any], expires_at: datetime
+    ) -> None: ...
+
+    async def get_oauth_grant(
+        self, kind: OAuthGrantKind, key_hash: str, now: datetime
+    ) -> dict[str, Any] | None: ...
+
+    async def take_oauth_grant(
+        self, kind: OAuthGrantKind, key_hash: str, now: datetime
+    ) -> dict[str, Any] | None:
+        """Renvoie et supprime en une seule opération : deux appels ne peuvent pas réussir."""
+        ...
+
+    async def delete_expired_oauth_grants(self, now: datetime) -> None: ...
+
+
+class UsageStore(Protocol):
+    async def add_usage(self, day: date, event: UsageEvent, account_id: str | None) -> None:
+        """Ajoute 1 au compteur du jour, de cet événement et de ce compte."""
+        ...
+
+    async def usage_totals(self, since: date) -> list[UsageTotal]:
+        """Totaux par événement depuis cette date incluse, triés par événement."""
+        ...
+
+
+class Store(FicheStore, IncidentStore, ContributionStore, AccountStore, UsageStore, Protocol):
     """Le stockage complet. Choisi au démarrage selon GOTCHA_STORE (memory ou postgres)."""
 
     async def close(self) -> None: ...
@@ -123,4 +208,14 @@ class IncidentFeed(Protocol):
 
     async def fetch(self) -> list[Incident]:
         """Lit le flux et le traduit en pannes Gotcha. Lève une exception en cas d'échec."""
+        ...
+
+
+class IdentityProvider(Protocol):
+    """Identifie un développeur (GitHub en production, un faux dans les tests)."""
+
+    def authorize_url(self, *, state: str, redirect_uri: str) -> str: ...
+
+    async def fetch_identity(self, code: str, redirect_uri: str) -> ExternalIdentity:
+        """Échange le code contre l'identité ; lève IdentityError en cas d'échec."""
         ...

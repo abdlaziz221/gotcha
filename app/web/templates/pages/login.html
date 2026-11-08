@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ page.meta.title }}</h1>
+<p>Le compte est gratuit. Il permet de lire les solutions, de confirmer un piège et d'en proposer un nouveau. GitHub sert seulement à vous identifier : aucune permission sur vos dépôts n'est demandée.</p>
+
+{% if page.form.errors.get("form") %}<p class="flash flash--error" role="alert">{{ page.form.errors["form"] }}</p>{% endif %}
+
+<p><a class="button" href="{{ page.github_url }}">Se connecter avec GitHub</a></p>
+
+{% if page.jury_enabled %}
+<section aria-labelledby="jury">
+  <h2 id="jury">Accès du jury</h2>
+  <form class="form" method="post" action="/connexion/jury" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="retour" value="{{ page.retour }}">
+    <div class="field">
+      <label for="code">Code d'accès</label>
+      <input id="code" name="code" type="password" required autocomplete="off">
+    </div>
+    <button type="submit" class="button button--secondary">Entrer</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

@@ -5,6 +5,9 @@ from __future__ import annotations
 import re
 import uuid
 from collections.abc import Callable, Sequence
+from datetime import timedelta
+
+from pydantic import ValidationError
 
 from app.domain.errors import InvalidInputError, NotFoundError, SecretDetectedError
 from app.domain.models import (
@@ -21,6 +24,9 @@ from app.services.fiches import FicheService
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 Scanner = Callable[[str], Sequence[SecretFinding]]
+
+# Un même compte ne recompte pas la même cible avant ce délai.
+RECONFIRM_AFTER = timedelta(days=30)
 
 
 class ContributionService:
@@ -44,7 +50,7 @@ class ContributionService:
         jamais stocké, l'auteur doit le retirer et renvoyer.
         """
         await self._fiches.get(data.fiche_slug)
-        if not _EMAIL_RE.match(data.email):
+        if data.account_id is None and not _EMAIL_RE.match(data.email or ""):
             raise InvalidInputError("Adresse e-mail invalide.")
         text = "\n".join([data.title, data.body_md, str(data.source_url or "")])
         findings = self._scan(text)
@@ -66,6 +72,8 @@ class ContributionService:
         still_works: bool = True,
         api_version: str | None = None,
         pseudo: str | None = None,
+        account_id: str | None = None,
+        proof: str | None = None,
     ) -> Confirmation:
         fiche_slug = target_id.split(".", 1)[0]
         fiche = await self._fiches.get(fiche_slug)
@@ -73,16 +81,39 @@ class ContributionService:
             raise NotFoundError(f"Piège introuvable : {target_id}")
         if target_kind is TargetKind.FICHE and target_id != fiche.slug:
             raise NotFoundError(f"Fiche introuvable : {target_id}")
-        confirmation = Confirmation(
-            target_kind=target_kind,
-            target_id=target_id,
-            still_works=still_works,
-            api_version=api_version or None,
-            pseudo=pseudo or None,
-            created_at=self._clock.now(),
-        )
+        if proof:
+            findings = self._scan(proof)
+            if findings:
+                raise SecretDetectedError(sorted({f.kind for f in findings}))
+        now = self._clock.now()
+        if account_id is not None:
+            if not proof:
+                raise InvalidInputError(
+                    "Indiquez une preuve : versions, configuration sans secret, étapes et résultat."
+                )
+            since = now - RECONFIRM_AFTER
+            if await self._store.has_recent_confirmation(
+                account_id, target_id, since, still_works=still_works
+            ):
+                raise InvalidInputError("Vous avez déjà donné cette réponse récemment.")
+        try:
+            confirmation = Confirmation(
+                target_kind=target_kind,
+                target_id=target_id,
+                still_works=still_works,
+                api_version=api_version or None,
+                pseudo=pseudo or None,
+                account_id=account_id,
+                proof=proof or None,
+                created_at=now,
+            )
+        except ValidationError as exc:
+            raise InvalidInputError("Pseudo, version ou preuve invalide.") from exc
         await self._store.add_confirmation(confirmation)
         return confirmation
+
+    async def recent_confirmations(self) -> list[Confirmation]:
+        return await self._store.list_confirmations(limit=30)
 
     async def pending(self) -> list[Contribution]:
         return await self._store.list_contributions(status=ContributionStatus.PENDING)
@@ -100,13 +131,22 @@ class ContributionService:
             raise NotFoundError(f"Contribution introuvable : {contribution_id}")
         if contribution.status is not ContributionStatus.PENDING:
             raise InvalidInputError("Cette contribution a déjà été relue.")
-        reviewed = contribution.model_copy(
-            update={
-                "status": ContributionStatus.APPROVED if approve else ContributionStatus.REJECTED,
-                "reviewed_at": self._clock.now(),
-                "reviewer": reviewer,
-                "review_note": note or None,
-            }
-        )
-        await self._store.update_contribution(reviewed)
+        try:
+            # model_validate et non model_copy : la note est vérifiée comme tout texte saisi.
+            reviewed = Contribution.model_validate(
+                {
+                    **contribution.model_dump(),
+                    "status": ContributionStatus.APPROVED
+                    if approve
+                    else ContributionStatus.REJECTED,
+                    "reviewed_at": self._clock.now(),
+                    "reviewer": reviewer,
+                    "review_note": note or None,
+                }
+            )
+        except ValidationError as exc:
+            raise InvalidInputError("Note de relecture invalide.") from exc
+        if not await self._store.update_contribution(reviewed):
+            # Un autre relecteur a décidé entre la lecture et l'écriture.
+            raise InvalidInputError("Cette contribution a déjà été relue.")
         return reviewed

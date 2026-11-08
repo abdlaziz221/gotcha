@@ -1,6 +1,7 @@
 -- Schéma initial de Gotcha (PostgreSQL 14 ou plus). Responsable : Abdoul Aziz.
--- Les fiches et pièges sont stockés en JSONB (le modèle Pydantic sérialisé), avec
--- quelques colonnes extraites pour filtrer, trier et chercher.
+-- Les fiches et pièges sont stockés en JSONB (le modèle Pydantic sérialisé, décision
+-- D6), avec quelques colonnes extraites pour filtrer et compter les confirmations.
+-- La recherche se fait dans l'application, comme pour le stockage mémoire (D17).
 -- Une migration appliquée ne se modifie plus : on en ajoute une nouvelle (002_…).
 
 CREATE TABLE fiches (
@@ -12,26 +13,23 @@ CREATE TABLE fiches (
     data               jsonb       NOT NULL,  -- modèle Fiche, sans ses pièges
     last_confirmed_on  date        NOT NULL,
     confirmations      integer     NOT NULL DEFAULT 0,
-    search             tsvector,              -- rempli par l'application à l'écriture
     updated_at         timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX fiches_service_idx ON fiches (service_slug, country);
-CREATE INDEX fiches_search_idx ON fiches USING gin (search);
 
 CREATE TABLE gotchas (
     id                 text PRIMARY KEY,      -- "<slug de la fiche>.<nom du fichier>"
     fiche_slug         text        NOT NULL REFERENCES fiches (slug) ON DELETE CASCADE,
+    position           integer     NOT NULL,  -- ordre du piège dans sa fiche
     publication        text        NOT NULL CHECK (publication IN ('draft', 'published')),
     data               jsonb       NOT NULL,  -- modèle Gotcha
     last_confirmed_on  date        NOT NULL,
     confirmations      integer     NOT NULL DEFAULT 0,
-    search             tsvector,
     updated_at         timestamptz NOT NULL DEFAULT now()
 );
-CREATE INDEX gotchas_fiche_idx ON gotchas (fiche_slug);
-CREATE INDEX gotchas_search_idx ON gotchas USING gin (search);
+CREATE INDEX gotchas_fiche_idx ON gotchas (fiche_slug, position);
 
--- Historique des versions d'une fiche (contenu versionné).
+-- Historique des versions du contenu d'une fiche (une ligne quand le contenu change).
 CREATE TABLE fiche_revisions (
     id          bigserial PRIMARY KEY,
     fiche_slug  text        NOT NULL REFERENCES fiches (slug) ON DELETE CASCADE,
@@ -95,4 +93,12 @@ CREATE INDEX incidents_active_idx ON incidents (started_at DESC) WHERE resolved_
 CREATE TABLE ingest_runs (
     source           text PRIMARY KEY,
     last_success_at  timestamptz NOT NULL
+);
+
+-- Date de construction de l'image dont le contenu est en base (scripts/release.py) :
+-- une image plus ancienne qui redémarre ne recharge pas son ancien contenu.
+CREATE TABLE content_release (
+    id          integer     PRIMARY KEY CHECK (id = 1),
+    built_at    bigint      NOT NULL,  -- secondes Unix, fichier BUILD_TIME de l'image
+    applied_at  timestamptz NOT NULL DEFAULT now()
 );
