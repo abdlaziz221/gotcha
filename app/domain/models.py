@@ -6,24 +6,53 @@ champ demande l'accord des trois membres (voir app/domain/README.md).
 
 from __future__ import annotations
 
+import re
 from datetime import date, datetime
 from enum import StrEnum
-from typing import Self
+from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
 
 SLUG_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
 GOTCHA_ID_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*\.[a-z0-9]+(?:-[a-z0-9]+)*$"
 COUNTRY_PATTERN = r"^[A-Z]{2}$"
 
+# PostgreSQL refuse l'octet nul, et une demi-paire de substitution n'existe pas en UTF-8.
+_UNSTORABLE_RE = re.compile("[\x00\ud800-\udfff]")
+
+
+def is_storable(text: str) -> bool:
+    """Faux si le texte contient un caractère qu'aucun stockage ne peut enregistrer."""
+    return _UNSTORABLE_RE.search(text) is None
+
 
 class Model(BaseModel):
-    """Base commune : objets immuables, champs inconnus refusés."""
+    """Base commune : objets immuables, champs inconnus refusés.
+
+    Les textes contenant un octet nul sont refusés partout : sinon un formulaire ou un
+    agent pourrait provoquer une erreur 500 avec PostgreSQL, et pas avec le stockage mémoire.
+    """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
+    @field_validator("*", mode="after")
+    @classmethod
+    def _storable_text(cls, value: object) -> object:
+        for item in value if isinstance(value, list) else (value,):
+            if isinstance(item, str) and not is_storable(item):
+                raise ValueError("le texte contient un caractère interdit (octet nul)")
+        return value
+
 
 # --- Énumérations ------------------------------------------------------------
+
+
+class ConfidenceLevel(StrEnum):
+    """Ce qui a été vérifié pour un piège (D22)."""
+
+    SOURCED = "sourced"  # lu dans une source officielle ou recoupé, sans test de notre part
+    REPRODUCED = "reproduced"  # reproduit dans un bac à sable, avec la date et la version
+    PRODUCTION = "production"  # confirmé par un développeur en production
 
 
 class ServiceKind(StrEnum):
@@ -92,7 +121,8 @@ class Source(Model):
     title: str = Field(min_length=3)
     url: HttpUrl | None = None
     author: str | None = None  # pseudo du dev, pour un retour de terrain
-    accessed_on: date
+    published_on: date | None = None  # date de publication, si la page la donne
+    accessed_on: date  # le jour où nous l'avons lue
 
     @model_validator(mode="after")
     def _url_or_author(self) -> Self:
@@ -131,6 +161,29 @@ class ErrorCode(Model):
     action: str
 
 
+AUDIO_FILE_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*\.(?:mp3|ogg|m4a)$"
+
+
+class AudioExplanation(Model):
+    """Explication orale d'un piège dans une langue locale (D26), avec sa transcription.
+
+    Le fichier est dans content/fiches/<fiche>/audio/ et n'est servi que par une route
+    qui vérifie les droits de la fiche, jamais par /static. Le français reste la référence.
+    """
+
+    language: Literal["wo"] = "wo"  # wolof, seule langue retenue pour la compétition
+    file: str = Field(pattern=AUDIO_FILE_PATTERN)
+    transcript_md: str = Field(min_length=10)
+    recorded_by: str = Field(min_length=2)
+    reviewed_by: str | None = None  # second locuteur qui a écouté et relu ; requis pour publier
+
+    @model_validator(mode="after")
+    def _reviewed_by_someone_else(self) -> Self:
+        if self.reviewed_by and self.reviewed_by == self.recorded_by:
+            raise ValueError("l'audio doit être relu par un autre locuteur que son auteur")
+        return self
+
+
 class Gotcha(Model):
     """Un piège : ce que la documentation ne dit pas."""
 
@@ -140,6 +193,9 @@ class Gotcha(Model):
     symptom_md: str
     cause_md: str
     fix_md: str
+    failed_attempts_md: str | None = None  # pistes essayées qui n'ont pas marché
+    proof_md: str | None = None  # versions, configuration, étapes, résultat obtenu
+    confidence: ConfidenceLevel = ConfidenceLevel.SOURCED
     severity: Severity
     environments: list[Environment] = Field(min_length=1)
     api_version: str | None = None
@@ -149,11 +205,17 @@ class Gotcha(Model):
     verified_by: str | None = None  # qui l'a vérifié ; obligatoire pour publier
     last_confirmed_on: date
     confirmations: int = Field(default=0, ge=0)
+    audio: AudioExplanation | None = None  # explication en wolof (D26), facultative
 
     @model_validator(mode="after")
     def _published_is_verified(self) -> Self:
         if self.publication is Publication.PUBLISHED and not self.verified_by:
             raise ValueError(f"le piège {self.id} est publié sans verified_by")
+        if self.publication is Publication.PUBLISHED and self.audio and not self.audio.reviewed_by:
+            # Une explication fausse ferait plus de mal que pas d'audio (D26).
+            raise ValueError(f"le piège {self.id} est publié avec un audio non relu")
+        if self.confidence is not ConfidenceLevel.SOURCED and not self.proof_md:
+            raise ValueError(f"le piège {self.id} est « {self.confidence.value} » sans preuve")
         if not self.id.startswith(f"{self.fiche_slug}."):
             raise ValueError(f"l'id {self.id} doit commencer par '{self.fiche_slug}.'")
         return self
@@ -182,6 +244,7 @@ class Fiche(Model):
     publication: Publication = Publication.DRAFT
     last_confirmed_on: date
     confirmations: int = Field(default=0, ge=0)
+    open_access: bool = False  # lisible entière sans compte (D23)
 
     @model_validator(mode="after")
     def _consistent(self) -> Self:
@@ -218,7 +281,9 @@ class ContributionInput(Model):
     source_url: HttpUrl | None = None
     api_version: str | None = Field(default=None, max_length=40)
     pseudo: str = Field(min_length=2, max_length=40)
-    email: str = Field(min_length=5, max_length=254)  # PRIVÉ : jamais affiché ni exposé
+    # PRIVÉ : jamais affiché ni exposé. Obligatoire seulement sans compte (développement).
+    email: str | None = Field(default=None, min_length=5, max_length=254)
+    account_id: str | None = None
 
 
 class Contribution(Model):
@@ -230,7 +295,8 @@ class Contribution(Model):
     source_url: HttpUrl | None = None
     api_version: str | None = None
     pseudo: str
-    email: str  # PRIVÉ : jamais affiché, jamais renvoyé par le serveur MCP
+    email: str | None = None  # PRIVÉ : jamais affiché, jamais renvoyé par le serveur MCP
+    account_id: str | None = None
     status: ContributionStatus = ContributionStatus.PENDING
     created_at: datetime
     reviewed_at: datetime | None = None
@@ -246,6 +312,8 @@ class Confirmation(Model):
     still_works: bool = True
     api_version: str | None = Field(default=None, max_length=40)
     pseudo: str | None = Field(default=None, max_length=40)
+    account_id: str | None = None
+    proof: str | None = Field(default=None, max_length=4000)
     created_at: datetime
 
 
@@ -316,3 +384,51 @@ class SearchHit(Model):
     snippet: str
     anchor: str | None = None  # ancre dans la page de la fiche, ex. "piege-sandbox-eur"
     score: float = 0.0
+
+
+# --- Comptes -----------------------------------------------------------------
+
+
+class OAuthGrantKind(StrEnum):
+    LOGIN = "login"  # connexion en cours chez GitHub
+    CODE = "code"  # code d'autorisation, à usage unique
+    ACCESS = "access"  # jeton d'accès au serveur MCP
+    REFRESH = "refresh"  # jeton de renouvellement, remplacé à chaque usage
+    SESSION = "session"  # session d'un visiteur connecté sur le site
+
+
+class ExternalIdentity(Model):
+    """Ce que le fournisseur d'identité nous apprend sur le développeur."""
+
+    id: str = Field(min_length=3)  # "github:<identifiant numérique>"
+    pseudo: str = Field(min_length=1, max_length=100)
+
+
+class Account(Model):
+    """Un développeur connecté. Aucun mot de passe ni jeton GitHub n'est conservé."""
+
+    id: str = Field(min_length=3)
+    pseudo: str = Field(min_length=1, max_length=100)
+    created_at: datetime
+    last_login_at: datetime
+    blocked: bool = False
+
+
+# --- Usage -------------------------------------------------------------------
+
+
+class UsageEvent(StrEnum):
+    READ_FICHE = "read_fiche"
+    READ_OPEN_FICHE = "read_open_fiche"  # fiche ouverte (D27) lue sans compte, anonymisée
+    SEARCH_HIT = "search_hit"
+    SEARCH_MISS = "search_miss"
+    READ_STATUS = "read_status"
+    REPORT_OUTAGE = "report_outage"
+    PROPOSE = "propose"
+    CONFIRM = "confirm"
+
+
+class UsageTotal(Model):
+    event: UsageEvent
+    count: int = Field(ge=0)
+    accounts: int = Field(ge=0)  # comptes différents

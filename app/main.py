@@ -18,12 +18,27 @@ from app.container import Services, build_services
 from app.mcp.server import build_mcp_server, mount_mcp
 from app.security.csrf import CSRFCookieMiddleware
 from app.security.headers import SecurityHeadersMiddleware
-from app.security.ratelimit import RateLimiter
+from app.security.proxy import ForwardedProtoMiddleware
+from app.security.ratelimit import PathQuotaMiddleware, RateLimiter
 from app.web.errors import install_error_handlers
-from app.web.routes import contributions, dev, fiches, health, incidents, pages, review
+from app.web.routes import (
+    auth,
+    contributions,
+    dev,
+    fiches,
+    health,
+    incidents,
+    pages,
+    probe,
+    review,
+)
+from app.web.session import AccountMiddleware
 from app.web.templating import STATIC_DIR
 
 ServicesFactory = Callable[[Settings], Awaitable[Services]]
+
+# Routes OAuth du SDK : au plus tant d'appels par heure et par adresse IP.
+OAUTH_QUOTAS = {"/register": (20, 3600), "/authorize": (60, 3600), "/token": (120, 3600)}
 
 
 def create_app(
@@ -55,17 +70,25 @@ def create_app(
     app.state.settings = settings
     app.state.rate_limiter = RateLimiter()
 
+    if settings.site_auth:
+        app.add_middleware(AccountMiddleware)
     app.add_middleware(CSRFCookieMiddleware, secure=settings.is_prod)
     app.add_middleware(GZipMiddleware, minimum_size=500)
     app.add_middleware(SecurityHeadersMiddleware, hsts=settings.is_prod)
+    # Ajouté en dernier, donc exécuté en premier : tout le reste voit le vrai protocole.
+    app.add_middleware(ForwardedProtoMiddleware, proxy_hops=settings.proxy_hops)
 
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-    for module in (pages, fiches, contributions, incidents, review, dev, health):
+    for module in (pages, fiches, contributions, incidents, review, dev, health, auth):
         app.include_router(module.router)
+    if settings.probe:
+        app.include_router(probe.router)
     install_error_handlers(app)
 
     mcp = build_mcp_server(app)
     mount_mcp(app, mcp)
+    if settings.mcp_auth:
+        app.add_middleware(PathQuotaMiddleware, quotas=OAUTH_QUOTAS)
     return app
 
 

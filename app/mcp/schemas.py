@@ -38,6 +38,9 @@ class GotchaOut(BaseModel):
     symptom: str
     cause: str
     fix: str
+    failed_attempts: str | None
+    proof: str | None
+    confidence: str  # sourced, reproduced ou production
     error_codes: list[str]
     api_version: str | None
     sources: list[str]
@@ -109,4 +112,16 @@ class SearchResultOut(BaseModel):
 class OutageReportOut(BaseModel):
     incident_id: str
     status: str
+    message: str
+
+
+class ProposalOut(BaseModel):
+    contribution_id: str
+    status: str
+    message: str
+
+
+class ConfirmationOut(BaseModel):
+    gotcha_id: str
+    still_works: bool
     message: str

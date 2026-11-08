@@ -11,6 +11,8 @@ Les services reçoivent le stockage par injection (voir `app/container.py`) et n
 | `fiches.py` | Lire les fiches, chercher, trouver la fiche d'un service dans un pays, glossaire, fraîcheur | Abdoul Aziz |
 | `contributions.py` | Soumettre (avec refus des secrets), relire, confirmer « ça marche encore » | Abdoul Aziz |
 | `freshness.py` | Règle des 90 jours (« à revérifier ») | Abdoul Aziz |
+| `usage.py` | Compteurs d'usage, visibles sur `/relecture` | Abdoul Aziz |
+| `oauth.py` | Connexion au serveur MCP : comptes, codes et jetons opaques, dont seule l'empreinte est stockée | Abdoul Aziz |
 | `clock.py` | Horloge système et horloge figée pour les tests | Abdoul Aziz |
 | `status.py` | **Fonctions pures** : calcul de l'état normal, dégradé ou en panne | Khalifa |
 | `incidents.py` | État des fiches, signalements, rafraîchissement des flux de pannes | Khalifa |
@@ -19,16 +21,29 @@ Les services reçoivent le stockage par injection (voir `app/container.py`) et n
 
 | Id | Tâche | Qui |
 | --- | --- | --- |
-| A7 | Circuit de relecture en production : une contribution approuvée doit être intégrée au contenu (aujourd'hui par une PR sur `content/`, voir D9) ; automatiser si le temps le permet | Abdoul Aziz |
+| A7 | Circuit de relecture en production : **fait**. Une contribution approuvée sur `/relecture` est exportée en brouillon dans `content/` par `scripts/export_contributions.py`, puis complétée et publiée par une PR (décision D9) | Abdoul Aziz |
 | K5 | Ajuster et documenter les règles d'état ci-dessous (seuils, expiration, plusieurs signalements) | Khalifa |
+| A18 | Compter les consultations de façon anonymisée pendant que la fiche Wave est ouverte (D27) | Abdoul Aziz |
+| A19 | Audio en wolof, si le socle est en ligne : champs du piège, route qui vérifie les droits de la fiche, recherche (D26) | Abdoul Aziz |
 
-## Règles d'état actuelles (`status.py`)
+## Règles d'état (`status.py`)
 
-- Une panne compte tant qu'elle n'est pas résolue.
-- Un signalement de la communauté ou d'un agent **expire au bout de 6 heures** s'il n'est pas confirmé (`REPORT_TTL`).
+| Règle | Valeur | Constante |
+| --- | --- | --- |
+| Un signalement de la communauté ou d'un agent, seul, met le service en **dégradé** | 1 signalement | — |
+| Ce signalement cesse de compter s'il n'est pas renouvelé | au bout de **6 heures** (6 h pile compte encore) | `REPORT_TTL` |
+| Plusieurs personnes différentes en peu de temps font passer le service **en panne** | **3 personnes en 1 heure** | `CONFIRMING_REPORTERS`, `CONFIRMATION_WINDOW` |
+
+- Une panne compte tant qu'elle n'est pas résolue. Une panne importée de Flutterwave n'expire pas : c'est le flux qui la résout.
+- **Plusieurs signalements :** une personne compte une fois, quel que soit le nombre de ses signalements, sans tenir compte des majuscules ; tous les anonymes comptent ensemble pour une seule personne. Passé 1 heure, le service redescend en dégradé, jusqu'à l'expiration des signalements.
 - Une panne **sans service** (Mobile Money en général) concerne tous les services de paiement du pays, pas les hébergeurs.
 - Une panne sans pays, ou une fiche sans pays, s'appliquent partout.
-- L'état est celui de la panne active **la plus grave** (`down` l'emporte sur `degraded`).
+- L'état est celui de la panne active **la plus grave** (`down` l'emporte sur `degraded`) ; `since` est le début de la plus ancienne.
+
+**Limites :**
+
+- La règle des 3 personnes n'est fiable qu'avec des pseudos vérifiés : sur `/signaler`, le pseudo reste libre tant que la connexion GitHub (PR 51) n'est pas fusionnée.
+- Le seuil et la fenêtre sont un choix de l'équipe, à revoir avec de vrais signalements.
 
 Toute nouvelle règle : un test dans `tests/unit/test_domain.py`, puis une ligne ici.
 

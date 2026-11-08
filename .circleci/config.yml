@@ -16,6 +16,23 @@ executors:
     docker:
       - image: cimg/python:3.12-node
     resource_class: small
+  # Tests : une base PostgreSQL jetable par job, pour les tests de contrat de PostgresStore.
+  python-postgres:
+    parameters:
+      version:
+        type: string
+    docker:
+      - image: cimg/python:<< parameters.version >>
+      # Base jetable, joignable seulement depuis le job : connexion sans mot de passe
+      # (trust), pour qu'aucun mot de passe n'apparaisse dans le dépôt (GitGuardian).
+      - image: cimg/postgres:17.9
+        environment:
+          POSTGRES_USER: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: gotcha_test
+    resource_class: small
+    environment:
+      GOTCHA_TEST_DATABASE_URL: postgresql://postgres@localhost:5432/gotcha_test
 
 commands:
   install:
@@ -31,6 +48,25 @@ commands:
           key: pip-v1-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
           paths:
             - ~/.cache/pip
+
+  wait-ready:
+    description: Attendre que le conteneur réponde, base PostgreSQL comprise
+    steps:
+      - run:
+          name: Attente du site (/healthz?db=1)
+          command: |
+            for i in $(seq 1 60); do
+              # Sortie dans un fichier, puis grep : avec pipefail, « … | grep -q » peut échouer
+              # quand grep s'arrête au premier résultat (SIGPIPE pour l'émetteur).
+              curl -fsS 'http://localhost:8000/healthz?db=1' > /tmp/health.json 2>/dev/null || true
+              if grep -q '"database":"ok"' /tmp/health.json; then
+                echo "Site prêt après ${i} s"
+                exit 0
+              fi
+              sleep 1
+            done
+            echo "ÉCHEC : le site ne répond pas après 60 s"
+            exit 1
 
 jobs:
   pr-rules:
@@ -64,13 +100,22 @@ jobs:
       python:
         type: string
     executor:
-      name: python
+      name: python-postgres
       version: << parameters.python >>
     steps:
       - checkout
       - install
       - run:
-          name: Tests et couverture (85 % minimum)
+          name: Attendre PostgreSQL
+          command: |
+            for i in $(seq 1 30); do
+              python -c "import socket; socket.create_connection(('localhost', 5432), 1)" 2>/dev/null && exit 0
+              sleep 1
+            done
+            echo "ÉCHEC : PostgreSQL ne répond pas après 30 s"
+            exit 1
+      - run:
+          name: Tests et couverture (85 % minimum), PostgreSQL compris
           command: |
             mkdir -p test-results
             python -m pytest --cov --cov-report=term-missing:skip-covered --junitxml=test-results/junit.xml
@@ -87,6 +132,15 @@ jobs:
             python -m venv /tmp/prod
             /tmp/prod/bin/pip install --quiet -r requirements.txt
             /tmp/prod/bin/python scripts/check_licenses.py --list
+      - run:
+          name: Liste de référence des composants (artefact LICENCES.md)
+          command: |
+            python -m venv /tmp/dev
+            /tmp/dev/bin/pip install --quiet -r requirements-dev.txt
+            /tmp/dev/bin/python scripts/check_licenses.py --markdown
+            mkdir -p /tmp/artefacts && cp docs/LICENCES.md /tmp/artefacts/LICENCES.md
+      - store_artifacts:
+          path: /tmp/artefacts
 
   docker:
     machine:
@@ -97,21 +151,36 @@ jobs:
           name: Construction de l'image
           command: docker build --pull -t gotcha:ci .
       - run:
-          name: Démarrage en mode production
+          name: Base PostgreSQL jetable, comme la base managée de Datacloud
           command: |
-            docker run -d --name gotcha -p 8000:8000 \
-              -e GOTCHA_ENV=prod -e GOTCHA_STORE=memory -e GOTCHA_INGEST_LIVE=false \
-              -e GOTCHA_SITE_URL=http://localhost:8000 \
-              gotcha:ci
-            for i in $(seq 1 30); do
-              if curl -fsS http://localhost:8000/healthz > /dev/null 2>&1; then
-                echo "Conteneur prêt après ${i} s"
+            docker network create gotcha
+            docker run -d --name db --network gotcha \
+              -e POSTGRES_USER=gotcha -e POSTGRES_PASSWORD=gotcha -e POSTGRES_DB=gotcha \
+              postgres:17-alpine
+            # Par TCP : pendant son initialisation, le serveur n'écoute que sur un socket local.
+            for i in $(seq 1 60); do
+              if docker exec db pg_isready -h 127.0.0.1 -U gotcha -d gotcha > /dev/null 2>&1; then
+                echo "Base prête après ${i} s"
                 exit 0
               fi
               sleep 1
             done
-            echo "ÉCHEC : le conteneur ne répond pas après 30 s"
+            echo "ÉCHEC : la base ne répond pas après 60 s"
             exit 1
+      - run:
+          name: Démarrage en mode production (migrations et contenu chargés au démarrage)
+          command: |
+            docker run -d --name gotcha --network gotcha -p 8000:8000 \
+              -e GOTCHA_ENV=prod -e GOTCHA_INGEST_LIVE=false \
+              -e DATABASE_URL=postgresql://gotcha:gotcha@db:5432/gotcha \
+              -e GOTCHA_SITE_URL=https://gotcha.example \
+              -e GOTCHA_GITHUB_CLIENT_ID=ci -e GOTCHA_GITHUB_CLIENT_SECRET=ci \
+              gotcha:ci
+      - wait-ready
+      - run:
+          name: Redémarrage (deuxième mise en service, sans rien casser)
+          command: docker restart gotcha
+      - wait-ready
       - run:
           name: Vérifications en mode production
           command: |
@@ -120,15 +189,49 @@ jobs:
             test "$(code /)" = 200 || { echo "ÉCHEC : l'accueil ne répond pas 200"; exit 1; }
             test "$(code /styleguide)" = 404 || { echo "ÉCHEC : /styleguide doit être caché"; exit 1; }
             test "$(code /relecture)" = 404 || { echo "ÉCHEC : /relecture doit être fermée"; exit 1; }
-            headers="$(curl -sI http://localhost:8000/)"
+            if docker run --rm gotcha:ci python -c "import pip" 2>/dev/null; then
+              echo "ÉCHEC : pip est encore dans l'image (il embarque certifi, sous MPL-2.0)"; exit 1
+            fi
+            test "$(code /_sonde/requete)" = 404 || { echo "ÉCHEC : la sonde doit être éteinte"; exit 1; }
+            # Sorties dans des fichiers, puis grep (voir wait-ready : pipefail et SIGPIPE).
+            docker logs gotcha > /tmp/gotcha.log 2>&1
+            grep -q "la base est à jour" /tmp/gotcha.log \
+              || { echo "ÉCHEC : le redémarrage aurait dû trouver la base à jour"; exit 1; }
+            curl -sI http://localhost:8000/ > /tmp/headers.txt
             for header in content-security-policy strict-transport-security x-content-type-options x-frame-options; do
-              printf '%s' "$headers" | grep -qi "^$header:" || { echo "ÉCHEC : en-tête $header absent"; exit 1; }
+              grep -qi "^$header:" /tmp/headers.txt || { echo "ÉCHEC : en-tête $header absent"; exit 1; }
             done
-            curl -fsS -X POST http://localhost:8000/mcp \
-              -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
-              -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | grep -q '"get_fiche"' \
-              || { echo "ÉCHEC : le serveur MCP ne répond pas"; exit 1; }
-            echo "Accueil, pages cachées, en-têtes de sécurité et serveur MCP : OK"
+            # Sorties dans des fichiers, puis grep : avec pipefail, « … | grep -q » peut
+            # échouer quand grep s'arrête au premier résultat (SIGPIPE pour l'émetteur).
+            mcp() {
+              curl -sS -X POST "http://localhost:$1/mcp" -D - \
+                -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
+                -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' || true
+            }
+            mcp 8000 > /tmp/mcp.txt
+            grep -qi '^www-authenticate: bearer' /tmp/mcp.txt \
+              || { echo "ÉCHEC : le serveur MCP doit demander une connexion"; exit 1; }
+            curl -fsS http://localhost:8000/.well-known/oauth-authorization-server \
+              -o /tmp/discovery.json || true
+            grep -q '"issuer":"https://gotcha.example"' /tmp/discovery.json \
+              || { echo "ÉCHEC : la découverte OAuth ne répond pas"; exit 1; }
+            # Plan de secours : lecture libre, aucun outil d'écriture.
+            docker run -d --name secours --network gotcha -p 8001:8000 \
+              -e GOTCHA_ENV=prod -e GOTCHA_INGEST_LIVE=false -e GOTCHA_MCP_AUTH=false -e GOTCHA_SITE_AUTH=false \
+              -e DATABASE_URL=postgresql://gotcha:gotcha@db:5432/gotcha \
+              -e GOTCHA_SITE_URL=http://localhost:8001 \
+              gotcha:ci
+            for _ in $(seq 1 30); do
+              curl -fsS http://localhost:8001/healthz > /dev/null 2>&1 && break
+              sleep 2
+            done
+            mcp 8001 > /tmp/secours.txt
+            grep -q '"get_fiche"' /tmp/secours.txt \
+              || { echo "ÉCHEC : le serveur MCP de secours ne répond pas"; docker logs secours; exit 1; }
+            if grep -q '"report_outage"' /tmp/secours.txt; then
+              echo "ÉCHEC : le plan de secours ne doit exposer aucun outil d'écriture"; exit 1
+            fi
+            echo "Accueil, pages cachées, en-têtes de sécurité, connexion MCP et plan de secours : OK"
       - run:
           name: Journaux du conteneur
           when: always

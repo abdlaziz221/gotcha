@@ -11,16 +11,26 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /srv
 
 COPY requirements.txt ./
-RUN pip install -r requirements.txt
+# pip, setuptools et wheel ne servent qu'à installer : on les retire, avec les copies de
+# ensurepip. pip embarque certifi (MPL-2.0), licence interdite par D3.
+RUN pip install -r requirements.txt \
+ && pip uninstall -y pip setuptools wheel \
+ && rm -rf /usr/local/lib/python3*/ensurepip
 
 COPY app ./app
 COPY content ./content
 COPY fixtures ./fixtures
 COPY migrations ./migrations
 COPY scripts ./scripts
+# Date de construction : une image plus ancienne qui redémarre ne recharge pas son contenu.
+RUN date -u +%s > BUILD_TIME
 
 RUN useradd --create-home --uid 10001 gotcha
 USER gotcha
 
 EXPOSE 8000
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --proxy-headers --forwarded-allow-ips='*'"]
+# Avant le site : schéma à jour et contenu de l'image chargé en base (scripts/release.py).
+# --no-proxy-headers : l'adresse du visiteur est lue par l'application, selon le nombre de
+# proxys de confiance (GOTCHA_PROXY_HOPS), jamais en croyant n'importe quel X-Forwarded-For.
+# Le protocole d'origine (X-Forwarded-Proto) suit la même règle : app/security/proxy.py.
+CMD ["sh", "-c", "python scripts/release.py && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --no-proxy-headers"]

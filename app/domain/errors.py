@@ -15,6 +15,10 @@ class InvalidInputError(GotchaError):
     """Donnée refusée ; le message est affichable tel quel à l'utilisateur."""
 
 
+class IdentityError(GotchaError):
+    """Le fournisseur d'identité (GitHub) n'a pas pu identifier le développeur."""
+
+
 class SecretDetectedError(GotchaError):
     """Le texte envoyé semble contenir une clé ou un jeton : on refuse de l'enregistrer."""
 

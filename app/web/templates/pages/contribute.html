@@ -12,11 +12,15 @@
   {{ select_field(page.form, "kind", "Vous voulez partager", page.kind_options, required=True, placeholder="Choisir le type") }}
   {{ select_field(page.form, "fiche_slug", "Fiche concernée", page.fiche_options, required=True, placeholder="Choisir une fiche") }}
   {{ text_field(page.form, "title", "Titre", required=True, maxlength=160, help="Le piège en une phrase, par exemple : « Le bac à sable n'accepte que l'EUR ».") }}
-  {{ textarea_field(page.form, "body_md", "Ce qui se passe, pourquoi, et comment l'éviter", required=True, maxlength=10000, help="Markdown accepté. Indiquez le symptôme, la cause et la solution.") }}
+  {{ textarea_field(page.form, "body_md", "Ce qui se passe, pourquoi, et comment l'éviter", required=True, maxlength=10000, help="Markdown accepté. Indiquez le symptôme, la cause, la solution, les pistes qui ont échoué et votre preuve (versions, étapes, résultat).") }}
   {{ text_field(page.form, "source_url", "Lien vers une source", type="url", help="Page de documentation, fil de forum, ticket…") }}
   {{ text_field(page.form, "api_version", "Version de l'API concernée", maxlength=40) }}
+  {% if viewer.pseudo %}
+  <p>Publié sous votre pseudo : <strong>{{ viewer.pseudo }}</strong>.</p>
+  {% else %}
   {{ text_field(page.form, "pseudo", "Pseudo affiché", required=True, maxlength=40, autocomplete="nickname") }}
   {{ text_field(page.form, "email", "E-mail (privé, jamais affiché)", type="email", required=True, autocomplete="email", help="Pour vous prévenir quand la contribution est publiée.") }}
+  {% endif %}
   <div class="field field--checkbox{% if page.form.errors.get('licence') %} field--invalid{% endif %}">
     <input id="licence" name="licence" type="checkbox" value="oui"{% if page.form.values.get("licence") == "oui" %} checked{% endif %}>
     <label for="licence">J'accepte que ma contribution soit publiée sous licence CC BY 4.0, avec mon pseudo.</label>

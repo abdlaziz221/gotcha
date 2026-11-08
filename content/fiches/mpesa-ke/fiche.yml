@@ -21,7 +21,9 @@ error_codes: []
 sources:
   - title: "McTaba : configurer le bac à sable Daraja"
     url: https://mctaba.com/learn/mpesa/daraja-sandbox-setup
+    published_on: 2026-07-19
     accessed_on: 2026-10-28
   - title: "Les pièges de l'API Daraja (M-Pesa)"
     url: https://ml.co.ke/posts/mpesa-daraja-api-pitfalls/
+    published_on: 2026-09-03
     accessed_on: 2026-10-28

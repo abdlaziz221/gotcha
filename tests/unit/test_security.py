@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
+import time
+
 import pytest
 
 from app.config import Settings
 from app.security.auth import hash_password, parse_reviewers, verify_password
 from app.security.ratelimit import RateLimiter, client_ip
-from app.security.secrets import scan_text
+from app.security.secrets import RULES, scan_text
 
 # Clés FICTIVES, au bon format. Elles sont coupées en morceaux pour que le texte de ce
 # fichier ne déclenche pas lui-même scripts/scan_secrets.py.
 FAKE = "Zx8Yw7Vu6Ts5Rq4P"
+HEX_32 = "0123456789abcdef" * 2
 SECRETS = {
     "clé privée": "-----BEGIN RSA " + "PRIVATE KEY-----",
     "jeton JWT": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0."
@@ -21,25 +24,74 @@ SECRETS = {
     "clé secrète Flutterwave": "FLWSECK_TEST-" + "abc123" * 5 + "-X",
     "clé secrète Paystack ou Stripe": "sk_live_" + "Ab12" * 6,
     "clé d'API Wave": "wave_sn_prod_" + "Xy9_" * 6,
-    "clé d'abonnement MTN MoMo": "Ocp-Apim-Subscription-Key: " + "0123456789abcdef" * 2,
+    "secret de signature Wave": "wave_sn_AKS_" + "a1b2c3d4" * 5,
+    "clé d'abonnement MTN MoMo": "Ocp-Apim-Subscription-Key: " + HEX_32,
+    "clé marchand Orange Money": '"merchant_key": "' + "a1b2c3d4" + '"',
+    "passkey Daraja": "passkey: " + "ab12cd34" * 8,
     "en-tête Authorization": "Authorization: Bearer " + "abcDEF123456" * 3,
     "secret dans une affectation": 'consumer_secret = "' + FAKE + '"',
+    "secret sans guillemets": "curl https://api.example.com/v1?api_key=" + FAKE,
     "secret dans un fichier .env": "\nCONSUMER_SECRET=" + FAKE + "\n",
     "secret dans un fichier YAML": "\nconsumer_secret: " + FAKE + "\n",
 }
 
+# Pour chaque règle, un texte qui lui ressemble et qui ne doit pas la déclencher.
+LOOKALIKES = {
+    "clé privée": "-----BEGIN PUBLIC KEY-----",
+    "jeton JWT": "eyJhbGciOiJIUzI1NiJ9 est l'en-tête d'un jeton",
+    "clé AWS": "Le préfixe AKIA identifie une clé AWS.",
+    "jeton GitHub": "Un jeton commence par ghp_ puis des caractères.",
+    "clé secrète Flutterwave": "FLWPUBK_TEST-" + "abc123" * 5 + "-X",
+    "clé secrète Paystack ou Stripe": "pk_live_" + "Ab12" * 6,
+    # L'exemple tronqué de docs.wave.com.
+    "clé d'API Wave": "Authorization: Bearer " + "wave_sn_prod_" + "YhUNb9d...i4bA6",
+    "secret de signature Wave": "wave_sn_AKS_" + "X" * 40,
+    "clé d'abonnement MTN MoMo": "Ocp-Apim-Subscription-Key: {{subscription_key}}",
+    "clé marchand Orange Money": "merchant_key: process.env.OM_MERCHANT_KEY",
+    "passkey Daraja": "La passkey Daraja compte 64 caractères.",
+    "en-tête Authorization": "Authorization: Bearer <VOTRE_JETON>",
+    "secret dans une affectation": "password = settings.reviewer_password",
+    "secret sans guillemets": "password = get_reviewer_password_v2()",
+    "secret dans un fichier .env": "CONSUMER_SECRET=<VOTRE_SECRET>",
+    "secret dans un fichier YAML": "consumer_secret: {{ secret }}",
+}
+
 NOT_SECRETS = [
-    "Authorization: Bearer <VOTRE_JETON>",
     "api_key = xxxxxxxxxxxxxxxxxxxx",
-    "consumer_secret: {{ secret }}",
-    "CONSUMER_SECRET=<VOTRE_SECRET>",
     "Envoyez l'en-tête X-Target-Environment: sandbox",
+    "X-Reference-Id: 0f8fad5b-d9cb-469f-a165-70867728950e",
     "Le jeton expire au bout de 3600 secondes.",
     # Du code qui manipule un secret sans le contenir :
     "password = base64.b64decode(credentials).decode()",
-    "password = settings.reviewer_password",
     "api_key: str = Field(min_length=12)",
     "DATABASE_URL=postgresql://utilisateur:motdepasse@hote:5432/gotcha",
+    # Des références à une variable, pas sa valeur :
+    "API_KEY=$MY_LONG_ENV_VARIABLE_NAME",
+    "API_KEY=$(get_secret_from_vault)",
+    "MPESA_CONSUMER_SECRET=$MPESA_CONSUMER_SECRET",
+    "CONSUMER_KEY=os.environ.get('CONSUMER_KEY')",
+    'consumer_secret = "YOUR_CONSUMER_SECRET_HERE"',
+    # La passkey du bac à sable Daraja est la même pour tous et publiée par Safaricom.
+    "passkey: " + "bfb279f9aa9bdbcf158e97dd71a467cd" + "2e0c893059b10f78e6b72ada1ed2c919",
+]
+
+# Formes vues dans de vraies intégrations, qui doivent toutes être refusées.
+REAL_WORLD_LEAKS = [
+    "Mon api_key=" + FAKE,
+    "mon password: " + FAKE,
+    "api_key: " + FAKE + " # prod",
+    "- password: " + FAKE,
+    'password = "' + FAKE + '!x"',
+    "PASSWD=" + FAKE,
+    'curl -d "client_id=a&client_secret=' + FAKE + '"',
+    "docker run -e MPESA_CONSUMER_SECRET=" + FAKE + " image",
+    'MPESA_API_KEY="' + FAKE + '"',
+    "export MOMO_SUBSCRIPTION_KEY=" + HEX_32,
+    "Authorization: Basic " + "QWxhZGRpbjpvcGVuIHNlc2FtZQ==",
+    'curl -H "Ocp-Apim-Subscription-Key: ' + HEX_32 + '"',
+    "consumer_key=" + "aB3dE6gH9jK2mN5pQ8sT" * 2,
+    "wave_sn_WHS_" + "x4m6g8rj" * 6,
+    "mpesa_consumer_secret = '" + FAKE + "'",
 ]
 
 
@@ -49,9 +101,61 @@ def test_each_rule_detects_its_secret(kind: str, text: str) -> None:
     assert kind in {f.kind for f in findings}
 
 
-@pytest.mark.parametrize("text", NOT_SECRETS)
+@pytest.mark.parametrize(("kind", "text"), list(LOOKALIKES.items()))
+def test_each_rule_ignores_its_lookalike(kind: str, text: str) -> None:
+    assert kind not in {f.kind for f in scan_text(text)}
+
+
+def test_every_rule_has_a_secret_and_a_lookalike() -> None:
+    kinds = {kind for kind, _ in RULES}
+    assert set(SECRETS) == kinds
+    assert set(LOOKALIKES) == kinds
+
+
+@pytest.mark.parametrize("text", NOT_SECRETS + list(LOOKALIKES.values()))
 def test_placeholders_code_and_normal_text_are_not_secrets(text: str) -> None:
     assert scan_text(text) == []
+
+
+@pytest.mark.parametrize("text", REAL_WORLD_LEAKS)
+def test_real_world_leaks_are_detected(text: str) -> None:
+    assert scan_text(text) != []
+
+
+def test_long_unquoted_secret_is_still_detected() -> None:
+    assert scan_text("api_key=" + "Ab1" * 200 + " fin") != []
+
+
+def test_value_followed_by_code_is_not_a_secret() -> None:
+    assert scan_text("password = abcdefgh12345678x.method()") == []
+
+
+def test_finding_starts_on_the_line_of_the_secret() -> None:
+    text = "A=1\n\n\nCONSUMER_SECRET=" + FAKE + "\n"
+    finding = scan_text(text)[0]
+    assert text.count("\n", 0, finding.start) == 3
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "\n" * 100_000,
+        " " * 100_000,
+        "API_KEY" * 15_000,
+        "password " * 12_000,
+        "a=" * 50_000,
+        # Trouvés en relecture : chaque occurrence relisait toute la suite.
+        "password=" * 5_000,
+        "passkey=" * 5_000 + "(",
+        'password = "' * 4_000,
+        "merchant_key=a1" * 3_000,
+        "Authorization: Bearer " * 2_000,
+    ],
+)
+def test_scan_stays_fast_on_hostile_text(text: str) -> None:
+    started = time.perf_counter()
+    scan_text(text)
+    assert time.perf_counter() - started < 0.5
 
 
 def test_reviewer_password_round_trip() -> None:
@@ -72,19 +176,116 @@ def test_rate_limiter_window() -> None:
     assert limiter.hit("k", limit=2, window_seconds=60)
 
 
-def test_client_ip_trusts_proxy_only_when_asked() -> None:
-    headers = {"x-forwarded-for": "41.82.1.2, 10.0.0.1"}
-    assert client_ip(headers, "10.0.0.1", trust_proxy=True) == "41.82.1.2"
-    assert client_ip(headers, "10.0.0.1", trust_proxy=False) == "10.0.0.1"
+def test_rate_limiter_check_does_not_count() -> None:
+    limiter = RateLimiter(clock=lambda: 0.0)
+    assert not limiter.exceeded("k", limit=1, window_seconds=60)
+    assert not limiter.exceeded("k", limit=1, window_seconds=60)
+    assert limiter.hit("k", limit=1, window_seconds=60)
+    assert limiter.exceeded("k", limit=1, window_seconds=60)
+
+
+# Le visiteur a inventé 6.6.6.6 ; le proxy de confiance a ajouté l'adresse qu'il a vue.
+FORWARDED = {"x-forwarded-for": "6.6.6.6, 41.82.1.2"}
+
+
+@pytest.mark.parametrize(
+    ("headers", "hops", "expected"),
+    [
+        (FORWARDED, 1, "41.82.1.2"),  # la dernière valeur, jamais la première
+        (FORWARDED, 2, "6.6.6.6"),  # deux proxys : l'avant-dernière
+        (FORWARDED, 0, "10.0.0.1"),  # aucun proxy de confiance : l'en-tête est ignoré
+        ({"x-forwarded-for": "41.82.1.2"}, 2, "10.0.0.1"),  # moins de valeurs que de proxys
+        ({"x-forwarded-for": " , "}, 1, "10.0.0.1"),
+        ({}, 1, "10.0.0.1"),
+    ],
+)
+def test_client_ip_reads_the_value_added_by_trusted_proxies(
+    headers: dict[str, str], hops: int, expected: str
+) -> None:
+    assert client_ip(headers, "10.0.0.1", proxy_hops=hops) == expected
+    assert client_ip({}, None, proxy_hops=hops) == "inconnu"
+
+
+def test_proxy_hops_setting() -> None:
+    assert Settings.from_env({}).proxy_hops == 0
+    prod = {
+        "GOTCHA_ENV": "prod",
+        "DATABASE_URL": "postgresql://x",
+        "GOTCHA_MCP_AUTH": "0",
+        "GOTCHA_SITE_AUTH": "0",
+    }
+    assert Settings.from_env(prod).proxy_hops == 1
+    assert Settings.from_env({**prod, "GOTCHA_PROXY_HOPS": "2"}).proxy_hops == 2
+    with pytest.raises(ValueError, match="GOTCHA_PROXY_HOPS"):
+        Settings.from_env({"GOTCHA_PROXY_HOPS": "-1"})
+
+
+PROD_WITH_CONNECTION = {
+    "GOTCHA_ENV": "prod",
+    "DATABASE_URL": "postgresql://x",
+    "GOTCHA_SITE_URL": "https://gotcha.test",
+    "GOTCHA_GITHUB_CLIENT_ID": "identifiant",
+    "GOTCHA_GITHUB_CLIENT_SECRET": "secret-a-cacher",
+}
+
+
+def test_production_requires_the_mcp_connection_by_default() -> None:
+    settings = Settings.from_env(PROD_WITH_CONNECTION)
+    assert settings.mcp_auth
+    assert "secret-a-cacher" not in repr(settings)
+    assert settings.site_auth
+    assert not Settings.from_env({}).mcp_auth
+    assert not Settings.from_env({}).site_auth
+
+
+def test_site_connection_alone_also_needs_github() -> None:
+    environ = {**PROD_WITH_CONNECTION, "GOTCHA_MCP_AUTH": "0", "GOTCHA_GITHUB_CLIENT_ID": ""}
+    with pytest.raises(ValueError, match="GOTCHA_GITHUB_CLIENT_ID"):
+        Settings.from_env(environ)
+
+
+def test_jury_code_stays_out_of_logs() -> None:
+    settings = Settings.from_env({**PROD_WITH_CONNECTION, "GOTCHA_JURY_CODE": "code-a-cacher"})
+    assert settings.jury_code == "code-a-cacher"
+    assert "code-a-cacher" not in repr(settings)
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        ({"GOTCHA_GITHUB_CLIENT_SECRET": ""}, "GOTCHA_GITHUB_CLIENT_SECRET"),
+        ({"GOTCHA_GITHUB_CLIENT_ID": ""}, "GOTCHA_GITHUB_CLIENT_ID"),
+        ({"GOTCHA_STORE": "memory"}, "PostgreSQL"),
+        ({"GOTCHA_SITE_URL": "http://gotcha.test"}, "https"),
+    ],
+)
+def test_unsafe_mcp_connection_settings_are_refused(change: dict[str, str], message: str) -> None:
+    with pytest.raises(ValueError, match=message):
+        Settings.from_env({**PROD_WITH_CONNECTION, **change})
 
 
 def test_production_settings_are_safe() -> None:
-    settings = Settings.from_env({"GOTCHA_ENV": "prod", "DATABASE_URL": "postgresql://x"})
+    settings = Settings.from_env(
+        {
+            "GOTCHA_ENV": "prod",
+            "DATABASE_URL": "postgresql://x",
+            "GOTCHA_MCP_AUTH": "0",
+            "GOTCHA_SITE_AUTH": "0",
+        }
+    )
     assert settings.store == "postgres"
     assert not settings.show_drafts
     assert not settings.load_fixtures
     assert settings.ingest_live
     with pytest.raises(ValueError, match="brouillons"):
-        Settings.from_env({"GOTCHA_ENV": "prod", "DATABASE_URL": "x", "GOTCHA_SHOW_DRAFTS": "1"})
+        Settings.from_env(
+            {
+                "GOTCHA_ENV": "prod",
+                "DATABASE_URL": "x",
+                "GOTCHA_SHOW_DRAFTS": "1",
+                "GOTCHA_MCP_AUTH": "0",
+                "GOTCHA_SITE_AUTH": "0",
+            }
+        )
     with pytest.raises(ValueError, match="DATABASE_URL"):
         Settings.from_env({"GOTCHA_STORE": "postgres"})

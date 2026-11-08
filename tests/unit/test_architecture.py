@@ -20,7 +20,7 @@ ALLOWED: dict[str, tuple[str, ...]] = {
     "stores": ("app.domain", "app.stores", "app.config"),
     "security": ("app.domain", "app.security"),
     "ingest": ("app.domain", "app.ingest", "app.config", "app.container"),
-    "mcp": ("app.domain", "app.mcp", "app.security", "app.container"),
+    "mcp": ("app.domain", "app.mcp", "app.services", "app.security", "app.container"),
     "web": ("app.domain", "app.web", "app.services", "app.security", "app.container", "app.config"),
 }
 

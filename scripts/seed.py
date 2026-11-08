@@ -1,8 +1,8 @@
 """Charge content/ (fiches, pièges, glossaire) dans la base PostgreSQL DATABASE_URL.
 
 Usage : DATABASE_URL=postgresql://… python scripts/seed.py
-À lancer après scripts/migrate.py, et à chaque mise à jour du contenu.
-Demande PostgresStore.upsert_fiche et upsert_glossary (tâche A6).
+À lancer après scripts/migrate.py. En production, inutile : scripts/release.py le fait
+à chaque démarrage du conteneur.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from app.stores.content_files import load_fiches, load_glossary  # noqa: E402
+from app.stores.postgres.release import seed_content  # noqa: E402
 from app.stores.postgres.store import PostgresStore  # noqa: E402
 
 
@@ -23,18 +23,14 @@ async def main() -> None:
     url = os.environ.get("DATABASE_URL")
     if not url:
         sys.exit("DATABASE_URL n'est pas défini.")
-    content_dir = ROOT / "content"
-    fiches = load_fiches(content_dir)
-    glossary = load_glossary(content_dir)
     store = await PostgresStore.connect(url)
     try:
-        for fiche in fiches:
-            await store.upsert_fiche(fiche)
-        await store.upsert_glossary(glossary)
+        report = await seed_content(store, ROOT / "content")
     finally:
         await store.close()
-    gotchas = sum(len(f.gotchas) for f in fiches)
-    print(f"{len(fiches)} fiche(s), {gotchas} piège(s), {len(glossary)} terme(s) chargés.")
+    print(f"{report.fiches} fiche(s), {report.gotchas} piège(s), {report.terms} terme(s) chargés.")
+    if report.retired:
+        print("Repassées en brouillon (absentes de content/) : " + ", ".join(report.retired))
 
 
 if __name__ == "__main__":

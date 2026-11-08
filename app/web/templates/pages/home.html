@@ -8,7 +8,7 @@
 {% block content %}
 <section class="hero">
   <h1>{{ site.tagline }}</h1>
-  <p class="hero__lead">Wave, Orange Money, MTN MoMo, M-Pesa et Datacloud : ce que la documentation ne dit pas, confirmé par les devs qui l'ont vécu, lisible par vos agents IA.</p>
+  <p class="hero__lead">Wave, Orange Money, MTN MoMo, M-Pesa et Datacloud : des solutions sourcées, chacune avec son niveau de confiance (sourcé, reproduit ou confirmé en production), et l'état des services en direct, lisibles par vos agents IA.</p>
   {{ search_form(autofocus=False) }}
   <p class="hero__stats">{{ page.cards | length }} fiche{% if page.cards | length > 1 %}s{% endif %} · {{ page.gotcha_total }} piège{% if page.gotcha_total > 1 %}s{% endif %} documenté{% if page.gotcha_total > 1 %}s{% endif %}</p>
 </section>
@@ -51,6 +51,6 @@
 <section class="cta">
   <h2>Vous avez payé le prix d'un piège ?</h2>
   <p>Évitez-le au suivant : ajoutez-le en deux minutes, ou confirmez qu'une solution marche encore.</p>
-  <p><a class="button" href="/contribuer">Contribuer</a></p>
+  {% if viewer.can_write or viewer.site_auth %}<p><a class="button" href="/contribuer">Contribuer</a></p>{% endif %}
 </section>
 {% endblock %}

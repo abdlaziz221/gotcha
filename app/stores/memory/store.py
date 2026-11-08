@@ -6,13 +6,14 @@ Tout ce qui est écrit pendant l'exécution est perdu au redémarrage.
 
 from __future__ import annotations
 
+import copy
 import json
-import re
-import unicodedata
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 from app.domain.models import (
+    Account,
     Confirmation,
     Contribution,
     ContributionStatus,
@@ -21,35 +22,22 @@ from app.domain.models import (
     Gotcha,
     Incident,
     IncidentSource,
+    OAuthGrantKind,
     Publication,
     SearchHit,
-    SearchHitKind,
     SearchQuery,
     TargetKind,
+    UsageEvent,
+    UsageTotal,
 )
-from app.domain.text import plain_snippet
 from app.stores.content_files import load_fiches, load_glossary
-
-_TOKEN_RE = re.compile(r"[\w-]+")
-
-
-def _norm(text: str) -> str:
-    decomposed = unicodedata.normalize("NFKD", text)
-    return "".join(c for c in decomposed if not unicodedata.combining(c)).lower()
-
-
-def _visible(fiche: Fiche, include_drafts: bool) -> Fiche | None:
-    if include_drafts:
-        return fiche
-    if fiche.publication is not Publication.PUBLISHED:
-        return None
-    published = [g for g in fiche.gotchas if g.publication is Publication.PUBLISHED]
-    return fiche.model_copy(update={"gotchas": published})
-
-
-def _score(tokens: list[str], text: str, weight: float) -> float:
-    haystack = _norm(text)
-    return sum(weight for t in tokens if t in haystack)
+from app.stores.search import (
+    keep_confirmations,
+    search_fiches,
+    sort_fiches,
+    sort_glossary,
+    visible,
+)
 
 
 def _fixture_incident(item: dict[str, object], now: datetime) -> Incident:
@@ -75,6 +63,10 @@ class MemoryStore:
         self._contributions = {c.id: c for c in contributions or []}
         self._confirmations: list[Confirmation] = []
         self._last_ingest: dict[IncidentSource, datetime] = {}
+        self._accounts: dict[str, Account] = {}
+        self._usage: dict[tuple[date, UsageEvent, str], int] = {}
+        self._oauth_clients: dict[str, dict[str, Any]] = {}
+        self._oauth_grants: dict[tuple[str, str], tuple[dict[str, Any], datetime]] = {}
 
     @classmethod
     def from_directories(
@@ -97,89 +89,36 @@ class MemoryStore:
     # --- FicheStore ----------------------------------------------------------
 
     async def list_fiches(self, *, include_drafts: bool = False) -> list[Fiche]:
-        visible = [_visible(f, include_drafts) for f in self._fiches.values()]
-        return sorted((f for f in visible if f), key=lambda f: _norm(f.title))
+        shown = [visible(f, include_drafts=include_drafts) for f in self._fiches.values()]
+        return sort_fiches(f for f in shown if f)
 
     async def get_fiche(self, slug: str, *, include_drafts: bool = False) -> Fiche | None:
         fiche = self._fiches.get(slug)
-        return _visible(fiche, include_drafts) if fiche else None
+        return visible(fiche, include_drafts=include_drafts) if fiche else None
 
     async def search(self, query: SearchQuery, *, include_drafts: bool = False) -> list[SearchHit]:
-        tokens = [t for t in _TOKEN_RE.findall(_norm(query.text)) if len(t) > 1]
-        hits: list[SearchHit] = []
-        for fiche in await self.list_fiches(include_drafts=include_drafts):
-            if query.service and fiche.service.slug != query.service:
-                continue
-            if query.country and fiche.country not in (None, query.country):
-                continue
-            if not tokens:
-                hits.append(
-                    SearchHit(
-                        kind=SearchHitKind.FICHE,
-                        fiche_slug=fiche.slug,
-                        title=fiche.title,
-                        snippet=plain_snippet(fiche.summary),
-                    )
-                )
-                continue
-            fiche_score = _score(tokens, fiche.title, 3) + _score(tokens, fiche.summary, 1)
-            if fiche_score:
-                hits.append(
-                    SearchHit(
-                        kind=SearchHitKind.FICHE,
-                        fiche_slug=fiche.slug,
-                        title=fiche.title,
-                        snippet=plain_snippet(fiche.summary),
-                        score=fiche_score,
-                    )
-                )
-            hits.extend(self._gotcha_hits(fiche, tokens))
-            hits.extend(
-                SearchHit(
-                    kind=SearchHitKind.ERROR_CODE,
-                    fiche_slug=fiche.slug,
-                    title=f"{fiche.title} : erreur {error.code}",
-                    snippet=plain_snippet(f"{error.meaning} {error.action}"),
-                    anchor="codes-erreur",
-                    score=5,
-                )
-                for error in fiche.error_codes
-                if _norm(error.code) in tokens
-            )
-        hits.sort(key=lambda h: h.score, reverse=True)
-        return hits[: query.limit]
-
-    @staticmethod
-    def _gotcha_hits(fiche: Fiche, tokens: list[str]) -> list[SearchHit]:
-        hits = []
-        for gotcha in fiche.gotchas:
-            score = (
-                _score(tokens, gotcha.title, 3)
-                + _score(tokens, f"{gotcha.symptom_md} {gotcha.cause_md} {gotcha.fix_md}", 1)
-                + 5 * sum(1 for code in gotcha.error_codes if _norm(code) in tokens)
-            )
-            if score:
-                hits.append(
-                    SearchHit(
-                        kind=SearchHitKind.GOTCHA,
-                        fiche_slug=fiche.slug,
-                        title=gotcha.title,
-                        snippet=plain_snippet(gotcha.symptom_md),
-                        anchor=gotcha.anchor,
-                        score=score,
-                    )
-                )
-        return hits
+        return search_fiches(await self.list_fiches(include_drafts=include_drafts), query)
 
     async def list_glossary(self) -> list[GlossaryTerm]:
-        return sorted(self._glossary.values(), key=lambda t: _norm(t.term))
+        return sort_glossary(self._glossary.values())
 
     async def upsert_fiche(self, fiche: Fiche) -> None:
-        self._fiches[fiche.slug] = fiche
+        self._fiches[fiche.slug] = keep_confirmations(fiche, self._fiches.get(fiche.slug))
+
+    async def retire_fiches(self, keep: list[str]) -> list[str]:
+        retired = sorted(
+            slug
+            for slug, fiche in self._fiches.items()
+            if slug not in keep and fiche.publication is Publication.PUBLISHED
+        )
+        for slug in retired:
+            self._fiches[slug] = self._fiches[slug].model_copy(
+                update={"publication": Publication.DRAFT}
+            )
+        return retired
 
     async def upsert_glossary(self, terms: list[GlossaryTerm]) -> None:
-        for term in terms:
-            self._glossary[term.slug] = term
+        self._glossary = {term.slug: term for term in terms}
 
     # --- IncidentStore -------------------------------------------------------
 
@@ -224,8 +163,12 @@ class MemoryStore:
         selected = [c for c in self._contributions.values() if status is None or c.status is status]
         return sorted(selected, key=lambda c: c.created_at)
 
-    async def update_contribution(self, contribution: Contribution) -> None:
+    async def update_contribution(self, contribution: Contribution) -> bool:
+        current = self._contributions.get(contribution.id)
+        if current is None or current.status is not ContributionStatus.PENDING:
+            return False
         self._contributions[contribution.id] = contribution
+        return True
 
     async def add_confirmation(self, confirmation: Confirmation) -> None:
         self._confirmations.append(confirmation)
@@ -238,16 +181,94 @@ class MemoryStore:
             return
         if confirmation.target_kind is TargetKind.FICHE:
             self._fiches[fiche_slug] = fiche.model_copy(
-                update={"confirmations": fiche.confirmations + 1, "last_confirmed_on": day}
+                update={
+                    "confirmations": fiche.confirmations + 1,
+                    "last_confirmed_on": max(fiche.last_confirmed_on, day),
+                }
             )
             return
         gotchas: list[Gotcha] = [
-            g.model_copy(update={"confirmations": g.confirmations + 1, "last_confirmed_on": day})
+            g.model_copy(
+                update={
+                    "confirmations": g.confirmations + 1,
+                    "last_confirmed_on": max(g.last_confirmed_on, day),
+                }
+            )
             if g.id == confirmation.target_id
             else g
             for g in fiche.gotchas
         ]
         self._fiches[fiche_slug] = fiche.model_copy(update={"gotchas": gotchas})
+
+    async def has_recent_confirmation(
+        self, account_id: str, target_id: str, since: datetime, *, still_works: bool
+    ) -> bool:
+        return any(
+            c.account_id == account_id
+            and c.target_id == target_id
+            and c.still_works is still_works
+            and c.created_at >= since
+            for c in self._confirmations
+        )
+
+    async def list_confirmations(self, *, limit: int = 50) -> list[Confirmation]:
+        ordered = sorted(self._confirmations, key=lambda c: c.created_at, reverse=True)
+        return ordered[:limit]
+
+    # --- AccountStore ---------------------------------------------------------
+
+    async def save_account(self, account: Account) -> None:
+        existing = self._accounts.get(account.id)
+        blocked = account.blocked or (existing is not None and existing.blocked)
+        self._accounts[account.id] = account.model_copy(update={"blocked": blocked})
+
+    async def get_account(self, account_id: str) -> Account | None:
+        return self._accounts.get(account_id)
+
+    async def save_oauth_client(self, client_id: str, data: dict[str, Any]) -> None:
+        self._oauth_clients[client_id] = copy.deepcopy(data)
+
+    async def get_oauth_client(self, client_id: str) -> dict[str, Any] | None:
+        return copy.deepcopy(self._oauth_clients.get(client_id))
+
+    async def add_oauth_grant(
+        self, kind: OAuthGrantKind, key_hash: str, data: dict[str, Any], expires_at: datetime
+    ) -> None:
+        self._oauth_grants[(kind.value, key_hash)] = (copy.deepcopy(data), expires_at)
+
+    async def get_oauth_grant(
+        self, kind: OAuthGrantKind, key_hash: str, now: datetime
+    ) -> dict[str, Any] | None:
+        grant = self._oauth_grants.get((kind.value, key_hash))
+        return copy.deepcopy(grant[0]) if grant is not None and grant[1] > now else None
+
+    async def take_oauth_grant(
+        self, kind: OAuthGrantKind, key_hash: str, now: datetime
+    ) -> dict[str, Any] | None:
+        grant = self._oauth_grants.pop((kind.value, key_hash), None)
+        return grant[0] if grant is not None and grant[1] > now else None
+
+    async def delete_expired_oauth_grants(self, now: datetime) -> None:
+        self._oauth_grants = {k: g for k, g in self._oauth_grants.items() if g[1] > now}
+
+    # --- UsageStore -----------------------------------------------------------
+
+    async def add_usage(self, day: date, event: UsageEvent, account_id: str | None) -> None:
+        key = (day, event, account_id or "")
+        self._usage[key] = self._usage.get(key, 0) + 1
+
+    async def usage_totals(self, since: date) -> list[UsageTotal]:
+        counts: dict[UsageEvent, int] = {}
+        accounts: dict[UsageEvent, set[str]] = {}
+        for (day, event, account_id), count in self._usage.items():
+            if day >= since:
+                counts[event] = counts.get(event, 0) + count
+                if account_id:
+                    accounts.setdefault(event, set()).add(account_id)
+        return [
+            UsageTotal(event=event, count=counts[event], accounts=len(accounts.get(event, set())))
+            for event in sorted(counts, key=lambda e: e.value)
+        ]
 
     async def close(self) -> None:
         return None

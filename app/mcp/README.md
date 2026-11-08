@@ -10,6 +10,7 @@ Les agents de code (assistants compatibles MCP) consultent Gotcha **avant** d'é
 | --- | --- |
 | `schemas.py` | **Contrat** : la forme des réponses renvoyées aux agents |
 | `tools.py` | La logique de chaque outil, **sans dépendance au SDK** : testable avec de simples appels |
+| `oauth.py` | Fournisseur OAuth du SDK : traduit ses appels vers `app/services/oauth.py` |
 | `server.py` | Enregistre les outils auprès du SDK (`MCPServer`), traduit les erreurs, monte la route `POST /mcp` |
 
 ## Outils
@@ -20,9 +21,19 @@ Les agents de code (assistants compatibles MCP) consultent Gotcha **avant** d'é
 | `get_fiche(service, country?)` | Fiche complète : étapes, pièges, écarts bac à sable et production, codes d'erreur, état |
 | `search_gotchas(query, service?, country?)` | Recherche par mot-clé, en-tête, code d'erreur, symptôme |
 | `get_service_status(service, country?)` | État actuel et conseil pour l'agent |
-| `report_outage(service, description, country?)` | Signaler une panne (10 par heure et par IP) |
+| `report_outage(service, description, country?)` | Signaler une panne (10 par heure et par compte), sous le pseudo du compte |
+| `propose_gotcha(service, title, symptom, cause, fix, developer_approved, …)` | Proposer un piège résolu : accord du développeur obligatoire, puis relecture humaine (10 par heure) |
+| `confirm_gotcha(gotcha_id, still_works, proof, api_version?)` | Dire si un piège marche encore, avec une preuve (une fois par mois et par piège) |
 
 Détails des entrées et sorties : [docs/CONTRACTS.md](../../docs/CONTRACTS.md), section 4.
+
+## Connexion
+
+En production, chaque appel demande une connexion GitHub (D20). L'utilisateur ajoute l'adresse de `/mcp` à son outil une seule fois. Au premier appel, le serveur répond 401, l'outil ouvre le navigateur, et l'utilisateur se connecte. Il ne copie aucun jeton. Certains outils demandent une commande séparée dans un vrai terminal, par exemple `codex mcp login gotcha`. Un agent sans interface ne peut pas ouvrir cette connexion seul.
+
+`oauth.py` traduit les appels du SDK vers `app/services/oauth.py`. En développement, la connexion est coupée par défaut : tout marche sans compte. Pour l'essayer, voir `deploy/README.md`.
+
+`propose_gotcha` et `confirm_gotcha` n'existent qu'avec la connexion. Sans connexion en production (`GOTCHA_MCP_AUTH=false`), le serveur est en lecture libre et `report_outage` disparaît aussi : aucune écriture anonyme, même en secours.
 
 ## Tâches
 
@@ -32,6 +43,7 @@ Détails des entrées et sorties : [docs/CONTRACTS.md](../../docs/CONTRACTS.md),
 | K6 | `report_outage` : quotas, abus, messages | ven. 6 |
 | K8 | Scénario de démo et test automatisé reproductible (voir `docs/DEMO.md`) | ven. 6 |
 | K9 | Serveur en ligne sur Datacloud, testé depuis un vrai agent | sam. 7 |
+| K12 | Si l'audio en wolof est retenu : interroger un agent en wolof (5 essais), un locuteur juge le résultat. `get_fiche` n'envoie ni l'audio ni la transcription (D26) | lun. 9 |
 
 ## Comment faire
 

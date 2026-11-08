@@ -23,12 +23,13 @@ Objets immuables (Pydantic), champs inconnus refusés. Les valeurs des énuméra
 | Objet | Rôle | Champs principaux |
 | --- | --- | --- |
 | `Service` | Un opérateur ou un hébergeur | `slug` (`mtn-momo`), `name`, `kind` (`payment` ou `hosting`), `operator`, `docs_url` |
-| `Fiche` | Un service dans un pays | `slug` (`orange-money-sn`), `service`, `country` (code ISO ou vide = tous les pays), `title`, `summary`, `prerequisites`, `steps`, `gotchas`, `differences`, `error_codes`, `sources`, `publication`, `last_confirmed_on`, `confirmations` |
-| `Gotcha` | Un piège | `id` (`<fiche>.<fichier>`), `title`, `symptom_md`, `cause_md`, `fix_md`, `severity` (`blocking`, `major`, `minor`), `environments` (`sandbox`, `production`), `api_version`, `error_codes`, `sources` (au moins une), `publication`, `verified_by`, `last_confirmed_on`, `confirmations` |
-| `Source` | D'où vient une information | `title`, `url` ou `author`, `accessed_on` |
+| `Fiche` | Un service dans un pays | `slug` (`orange-money-sn`), `service`, `country` (code ISO ou vide = tous les pays), `title`, `summary`, `prerequisites`, `steps`, `gotchas`, `differences`, `error_codes`, `sources`, `publication`, `open_access` (fiche entière sans compte, D27), `last_confirmed_on`, `confirmations` |
+| `Gotcha` | Un piège | `id` (`<fiche>.<fichier>`), `title`, `symptom_md`, `cause_md`, `fix_md`, `severity` (`blocking`, `major`, `minor`), `confidence` (`sourced`, `reproduced`, `production`), `failed_attempts_md?`, `proof_md?` (obligatoire au-dessus de `sourced`), `environments` (`sandbox`, `production`), `api_version`, `error_codes`, `sources` (au moins une), `publication`, `verified_by`, `last_confirmed_on`, `confirmations`, `audio?` (explication en wolof, D26) |
+| `AudioExplanation` | Explication orale d'un piège (D26) | `language` (`wo`), `file` (dans `fiches/<fiche>/audio/`), `transcript_md`, `recorded_by`, `reviewed_by?` (second locuteur, obligatoire pour publier). Servie par `/fiches/<fiche>/audio/<piège>` avec les droits de la solution ; jamais dans `get_fiche` |
+| `Source` | D'où vient une information | `title`, `url` ou `author`, `published_on?` (date de publication, si la page la donne), `accessed_on` |
 | `GlossaryTerm` | Un terme expliqué | `slug`, `term`, `definition` |
-| `ContributionInput` / `Contribution` | Une proposition à relire | `kind` (`gotcha`, `step`, `correction`), `fiche_slug`, `title`, `body_md`, `source_url`, `api_version`, `pseudo`, `email` (**privé**), `status` (`pending`, `approved`, `rejected`) |
-| `Confirmation` | Un clic « ça marche encore » | `target_kind` (`fiche` ou `gotcha`), `target_id`, `still_works`, `api_version`, `pseudo`, `created_at` |
+| `ContributionInput` / `Contribution` | Une proposition à relire | `kind` (`gotcha`, `step`, `correction`), `fiche_slug`, `title`, `body_md`, `source_url`, `api_version`, `pseudo`, `email?` (**privé** ; obligatoire seulement sans compte), `account_id?` (compte connecté), `status` (`pending`, `approved`, `rejected`) |
+| `Confirmation` | Un clic « ça marche encore » | `target_kind` (`fiche` ou `gotcha`), `target_id`, `still_works`, `api_version`, `pseudo`, `account_id?` (compte connecté), `proof?` (obligatoire avec un compte), `created_at` |
 | `Incident` | Une panne | `id`, `source` (`flutterwave`, `community`, `agent`), `service_slug` (vide = tout le Mobile Money du pays), `country`, `status` (`degraded`, `down`), `title`, `started_at`, `resolved_at` |
 | `OutageReport` | Un signalement | `service_slug`, `country`, `description`, `reported_by`, `source` |
 | `ServiceStatus` | État calculé | `status` (`normal`, `degraded`, `down`, `unknown`), `since`, `active_incidents`, `checked_at` |
@@ -40,25 +41,34 @@ Règles garanties par le modèle :
 - l'`id` d'un piège commence par le slug de sa fiche ;
 - les étapes sont numérotées 1, 2, 3… ;
 - une source a une URL ou un auteur ;
+- aucun texte ne contient d'octet nul ni de demi-paire de substitution (PostgreSQL les refuse) ; un slug ou un identifiant qui en contient n'est jamais trouvé ;
 - l'**e-mail d'un contributeur n'est jamais affiché ni renvoyé** par le serveur MCP.
 
 ## 2. Ports de stockage
 
-`Store` réunit trois interfaces : `FicheStore`, `IncidentStore`, `ContributionStore`. Deux implémentations : `MemoryStore` (référence, fichiers) et `PostgresStore` (production). Les tests de `tests/contract/` tournent sur les deux.
+`Store` réunit cinq interfaces : `FicheStore`, `IncidentStore`, `ContributionStore`, `AccountStore`, `UsageStore`. Deux implémentations : `MemoryStore` (référence, fichiers) et `PostgresStore` (production). Les tests de `tests/contract/` tournent sur les deux.
 
 | Méthode | Comportement promis |
 | --- | --- |
 | `list_fiches(include_drafts)` | Fiches triées par titre. Sans brouillons : seules les fiches publiées, avec leurs seuls pièges publiés |
 | `get_fiche(slug, include_drafts)` | La fiche, ou `None` (y compris pour un brouillon quand `include_drafts` est faux) |
-| `search(query, include_drafts)` | Résultats triés par score décroissant, au plus `query.limit`, insensibles à la casse et aux accents, filtrés par service et pays ; un code d'erreur exact donne un résultat `error_code` |
+| `search(query, include_drafts)` (logique commune : `app/stores/search.py`) | Résultats triés par score décroissant, au plus `query.limit`, insensibles à la casse et aux accents, filtrés par service et pays ; un code d'erreur exact donne un résultat `error_code` ; un mot de trois lettres ou moins ne trouve qu'un mot entier (D26) |
 | `list_glossary()` | Termes triés par terme |
-| `upsert_fiche(fiche)` / `upsert_glossary(terms)` | Création ou remplacement (utilisés par `scripts/seed.py`) |
+| `upsert_fiche(fiche)` | Création ou remplacement (utilisé au chargement de `content/`, à chaque démarrage en production). Les pièges retirés disparaissent, leur ordre est conservé ; les **compteurs de confirmation déjà enregistrés sont gardés**, même si une confirmation arrive pendant le chargement, et `last_confirmed_on` garde la date la plus récente (une date future est donc refusée au chargement de `content/`) |
+| `retire_fiches(keep)` | Repasse en brouillon les fiches publiées absentes de `keep`, sans effacer leur historique ; renvoie leurs slugs |
+| `upsert_glossary(terms)` | Remplace tout le glossaire : les termes absents disparaissent |
 | `list_incidents(service_slug, country, active_only, limit)` | Pannes de la plus récente à la plus ancienne |
 | `upsert_incident(incident)` | Idempotent sur `incident.id` |
 | `get_last_ingest(source)` / `set_last_ingest(source, at)` | Dernière lecture réussie d'un flux |
-| `add_contribution`, `get_contribution`, `update_contribution` | Classiques |
+| `add_contribution`, `get_contribution` | Classiques |
+| `update_contribution(contribution)` | Enregistre une relecture ; renvoie `False` sans rien changer si la contribution n'existe pas ou n'est plus en attente (deux relecteurs simultanés : le premier gagne) |
 | `list_contributions(status)` | De la plus ancienne à la plus récente (file de relecture) |
-| `add_confirmation(c)` | Si `still_works` : le compteur de la cible augmente de 1 et sa date de dernière confirmation devient celle du jour |
+| `add_confirmation(c)` | Si `still_works` : le compteur de la cible augmente de 1 et sa date de dernière confirmation devient celle du jour, sans jamais reculer |
+| `has_recent_confirmation(account_id, target_id, since, still_works)` / `list_confirmations(limit)` | Évite qu'un compte redonne la même réponse sur la même cible (« ça ne marche plus » reste possible) ; dernières confirmations d'abord |
+| `add_usage(day, event, account_id)` / `usage_totals(since)` | Compteurs par jour, événement et compte ; aucun texte de recherche n'est conservé. `read_open_fiche` : une fiche ouverte (D27) lue sans compte, au plus une fois par jour et par visiteur, sans rien garder sur lui (empreinte salée de l'adresse, en mémoire 24 h) |
+| `save_account(account)` / `get_account(id)` | Création ou remplacement ; un blocage déjà posé est conservé |
+| `save_oauth_client(id, data)` / `get_oauth_client(id)` | Outils MCP enregistrés |
+| `add_oauth_grant`, `get_oauth_grant`, `take_oauth_grant`, `delete_expired_oauth_grants` | Autorisations retrouvées par l'empreinte de leur jeton. Expirée = absente. `take` renvoie et supprime en une seule opération : deux appels ne peuvent pas réussir |
 
 ## 3. Pages et contextes
 
@@ -87,7 +97,7 @@ Chaque formulaire POST contient `<input type="hidden" name="csrf_token" value="{
 
 ## 4. Outils MCP
 
-Transport HTTP « streamable », sans état, réponses JSON, point d'entrée `POST /mcp`. Réponses structurées décrites dans `app/mcp/schemas.py`.
+Transport HTTP « streamable », sans état, réponses JSON, point d'entrée `POST /mcp`. En production, tout appel demande une connexion GitHub : sans jeton, le serveur répond 401 et l'outil MCP compatible ouvre le navigateur (D20). Réponses structurées décrites dans `app/mcp/schemas.py`.
 
 | Outil | Entrées | Sortie | Notes |
 | --- | --- | --- | --- |
@@ -95,7 +105,9 @@ Transport HTTP « streamable », sans état, réponses JSON, point d'entrée `PO
 | `get_fiche` | `service`, `country?` | `FicheOut` | Étapes, pièges, écarts, codes d'erreur, état ; `warning` si des pièges ne sont pas vérifiés |
 | `search_gotchas` | `query`, `service?`, `country?` | `list[SearchResultOut]` | 10 résultats au plus |
 | `get_service_status` | `service`, `country?` | `StatusOut` | Avec un conseil (`advice`) pour l'agent |
-| `report_outage` | `service`, `description`, `country?` | `OutageReportOut` | Seul outil qui écrit ; 10 signalements par heure et par IP |
+| `report_outage` | `service`, `description`, `country?` | `OutageReportOut` | Seul outil qui écrit ; 10 signalements par heure et par compte. Absent en production sans connexion |
+| `propose_gotcha` | `service`, `title`, `symptom`, `cause`, `fix`, `developer_approved`, `failed_attempts?`, `proof?`, `country?`, `api_version?`, `source_url?` | `ProposalOut` | Avec connexion seulement. Refusé sans l'accord du développeur. Reste en attente de relecture. 10 par heure et par compte |
+| `confirm_gotcha` | `gotcha_id`, `still_works`, `proof`, `api_version?` | `ConfirmationOut` | Avec connexion seulement. Preuve obligatoire. Compte une fois par mois. 30 par heure et par compte |
 
 Erreurs : un service ou une fiche inconnus renvoient une erreur d'outil lisible (`isError: true`), jamais une exception brute. Les textes des pièges sont renvoyés sans la syntaxe `[[terme]]` du glossaire.
 

@@ -12,7 +12,9 @@
   {{ select_field(page.form, "fiche_slug", "Service concerné", page.fiche_options, required=True, placeholder="Choisir une fiche") }}
   {{ select_field(page.form, "country", "Pays", page.country_options, placeholder="Celui de la fiche") }}
   {{ textarea_field(page.form, "description", "Ce que vous constatez", required=True, rows=4, maxlength=1000) }}
+  {% if not viewer.pseudo %}
   {{ text_field(page.form, "pseudo", "Pseudo", maxlength=40, autocomplete="nickname") }}
+  {% endif %}
   <button type="submit" class="button">Signaler la panne</button>
 </form>
 {% endblock %}
