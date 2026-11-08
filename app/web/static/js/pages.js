@@ -94,8 +94,15 @@ for (const form of $$("form[data-inplace]")) {
         const reason = page.querySelector(".auth__desc, .flash")?.textContent?.trim();
         throw new Error(reason || "La confirmation n'a pas pu être enregistrée.");
       }
+      // Ne dire « enregistrée » que si le serveur est bien revenu sur la fiche avec ?ok=confirmation
+      // (une session expirée mène à /connexion en 200). Sinon, envoi normal du formulaire.
+      const confirmed = new URL(response.url).searchParams.get("ok") === "confirmation";
       const card = form.closest(".gotcha");
       const fresh = card ? page.getElementById(card.id) : null;
+      if (!confirmed || (card && !fresh)) {
+        form.submit();
+        return;
+      }
       if (card && fresh) {
         const note = document.createElement("p");
         note.className = "gotcha__done";
@@ -194,7 +201,8 @@ const TEMPLATE = "## Symptôme\n\n\n## Cause\n\n\n## Solution\n\n\n## Pistes qui
 
 // Aperçu : un sous-ensemble sûr du Markdown (titres, listes, code, gras, liens), texte échappé.
 function renderMarkdown(source) {
-  const esc = (t) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const esc = (t) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   const inline = (t) => esc(t)
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")

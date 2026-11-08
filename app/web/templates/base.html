@@ -49,7 +49,7 @@
       </nav>
 
       {% set can_contribute = viewer.can_write or viewer.site_auth %}
-      {% set login_url = "/connexion?retour=" ~ (request.url.path | urlencode) %}
+      {% set login_url = "/connexion?retour=" ~ ((request.url.path ~ ("?" ~ request.url.query if request.url.query else "")) | urlencode) %}
       <div class="site-header__actions">
         {% if viewer.pseudo %}
         <form class="account" method="post" action="/deconnexion">
