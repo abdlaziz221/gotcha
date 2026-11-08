@@ -95,7 +95,7 @@
     {% if g.verified_by and not g.is_draft %}<p class="gotcha__by">{{ icon("circle-check", size=16) }}Relu par {{ g.verified_by }}</p>{% endif %}
     {% if viewer.pseudo %}
     <details class="confirm-form">
-      <summary>Ça marche encore · <span class="confirm__count">{{ count_text }}</span></summary>
+      <summary>Confirmer ou signaler · <span class="confirm__count">{{ count_text }}</span></summary>
       <form class="form" method="post" action="/fiches/{{ fiche_slug }}/confirmer" data-inplace>
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <input type="hidden" name="target_kind" value="gotcha">
@@ -105,7 +105,11 @@
           <textarea id="preuve-{{ g.anchor }}" name="proof" rows="3" maxlength="4000" required></textarea>
           <p class="field__help">Versions, configuration sans secret, étapes et résultat obtenu.</p>
         </div>
-        <p><button type="submit" class="button button--small">Confirmer avec cette preuve</button></p>
+        <div class="field">
+          <label for="version-{{ g.anchor }}">Version d'API testée <span class="field__optional">(facultatif)</span></label>
+          <input id="version-{{ g.anchor }}" name="api_version" type="text" maxlength="40" autocomplete="off">
+        </div>
+        <p class="confirm-actions"><button type="submit" name="still_works" value="1" class="button button--small">Ça marche encore</button><button type="submit" name="still_works" value="0" class="button button--secondary button--small">Ça ne marche plus</button></p>
       </form>
     </details>
     {% elif viewer.can_write %}
@@ -114,7 +118,8 @@
       <input type="hidden" name="target_kind" value="gotcha">
       <input type="hidden" name="target_id" value="{{ g.id }}">
       <span class="confirm__count">{{ count_text }}</span>
-      <button type="submit" class="button button--secondary button--small">Ça marche encore</button>
+      <button type="submit" name="still_works" value="1" class="button button--secondary button--small">Ça marche encore</button>
+      <button type="submit" name="still_works" value="0" class="button button--secondary button--small">Ça ne marche plus</button>
     </form>
     {% else %}
     <p class="confirm__count">{{ count_text }}</p>

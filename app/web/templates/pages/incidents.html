@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "components/status.html" import incident_item %}
+{% from "components/status.html" import incident_item, status_text %}
 {% from "components/icons.html" import icon %}
 
 {# Journal des pannes : en cours et récentes (65 %), résumé et règles (35 %). #}
@@ -15,6 +15,16 @@
 
 <div class="split">
   <div class="split__main">
+    {% if page.services %}
+    <section class="box" aria-labelledby="par-service">
+      <div class="box__head"><div><h2 id="par-service">État par service</h2><p>Calculé à partir des pannes en cours et des signalements.</p></div></div>
+      <ul class="rows">
+        {% for card in page.services %}
+        <li><a class="row" href="{{ card.url }}"><span class="row__title">{{ card.title }}</span><span class="row__meta">{{ card.kind_label }} · {{ card.country_name }}</span><span class="row__aside">{{ status_text(card.status) }}</span></a></li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
     <section class="box" aria-labelledby="en-cours">
       <div class="box__head"><h2 id="en-cours">En cours <span class="num">{{ page.active | length }}</span></h2></div>
       {% if page.active %}

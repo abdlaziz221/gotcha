@@ -202,14 +202,18 @@
               <textarea id="preuve-fiche" name="proof" rows="3" maxlength="4000" required></textarea>
               <p class="field__help">Versions, configuration sans secret, étapes et résultat obtenu.</p>
             </div>
-            <p><button type="submit" class="button button--block">Confirmer avec cette preuve</button></p>
+            <div class="field">
+              <label for="version-fiche">Version d'API testée <span class="field__optional">(facultatif)</span></label>
+              <input id="version-fiche" name="api_version" type="text" maxlength="40" autocomplete="off">
+            </div>
+            <p class="confirm-actions"><button type="submit" name="still_works" value="1" class="button">Ça marche encore</button><button type="submit" name="still_works" value="0" class="button button--secondary">Ça ne marche plus</button></p>
           </form>
           {% elif viewer.can_write %}
           <form class="confirm" method="post" action="/fiches/{{ page.slug }}/confirmer">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="target_kind" value="fiche">
             <input type="hidden" name="target_id" value="{{ page.slug }}">
-            <button type="submit" class="button button--block">Ça marche encore</button>
+            <p class="confirm-actions"><button type="submit" name="still_works" value="1" class="button">Ça marche encore</button><button type="submit" name="still_works" value="0" class="button button--secondary">Ça ne marche plus</button></p>
           </form>
           {% else %}
           <p><a class="button button--block" href="{{ page.login_url }}">{{ icon("github", size=16) }}Se connecter pour confirmer</a></p>

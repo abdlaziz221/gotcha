@@ -342,6 +342,29 @@ pre.example { margin: 0; font-size: 0.8125rem; line-height: 1.55; white-space: p
   .flow-map li:not(:last-child)::after { top: 20px; bottom: auto; left: 52px; right: -12px; width: auto; height: 1px; }
 }
 
+/* Brancher votre agent : onglets par agent, configuration à copier. */
+.segmented--scroll { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+
+.segmented button { display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap; }
+
+.segmented .agent-logo { width: 14px; height: 14px; }
+
+.agent-config { padding: var(--space-5); }
+
+.agent-config + .agent-config { border-top: 1px solid var(--ui-border); }
+
+.agent-config__name { display: flex; align-items: center; gap: var(--space-2); margin: 0; font-size: 0.9375rem; font-weight: 600; }
+
+.agent-config__where { margin: var(--space-1) 0 var(--space-3); color: var(--ui-muted); font-size: 0.875rem; }
+
+.agent-config__code { position: relative; max-width: none; margin: 0; padding: var(--space-4) 3rem var(--space-4) var(--space-4); border: 1px solid var(--ui-border); border-radius: var(--ui-radius-sm); background-color: var(--ui-inset); font-size: 0.8125rem; line-height: 1.6; overflow-x: auto; }
+
+.agent-config__code code { border: 0; padding: 0; background: none; }
+
+.agent-config__code .icon-button { position: absolute; top: 6px; right: 6px; }
+
+.confirm-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; }
+
 /* Pile de cartes avec un titre de section discret (pièges d'une fiche). */
 .stack { display: grid; gap: var(--space-3); }
 

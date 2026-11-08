@@ -202,6 +202,7 @@ class SearchHitView:
     title: str
     snippet: str
     url: str
+    fiche_title: str = ""  # fiche du résultat (« Wave Sénégal »), affichée sous le titre
 
 
 @dataclass(frozen=True, slots=True)
@@ -278,6 +279,7 @@ class IncidentsPage:
     active: list[IncidentView]
     recent: list[IncidentView]
     flash: Flash | None = None
+    services: list[FicheCard] = field(default_factory=list)  # état en direct de chaque fiche
 
 
 @dataclass(frozen=True, slots=True)
@@ -342,6 +344,14 @@ class LoginPage:
 class GlossaryPage:
     meta: PageMeta
     terms: list[GlossaryTerm]
+
+
+@dataclass(frozen=True, slots=True)
+class ConnectPage:
+    """Page « Brancher votre agent » : configuration MCP de chaque agent."""
+
+    meta: PageMeta
+    login_required: bool  # GOTCHA_MCP_AUTH : connexion GitHub à la première utilisation
 
 
 @dataclass(frozen=True, slots=True)

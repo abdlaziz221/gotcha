@@ -47,6 +47,7 @@
           <a class="row" href="{{ hit.url }}">
             <span class="row__title">{{ hit.title }}</span>
             <span class="row__text">{{ hit.snippet }}</span>
+            {% if hit.fiche_title %}<span class="row__meta">{{ icon("book-open", size=14) }}{{ hit.fiche_title }}</span>{% endif %}
             <span class="row__aside row__kind">{{ icon(HIT_ICONS.get(hit.kind.value, "book-open"), size=16) }}{{ hit.kind_label }}</span>
           </a>
         </li>

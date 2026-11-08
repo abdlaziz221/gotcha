@@ -80,14 +80,26 @@ if (filters) {
 // --- Fiche : « Ça marche encore » sans quitter la page -----------------------------------------
 // Le serveur répond par une redirection vers la fiche : on y relit le piège mis à jour et on le
 // remplace sur place. En cas d'erreur, on laisse le formulaire partir normalement.
+// Envoi classique, en gardant la valeur du bouton cliqué (form.submit() l'oublierait).
+function sendNormally(form, submitter) {
+  if (submitter?.name) {
+    const keep = Object.assign(document.createElement("input"), {
+      type: "hidden", name: submitter.name, value: submitter.value,
+    });
+    form.append(keep);
+  }
+  form.submit();
+}
+
 for (const form of $$("form[data-inplace]")) {
   form.addEventListener("submit", async (event) => {
     if (!form.reportValidity()) return;
     event.preventDefault();
-    const button = form.querySelector('button[type="submit"]');
-    if (button) button.disabled = true;
+    const buttons = $$('button[type="submit"]', form);
+    for (const b of buttons) b.disabled = true;
     try {
-      const response = await fetch(form.action, { method: "POST", body: new FormData(form) });
+      // Le bouton cliqué porte still_works (« marche encore » ou « ne marche plus »).
+      const response = await fetch(form.action, { method: "POST", body: new FormData(form, event.submitter) });
       const html = await response.text();
       const page = new DOMParser().parseFromString(html, "text/html");
       if (!response.ok) {
@@ -100,14 +112,16 @@ for (const form of $$("form[data-inplace]")) {
       const card = form.closest(".gotcha");
       const fresh = card ? page.getElementById(card.id) : null;
       if (!confirmed || (card && !fresh)) {
-        form.submit();
+        sendNormally(form, event.submitter);
         return;
       }
       if (card && fresh) {
         const note = document.createElement("p");
         note.className = "gotcha__done";
         note.setAttribute("role", "status");
-        note.textContent = "Merci : votre confirmation est enregistrée.";
+        note.textContent = event.submitter?.value === "0"
+          ? "Merci : votre signalement « ne marche plus » est enregistré."
+          : "Merci : votre confirmation est enregistrée.";
         fresh.querySelector(".gotcha__foot")?.prepend(note);
         card.replaceWith(fresh);
       } else {
@@ -118,7 +132,7 @@ for (const form of $$("form[data-inplace]")) {
       }
       say("Confirmation enregistrée");
     } catch (error) {
-      if (button) button.disabled = false;
+      for (const b of buttons) b.disabled = false;
       let message = form.querySelector(".field__error");
       if (!message) {
         message = document.createElement("p");
@@ -370,3 +384,33 @@ document.addEventListener("keydown", (event) => {
   if (field) field.focus();
   else location.href = "/recherche";
 });
+
+// --- Onglets (page Brancher) : un panneau visible à la fois ; sans JavaScript, tous visibles. ---
+for (const tabs of $$("[data-tabs]")) {
+  const list = tabs.querySelector('[role="tablist"]');
+  const buttons = $$("[data-tab]", tabs);
+  const panels = $$("[data-panel]", tabs);
+  if (!list || !buttons.length) continue;
+  list.hidden = false;
+  const show = (key, focus = false) => {
+    for (const b of buttons) {
+      const on = b.dataset.tab === key;
+      b.setAttribute("aria-selected", String(on));
+      b.tabIndex = on ? 0 : -1;
+      if (on && focus) b.focus();
+    }
+    for (const panel of panels) panel.hidden = panel.dataset.panel !== key;
+  };
+  const wanted = location.hash.replace("#agent-", "");
+  show(buttons.some((b) => b.dataset.tab === wanted) ? wanted : buttons[0].dataset.tab);
+  list.addEventListener("click", (event) => {
+    const b = event.target.closest("[data-tab]");
+    if (b) show(b.dataset.tab);
+  });
+  list.addEventListener("keydown", (event) => {
+    const i = buttons.indexOf(document.activeElement);
+    if (i < 0 || !["ArrowRight", "ArrowLeft"].includes(event.key)) return;
+    const step = event.key === "ArrowRight" ? 1 : buttons.length - 1;
+    show(buttons[(i + step) % buttons.length].dataset.tab, true);
+  });
+}

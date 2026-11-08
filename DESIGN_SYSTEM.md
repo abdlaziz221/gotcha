@@ -265,11 +265,12 @@ Outil de travail, pas brochure : sobre, dense, lisible d'un coup d'œil. Styles 
 | :--- | :--- | :--- |
 | Fiche | Avant de commencer, étapes, pièges, tableaux, sources | Résumé, pannes en cours, sommaire, confirmation |
 | Recherche | Barre de filtres, résultats | Raccourcis par service, exemples |
-| Pannes | En cours, récentes | Résumé, règles de changement d'état |
+| Pannes | État par service, en cours, récentes | Résumé, règles de changement d'état |
 | Glossaire | Termes | Index des initiales |
 | Données | Quatre sections | L'essentiel |
 | Contribuer, Signaler | Formulaire | Avant d'envoyer, ensuite |
 | Relecture | File d'attente | Usage, dernières confirmations |
+| Brancher votre agent | Adresse MCP, configuration par agent (onglets), première connexion, outils | En bref, ce que Gotcha ne demande jamais |
 
 **Interactions des pages intérieures** (`static/js/pages.js`, jamais chargé par l'accueil ; chaque outil est caché par `hidden` dans le HTML et révélé par le script, la page reste complète sans JavaScript) :
 
