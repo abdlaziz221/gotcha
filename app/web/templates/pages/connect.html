@@ -43,7 +43,7 @@
       <div class="box__head">
         <h2 id="config">Configuration de votre agent</h2>
         <div class="segmented segmented--scroll" role="tablist" aria-label="Agents" hidden>
-          {% for key, name, where, snippet in agents %}<button type="button" role="tab" id="onglet-{{ key }}" aria-controls="agent-{{ key }}" aria-selected="{{ 'true' if loop.first else 'false' }}" data-tab="{{ key }}">{{ agent_logo(key, 14) or icon("bot", size=14) }}{{ name }}</button>{% endfor %}
+          {% for key, name, where, snippet in agents %}<button type="button" role="tab" id="onglet-{{ key }}" aria-controls="agent-{{ key }}" aria-selected="{{ 'true' if loop.first else 'false' }}" data-tab="{{ key }}">{{ name }}</button>{% endfor %}
         </div>
       </div>
       {% for key, name, where, snippet in agents %}
