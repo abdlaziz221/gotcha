@@ -168,6 +168,7 @@ class GotchaView:
     audio_url: str | None = None
     audio_transcript_html: Markup | None = None
     audio_credit: str | None = None  # « Enregistré par X, relu par Y »
+    verified_by: str | None = None  # relecteur affiché « Relu par » (L15) ; jamais d'auteur inventé
 
 
 @dataclass(frozen=True, slots=True)
@@ -201,6 +202,7 @@ class SearchHitView:
     title: str
     snippet: str
     url: str
+    fiche_title: str = ""  # fiche du résultat (« Wave Sénégal »), affichée sous le titre
 
 
 @dataclass(frozen=True, slots=True)
@@ -277,6 +279,7 @@ class IncidentsPage:
     active: list[IncidentView]
     recent: list[IncidentView]
     flash: Flash | None = None
+    services: list[FicheCard] = field(default_factory=list)  # état en direct de chaque fiche
 
 
 @dataclass(frozen=True, slots=True)
@@ -341,6 +344,15 @@ class LoginPage:
 class GlossaryPage:
     meta: PageMeta
     terms: list[GlossaryTerm]
+
+
+@dataclass(frozen=True, slots=True)
+class ConnectPage:
+    """Page « Brancher votre agent » : configuration MCP de chaque agent."""
+
+    meta: PageMeta
+    login_required: bool  # GOTCHA_MCP_AUTH : connexion GitHub à la première utilisation
+    mcp_url: str  # GOTCHA_SITE_URL + "/mcp", l'adresse que le serveur MCP annonce
 
 
 @dataclass(frozen=True, slots=True)

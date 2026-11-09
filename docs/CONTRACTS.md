@@ -77,15 +77,16 @@ Chaque gabarit de `app/web/templates/pages/` reçoit `page` (une classe de `app/
 | URL | Méthode | Gabarit | Contexte `page` | Remarques |
 | --- | --- | --- | --- | --- |
 | `/` | GET | `home.html` | `HomePage` | Fiches, pannes en cours |
-| `/recherche?q=&service=&pays=` | GET | `search.html` | `SearchPage` | |
+| `/recherche?q=&service=&pays=` | GET | `search.html` | `SearchPage` | Chaque résultat porte `fiche_title` |
 | `/fiches/{slug}` | GET | `fiche.html` | `FichePage` | `?mode=pas-a-pas&etape=N` remplit `step_mode` |
-| `/fiches/{slug}/confirmer` | POST | — | — | Champs `target_kind`, `target_id` ; redirige avec `?ok=confirmation` |
+| `/fiches/{slug}/confirmer` | POST | — | — | Champs `target_kind`, `target_id`, `still_works` (`1` ou `0`), `proof`, `api_version` ; redirige avec `?ok=confirmation` |
 | `/contribuer?fiche=` | GET, POST | `contribute.html` | `ContributePage` | Erreurs dans `page.form.errors[champ]` ; succès vers `/contribuer/merci` |
 | `/contribuer/merci` | GET | `message.html` | `MessagePage` | |
-| `/pannes` | GET | `incidents.html` | `IncidentsPage` | |
+| `/pannes` | GET | `incidents.html` | `IncidentsPage` | `services` : l'état en direct de chaque fiche |
 | `/pannes/signaler?fiche=` | GET, POST | `report_outage.html` | `ReportOutagePage` | Succès : retour sur la fiche avec `?ok=signalement` |
 | `/relecture` | GET | `review.html` | `ReviewPage` | Relecteurs seulement |
 | `/relecture/{id}` | POST | — | — | `action` = `approve` ou `reject`, `note` |
+| `/brancher` | GET | `connect.html` | `ConnectPage` | Configuration MCP de chaque agent ; `login_required` suit `GOTCHA_MCP_AUTH`, `mcp_url` vaut `GOTCHA_SITE_URL` + `/mcp` |
 | `/glossaire` | GET | `glossary.html` | `GlossaryPage` | Un `id` par terme (ancre) |
 | `/ou-sont-vos-donnees` | GET | `data.html` | `StaticPage` | |
 | `/styleguide` | GET | `styleguide.html` | `StyleguidePage` | Développement seulement |

@@ -13,6 +13,7 @@ from app.web.presenters import fiche_card, fiche_url, incident_view, service_nam
 from app.web.session import current_account
 from app.web.templating import render
 from app.web.viewmodels import (
+    ConnectPage,
     GlossaryPage,
     HomePage,
     Option,
@@ -58,6 +59,7 @@ async def search(
     countries = sorted({f.country for f in fiches if f.country}, key=country_name)
     locked = services.settings.site_auth and current_account(request) is None
     opened = {f.slug for f in fiches if f.open_access}
+    titles = {f.slug: f.title for f in fiches}
     page = SearchPage(
         meta=PageMeta(title="Rechercher un piège", path="/recherche"),
         query=q,
@@ -72,6 +74,7 @@ async def search(
                     else h.snippet
                 ),
                 url=fiche_url(h.fiche_slug) + (f"#{h.anchor}" if h.anchor else ""),
+                fiche_title=titles.get(h.fiche_slug, ""),
             )
             for h in hits
         ],
@@ -81,6 +84,20 @@ async def search(
         country_options=[Option(c, country_name(c), c == pays) for c in countries],
     )
     return render(request, "pages/search.html", page)
+
+
+@router.get("/brancher")
+async def connect(request: Request, services: ServicesDep) -> Response:
+    page = ConnectPage(
+        meta=PageMeta(
+            title="Brancher votre agent",
+            path="/brancher",
+            description="Ajouter le serveur MCP de Gotcha à votre agent de codage.",
+        ),
+        login_required=services.settings.mcp_auth,
+        mcp_url=f"{services.settings.site_url}/mcp",
+    )
+    return render(request, "pages/connect.html", page)
 
 
 @router.get("/glossaire")

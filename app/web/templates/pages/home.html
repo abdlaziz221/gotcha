@@ -1,56 +1,384 @@
 {% extends "base.html" %}
 {% from "components/forms.html" import search_form %}
-{% from "components/cards.html" import fiche_card %}
-{% from "components/status.html" import incident_item %}
+{% from "components/status.html" import incident_item, status_text %}
+{% from "components/icons.html" import icon %}
+{% from "components/agents.html" import agent_tiles %}
 
 {% block title %}{{ site.name }} · {{ site.tagline }}{% endblock %}
 
+{% block styles %}<link rel="stylesheet" href="/static/css/accueil.css?v=26">{% endblock %}
+{% block scripts %}{% endblock %}
+
 {% block content %}
-<section class="hero">
-  <h1>{{ site.tagline }}</h1>
-  <p class="hero__lead">Wave, Orange Money, MTN MoMo, M-Pesa et Datacloud : des solutions sourcées, chacune avec son niveau de confiance (sourcé, reproduit ou confirmé en production), et l'état des services en direct, lisibles par vos agents IA.</p>
-  {{ search_form(autofocus=False) }}
-  <p class="hero__stats">{{ page.cards | length }} fiche{% if page.cards | length > 1 %}s{% endif %} · {{ page.gotcha_total }} piège{% if page.gotcha_total > 1 %}s{% endif %} documenté{% if page.gotcha_total > 1 %}s{% endif %}</p>
+<section class="hero" aria-labelledby="hero-titre">
+  <div class="hero__copy">
+    {# Le mot qui tourne est masqué aux lecteurs d'écran : ils lisent la phrase complète. #}
+    <h1 id="hero-titre" class="hero__title reveal reveal--2">
+      <span class="visually-hidden">Ce que les devs ont déjà résolu sur le paiement et le déploiement en Afrique : Wave, Orange Money, MTN MoMo, M-Pesa et Datacloud.</span>
+      <span aria-hidden="true">Ce que les devs <em>ont déjà résolu</em><br>
+        sur <span class="hero__highlight"><span class="hero__glow"></span><span class="rotator"><span>Wave</span><span>Orange Money</span><span>MTN MoMo</span><span>M-Pesa</span><span>Datacloud</span></span></span></span>
+    </h1>
+
+    <p class="hero__lead reveal reveal--3">La mémoire opérationnelle du paiement mobile et du déploiement en Afrique : des solutions sourcées et relues, chacune avec son niveau de confiance, et l'état des services en direct. Cherchez une erreur, ou laissez votre agent IA le faire pour vous.</p>
+
+    <div class="hero__search reveal reveal--4">{{ search_form(autofocus=False) }}</div>
+
+    <p class="hero__actions reveal reveal--5">
+      <a class="button button--quiet" href="#video">{{ icon("play", size=16) }}Voir la démo</a>
+      {% if viewer.can_write or viewer.site_auth %}<a class="button button--secondary" href="/contribuer">Ajouter un piège{{ icon("arrow-right", size=16) }}</a>{% endif %}
+    </p>
+
+    <ul class="hero__proof reveal reveal--6">
+      <li>{{ icon("circle-check", size=16) }}{{ page.cards | length }} fiches, {{ page.gotcha_total }} pièges</li>
+      <li>{{ icon("circle-check", size=16) }}Gratuit</li>
+      <li>{{ icon("circle-check", size=16) }}Relu par des humains</li>
+      <li>{{ icon("circle-check", size=16) }}Hébergé à Dakar</li>
+    </ul>
+
+    {# Agents de codage : tuiles flottantes autour du titre sur grand écran, rangée sous les preuves ailleurs. #}
+    <p class="agents__label reveal reveal--6"><a href="/brancher">Se branche à tout agent compatible MCP</a></p>
+    {{ agent_tiles() }}
+  </div>
+
+  {# Vidéo motion : le scénario réel du test du 4 novembre, en 8 scènes posées dans un même monde,
+     parcouru par une caméra (app.js).
+     Sans JavaScript (ou avant son chargement), les 8 scènes s'affichent côte à côte comme un storyboard. #}
+  <div class="hero__showcase" id="video" data-showcase>
+    <div class="hero__bloom" aria-hidden="true"></div>
+    <div class="player-frame" data-player-frame>
+      <span class="player__corner player__corner--tl" aria-hidden="true"></span>
+      <span class="player__corner player__corner--tr" aria-hidden="true"></span>
+      <span class="player__corner player__corner--bl" aria-hidden="true"></span>
+      <span class="player__corner player__corner--br" aria-hidden="true"></span>
+      <figure class="player" data-player aria-labelledby="video-titre">
+        <div class="player__bar">
+          <div class="player__chrome-left" aria-hidden="true">
+            <span class="demo__dots"><span></span><span></span><span></span></span>
+            <span class="player__nav-icons">
+              <svg viewBox="0 0 12 12" width="12" height="12" fill="none"><path d="M9.5 6H2.5M2.5 6L6 2.5M2.5 6L6 9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <svg viewBox="0 0 12 12" width="12" height="12" fill="none"><path d="M2.5 6H9.5M9.5 6L6 2.5M9.5 6L6 9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.4"/></svg>
+              <svg viewBox="0 0 12 12" width="12" height="12" fill="none"><path d="M10.2 4.5A4.5 4.5 0 1 0 10.5 7M10.5 2V4.6H7.9" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </div>
+          <div class="player__address">
+            <span class="player__address-main">
+              <svg class="player__lock" viewBox="0 0 8 11" width="9" height="12" fill="none" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M7 3.5H6.5V2.5C6.5 1.12 5.38 0 4 0C2.62 0 1.5 1.12 1.5 2.5V3.5H1C0.45 3.5 0 3.95 0 4.5V9.5C0 10.05 0.45 10.5 1 10.5H7C7.55 10.5 8 10.05 8 9.5V4.5C8 3.95 7.55 3.5 7 3.5ZM2.5 3.5V2.5C2.5 1.67 3.17 1 4 1C4.83 1 5.5 1.67 5.5 2.5V3.5H2.5Z" fill="currentColor"/></svg>
+              <span class="player__domain" aria-hidden="true">app.gotcha.sn</span>
+              <span class="player__sep" aria-hidden="true">/</span>
+              <span id="video-titre" class="player__title">Comment Gotcha aide votre agent</span>
+            </span>
+            <span class="player__counter" data-player-counter aria-hidden="true">01 / 08</span>
+          </div>
+          <button type="button" class="player__toggle" data-player-toggle hidden>
+            <span class="player__icon-pause">{{ icon("pause", size=16) }}</span>
+            <span class="player__icon-play">{{ icon("play", size=16) }}</span>
+            <span class="visually-hidden" data-player-label>Mettre en pause</span>
+          </button>
+        </div>
+
+      <div class="player__stage">
+      {# Faisceaux entre les scènes : tracés et rayons posés par app.js, suivent la caméra. #}
+      <svg class="world-beams" aria-hidden="true" focusable="false"></svg>
+      <ol class="player__scenes">
+        <li class="scene scene--code">
+          <p class="scene__step"><span>1</span> Le dev demande le paiement Wave</p>
+          <div class="scene__art">
+            <div class="win win--ide">
+              <div class="win__head" aria-hidden="true">
+                <span class="win__tab">{{ icon("terminal", size=14) }}checkout/wave.ts</span>
+                <span class="win__badge">Claude Code · MCP actif</span>
+              </div>
+              <div class="ide-split">
+                <div class="ide-code" aria-hidden="true">
+                  <div class="ide-line"><span>01</span><code>import { wave } from "./client";</code></div>
+                  <div class="ide-line"><span>02</span><code>export async function payWave(xof: number) {</code></div>
+                  <div class="ide-line"><span>03</span><code class="ide-comment">// Intégration Wave Sénégal (XOF)</code></div>
+                  <div class="ide-line"><span>04</span><code>  return wave.checkout({ amount: xof });</code></div>
+                  <div class="ide-line"><span>05</span><code>}</code></div>
+                </div>
+                <div class="ide-chat">
+                  <span class="ide-chat__label" aria-hidden="true">{{ icon("bot", size=14) }}Assistant IA · Projet Dakar</span>
+                  <p class="bubble bubble--dev"><span data-type>« Ajoute le paiement Wave au Sénégal avec test et webhook. »</span><span class="cursor" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 2.5 19.5 12l-7 1.6L8.6 20z" fill="#0b0907" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/></svg></span></p>
+                  <span class="ide-send" aria-hidden="true"><span>Envoyer à l'agent</span>{{ icon("arrow-right", size=14) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <li class="scene">
+          <p class="scene__step"><span>2</span> L'agent suppose un bac à sable</p>
+          <div class="scene__art">
+            <div class="win">
+              <div class="win__head" aria-hidden="true">
+                <span class="win__tab">{{ icon("bot", size=14) }}Essai de l'agent</span>
+                <span class="win__badge win__badge--warn">Hypothèse non vérifiée</span>
+              </div>
+              <div class="win__body">
+                <span class="typing" aria-hidden="true"><span></span><span></span><span></span></span>
+                <p class="bubble bubble--agent">{{ icon("bot", size=16) }}« Je configure d'abord le bac à sable Wave pour tester sans débiter. »</p>
+                <code class="code-line code-line--bad">const BASE = "https://sandbox.wave.com/v1/checkout";</code>
+                <p class="scene-note scene-note--bad">{{ icon("triangle-alert", size=16) }}<span>Le modèle suppose un bac à sable : la documentation Wave n'en mentionne aucun.</span></p>
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <li class="scene scene--ask">
+          <p class="scene__step"><span>3</span> Avant d'écrire la suite, il interroge Gotcha</p>
+          <div class="scene__art">
+            <div class="win">
+              <div class="win__head" aria-hidden="true">
+                <span class="win__tab">{{ icon("plug", size=14) }}Appel MCP automatique</span>
+                <span class="win__badge">POST /mcp · lecture seule</span>
+              </div>
+              <div class="win__body">
+                <div class="flow">
+                  <span class="node">{{ icon("bot") }}Agent IA</span>
+                  <span class="flow__path" aria-hidden="true"><svg class="sbeam" viewBox="0 0 100 10" preserveAspectRatio="none"><path class="sbeam__track" d="M0 5H100"/><path class="sbeam__ray" d="M0 5H100" pathLength="100"/></svg></span>
+                  <span class="node node--gotcha"><span class="node__ping" aria-hidden="true"></span><img src="/static/img/logo.svg" alt="" width="22" height="22">Gotcha MCP</span>
+                </div>
+                <code class="flow__call" data-type>search_gotchas("wave bac à sable", country="SN")</code>
+                <p class="scene-pills" aria-hidden="true"><span>Lecture seule</span><span>Aucun secret transmis</span><span>{{ page.cards | length }} fiches</span></p>
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <li class="scene scene--answer">
+          <p class="scene__step"><span>4</span> Gotcha trouve le piège sourcé</p>
+          <div class="scene__art">
+            <div class="flow flow--back" aria-hidden="true">
+              <span class="node node--gotcha"><img src="/static/img/logo.svg" alt="" width="22" height="22">Gotcha MCP</span>
+              <span class="flow__path" aria-hidden="true"><svg class="sbeam" viewBox="0 0 100 10" preserveAspectRatio="none"><path class="sbeam__track" d="M0 5H100"/><path class="sbeam__ray" d="M0 5H100" pathLength="100"/></svg></span>
+              <span class="node">{{ icon("bot") }}Agent IA</span>
+            </div>
+            <div class="answer">
+              <span class="answer__meta"><span class="severity severity--major">{{ icon("triangle-alert", size=16) }}Important</span> · Wave Sénégal · <span class="confidence confidence--sourced">{{ icon("book-open", size=16) }}Sourcé</span></span>
+              <strong>Aucun bac à sable public : on teste avec un vrai compte</strong>
+              <span class="answer__body">Cause : la documentation officielle ne mentionne aucun bac à sable ; la clé d'API est réservée à un compte Wave Business. Solution : simuler Wave dans les tests, puis tester en production avec de petits montants.</span>
+              <span class="answer__by">{{ icon("book-open", size=16) }}Source : documentation officielle de l'API Wave Business, consultée le 28 oct. 2026</span>
+            </div>
+          </div>
+        </li>
+
+        <li class="scene">
+          <p class="scene__step"><span>5</span> L'agent corrige son code</p>
+          <div class="scene__art">
+            <div class="win">
+              <div class="win__head" aria-hidden="true">
+                <span class="win__tab">{{ icon("terminal", size=14) }}checkout/wave.ts · Correctif</span>
+                <span class="win__badge win__badge--ok">{{ icon("circle-check", size=14) }}Correctif proposé</span>
+              </div>
+              <div class="win__body">
+                <code class="code-line code-line--bad code-line--removed">- const BASE = "https://sandbox.wave.com";</code>
+                <code class="code-line code-line--good" data-type>+ const BASE = "https://api.wave.com/v1/checkout/sessions";</code>
+                <code class="code-line code-line--good" data-type>+ const wave = env.TEST ? fakeWave() : realWave(BASE); // Wave simulé dans les tests</code>
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <li class="scene">
+          <p class="scene__step"><span>6</span> Il vérifie les pannes en direct</p>
+          <div class="scene__art">
+            <div class="win">
+              <div class="win__head" aria-hidden="true">
+                <span class="win__tab">{{ icon("activity", size=14) }}État des services en direct</span>
+                <span class="win__badge">Flux d'incidents et signalements</span>
+              </div>
+              <div class="win__body">
+                <code class="flow__call" data-type>get_service_status("wave", country="SN")</code>
+                <span class="flow__drop" aria-hidden="true"><svg class="sbeam sbeam--v" viewBox="0 0 10 100" preserveAspectRatio="none"><path class="sbeam__track" d="M5 0V100"/><path class="sbeam__ray" d="M5 0V100" pathLength="100"/></svg></span>
+                <div class="radar-card">
+                  <p class="live-status">{{ icon("activity") }}<span>Wave Sénégal</span><span class="status status--normal">{{ icon("circle-check", size=16) }}Aucune panne signalée</span></p>
+                  <div class="radar-bars" aria-hidden="true">
+                    <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                  </div>
+                  <span class="answer__by">Une panne signalée ferait passer le service en « dégradé » : l'agent le dirait au dev.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <li class="scene">
+          <p class="scene__step"><span>7</span> Il prévient le développeur</p>
+          <div class="scene__art">
+            <div class="win">
+              <div class="win__head" aria-hidden="true">
+                <span class="win__tab">{{ icon("bot", size=14) }}Réponse de l'agent</span>
+                <span class="win__badge win__badge--ok">Piège et état vérifiés</span>
+              </div>
+              <div class="win__body">
+                <span class="typing" aria-hidden="true"><span></span><span></span><span></span></span>
+                <p class="bubble bubble--agent">{{ icon("bot", size=16) }}« La documentation Wave ne mentionne aucun bac à sable : j'ai isolé l'appel à Wave pour le simuler dans les tests. Aucune panne signalée sur Wave Sénégal : tu pourras tester en production avec de petits montants. »</p>
+                <div class="scene-checks" aria-hidden="true">
+                  <span>{{ icon("circle-check", size=16) }}Wave simulé dans <code>tests/wave.test.ts</code></span>
+                  <span>{{ icon("circle-check", size=16) }}Test en production prévu avec de petits montants</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <li class="scene scene--done">
+          <p class="scene__step"><span>8</span> Le piège est évité, et confirmé</p>
+          <div class="scene__art">
+            <div class="win">
+              <div class="win__head" aria-hidden="true">
+                <span class="win__tab">{{ icon("shield-check", size=14) }}Mémoire opérationnelle partagée</span>
+                <span class="win__badge win__badge--ok">Confirmation avec preuve</span>
+              </div>
+              <div class="win__body">
+                <div class="flow flow--confirm" aria-hidden="true">
+                  <span class="node">{{ icon("user") }}Dev</span>
+                  <span class="flow__path" aria-hidden="true"><svg class="sbeam" viewBox="0 0 100 10" preserveAspectRatio="none"><path class="sbeam__track" d="M0 5H100"/><path class="sbeam__ray" d="M0 5H100" pathLength="100"/></svg></span>
+                  <span class="node node--gotcha"><img src="/static/img/logo.svg" alt="" width="22" height="22">Fiche Wave</span>
+                </div>
+                <p class="done">{{ icon("circle-check") }}<span>Ça marche encore : <strong class="done__count">+1 confirmation (<span class="roll" aria-hidden="true"><span>0</span><span>1</span></span><span class="visually-hidden">1</span> au total)</strong></span></p>
+                <span class="answer__by">Le prochain dev, et son agent IA, retrouveront ce piège avec sa preuve.</span>
+              </div>
+            </div>
+          </div>
+        </li>
+      </ol>
+      <div class="player__dock" data-player-dock hidden aria-label="Chapitres de la démonstration">
+        <button type="button" class="player__step is-current" data-player-step="0"><span>01</span>Demande</button>
+        <button type="button" class="player__step" data-player-step="1"><span>02</span>Hypothèse</button>
+        <button type="button" class="player__step" data-player-step="2"><span>03</span>Appel MCP</button>
+        <button type="button" class="player__step" data-player-step="3"><span>04</span>Piège</button>
+        <button type="button" class="player__step" data-player-step="4"><span>05</span>Correctif</button>
+        <button type="button" class="player__step" data-player-step="5"><span>06</span>Pannes</button>
+        <button type="button" class="player__step" data-player-step="6"><span>07</span>Alerte</button>
+        <button type="button" class="player__step" data-player-step="7"><span>08</span>Confirmé</button>
+        <button type="button" class="player__step player__step--all" data-player-step="8">Vue 8/8</button>
+      </div>
+      </div>
+
+      <figcaption class="agent-connect">
+        <span class="agent-connect__label" id="mcp-aide">Branchez votre agent : ajoutez ce serveur MCP</span>
+        <span class="agent-connect__row">
+          <label class="visually-hidden" for="mcp-url">Adresse du serveur MCP de Gotcha</label>
+          <input id="mcp-url" type="text" value="{{ request.base_url }}mcp" readonly aria-describedby="mcp-aide">
+          <button type="button" class="button button--quiet copy-button" data-copy="mcp-url" hidden>{{ icon("copy", size=16) }}<span>Copier</span></button>
+        </span>
+      </figcaption>
+      </figure>
+    </div>
+  </div>
 </section>
 
-{% if page.active_incidents %}
-<section aria-labelledby="pannes-en-cours">
-  <h2 id="pannes-en-cours">Pannes en cours</h2>
-  <ul class="incidents">
-    {% for incident in page.active_incidents %}{{ incident_item(incident) }}{% endfor %}
-  </ul>
-  <p><a href="/pannes">Tout le journal des pannes</a></p>
-</section>
-{% endif %}
+{% include "components/landing.html" %}
 
+<div class="section-sep" aria-hidden="true"><span class="section-sep__cell"></span></div>
+<section class="coverage" aria-labelledby="couverture-titre">
+  <header class="section-head" data-reveal>
+    <p class="kicker">En ligne aujourd'hui</p>
+    <h2 id="couverture-titre">Ce que Gotcha couvre, <em>et son état en direct</em></h2>
+  </header>
+
+{# Une ligne par fiche : service, pays, état en direct, nombre de pièges ; toute la ligne mène à la fiche. #}
+{% macro service_row(card) -%}
+<li><a class="svc" href="{{ card.url }}"><span class="svc__name">{{ card.title }}<span>{{ card.country_name }} · mise à jour le {{ card.last_confirmed_on | date_fr }}{% if card.is_draft %} · brouillon{% endif %}{% if card.needs_review %} · à revérifier{% endif %}</span></span>{{ status_text(card.status) }}<span class="svc__count">{{ card.gotcha_count }} piège{% if card.gotcha_count > 1 %}s{% endif %}</span>{{ icon("arrow-right", size=16) }}</a></li>
+{%- endmacro %}
 {% set payment = page.cards | selectattr("kind.value", "equalto", "payment") | list %}
 {% set hosting = page.cards | selectattr("kind.value", "equalto", "hosting") | list %}
 
-{% if payment %}
-<section aria-labelledby="paiement">
-  <h2 id="paiement">Paiement mobile</h2>
-  <div class="cards">
-    {% for card in payment %}{{ fiche_card(card) }}{% endfor %}
+<div class="layout">
+  <div class="layout__main">
+    {% if payment %}
+    <section aria-labelledby="paiement">
+      <h3 class="svc-group" id="paiement">Paiement mobile</h3>
+      <ul class="svc-list">{% for card in payment %}{{ service_row(card) }}{% endfor %}</ul>
+    </section>
+    {% endif %}
+
+    {% if hosting %}
+    <section aria-labelledby="hebergement">
+      <h3 class="svc-group" id="hebergement">Déploiement cloud</h3>
+      <ul class="svc-list">{% for card in hosting %}{{ service_row(card) }}{% endfor %}</ul>
+    </section>
+    {% endif %}
+
+    {% if not page.cards %}
+    <p class="empty">Aucune fiche publiée pour l'instant.</p>
+    {% endif %}
+  </div>
+
+  <aside class="layout__aside" aria-labelledby="pannes-en-cours">
+    <section>
+      <h3 class="svc-group" id="pannes-en-cours">Pannes en cours</h3>
+      {% if page.active_incidents %}
+      <ul class="incidents incidents--compact">
+        {% for incident in page.active_incidents %}{{ incident_item(incident) }}{% endfor %}
+      </ul>
+      {% else %}
+      <p class="empty">Aucune panne en cours sur les services suivis.</p>
+      {% endif %}
+      <p><a href="/pannes">Voir le journal des pannes</a></p>
+    </section>
+  </aside>
+</div>
+</section>
+
+{# Questions fréquentes : accordéon natif (<details name="faq"> : une seule réponse ouverte à la fois),
+   sans JavaScript. Numéros et « + » dessinés en CSS (compteur, ::after). Chaque réponse s'appuie sur ce que fait vraiment le site (pages Données, MCP, pannes). #}
+{% set mcp_url = request.base_url ~ "mcp" %}
+<div class="section-sep" aria-hidden="true"><span class="section-sep__cell"></span></div>
+<section class="faq" aria-labelledby="faq-titre">
+  <header class="faq__head" data-reveal>
+    <p class="kicker">Questions fréquentes</p>
+    <h2 id="faq-titre">Avant de brancher, <em>vos questions</em></h2>
+    <p class="faq__lead">Compte, agents, sources, secrets, données : les réponses courtes.</p>
+    <p class="faq__more">{{ icon("book-open", size=16) }}<span>Un mot technique vous échappe ? <a href="/glossaire">Ouvrez le glossaire</a></span></p>
+  </header>
+
+  <div class="faq__list">
+    <details class="faq__item" name="faq" open>
+      <summary>Faut-il créer un compte ?</summary>
+      <div class="faq__a"><p>Pas pour chercher : titre, symptôme, début de la cause, niveau de confiance, sources et état des pannes sont publics, et les fiches Wave et Datacloud sont entières. Pour le reste (solutions, agent, contributions), un compte gratuit : connexion avec GitHub, sans aucune permission sur vos dépôts.</p></div>
+    </details>
+    <details class="faq__item" name="faq">
+      <summary>Quels agents peuvent s'en servir ?</summary>
+      <div class="faq__a"><p>Tout agent de codage qui accepte un serveur MCP : Claude Code, Cursor, GitHub Copilot, Windsurf, Codex, Gemini CLI, Cline… Ajoutez cette adresse dans sa configuration ; à la première utilisation, il ouvre la connexion GitHub dans votre navigateur, sans jeton à copier :</p><p><code>{{ mcp_url }}</code></p></div>
+    </details>
+    <details class="faq__item" name="faq">
+      <summary>Que fait mon agent avec Gotcha ?</summary>
+      <div class="faq__a"><p>Il lit les fiches, cherche un piège par mot-clé, en-tête HTTP ou code d'erreur, et vérifie l'état d'un service en direct. Il peut aussi signaler une panne, proposer un piège avec votre accord, ou confirmer une solution avec une preuve : rien n'est publié sans relecture humaine.</p><ul class="faq__tools"><li><code>search_gotchas</code></li><li><code>get_fiche</code></li><li><code>get_service_status</code></li><li><code>propose_gotcha</code></li><li><code>confirm_gotcha</code></li></ul></div>
+    </details>
+    <details class="faq__item" name="faq">
+      <summary>D'où viennent les pièges, et peut-on s'y fier ?</summary>
+      <div class="faq__a"><p>Chaque piège cite sa source (documentation officielle, ticket, essai réel) et passe une relecture humaine avant d'être publié. Aucune fiche n'est générée automatiquement. Chaque piège affiche son niveau : sourcé, reproduit ou confirmé en production, avec une preuve au-delà du premier.</p></div>
+    </details>
+    <details class="faq__item" name="faq">
+      <summary>Et si je colle une clé d'API par erreur ?</summary>
+      <div class="faq__a"><p>Le formulaire refuse l'envoi tant que le texte semble contenir un secret (clé, jeton). Remplacez-le par une valeur comme <code>&lt;VOTRE_CLE&gt;</code>, puis renvoyez.</p></div>
+    </details>
+    <details class="faq__item" name="faq">
+      <summary>Comment savez-vous qu'un service est en panne ?</summary>
+      <div class="faq__a"><p>Par les flux d'incidents publics des fournisseurs, et par les signalements des devs et de leurs agents. Un signalement non confirmé cesse de compter au bout de 6 heures. <a href="/pannes">Voir le journal des pannes</a></p></div>
+    </details>
+    <details class="faq__item" name="faq">
+      <summary>Où sont stockées mes données ?</summary>
+      <div class="faq__a"><p>À Dakar, sur Datacloud. Seule la connexion passe par GitHub. Pas de publicité, pas de traceur tiers. <a href="/ou-sont-vos-donnees">Où sont vos données</a></p></div>
+    </details>
   </div>
 </section>
-{% endif %}
 
-{% if hosting %}
-<section aria-labelledby="hebergement">
-  <h2 id="hebergement">Hébergement</h2>
-  <div class="cards">
-    {% for card in hosting %}{{ fiche_card(card) }}{% endfor %}
+{# Bandeau final : le seul bandeau bordeaux de la page (DS-05). #}
+<section class="band" aria-labelledby="contribuer">
+  <div>
+    <p class="kicker">Contribuer</p>
+    <h2 id="contribuer">Vous avez payé le prix <em>d'un piège ?</em></h2>
+    <p>Évitez-le au suivant : documentez une anomalie vécue en deux minutes, ou confirmez qu'une solution fonctionne toujours en production.</p>
+    <p class="band__signature">Les développeurs partagent. Les agents retrouvent. <em>L'expérience reste.</em></p>
+    <p class="band__actions">{% if viewer.can_write or viewer.site_auth %}<a class="button" href="/contribuer">Ajouter un retour de terrain{{ icon("arrow-right") }}</a><a class="band__link" href="/pannes/signaler">{{ icon("activity", size=18) }}Signaler une panne</a>{% endif %}</p>
   </div>
-</section>
-{% endif %}
-
-{% if not page.cards %}
-<p class="empty">Aucune fiche publiée pour l'instant.</p>
-{% endif %}
-
-<section class="cta">
-  <h2>Vous avez payé le prix d'un piège ?</h2>
-  <p>Évitez-le au suivant : ajoutez-le en deux minutes, ou confirmez qu'une solution marche encore.</p>
-  {% if viewer.can_write or viewer.site_auth %}<p><a class="button" href="/contribuer">Contribuer</a></p>{% endif %}
+  <ul class="band__stats">
+    <li><span class="band__number">{{ page.cards | length }}</span><span class="band__label">fiche{% if page.cards | length > 1 %}s{% endif %} de référence</span></li>
+    <li><span class="band__number">{{ page.gotcha_total }}</span><span class="band__label">piège{% if page.gotcha_total > 1 %}s{% endif %} documenté{% if page.gotcha_total > 1 %}s{% endif %}</span></li>
+    <li><span class="band__number">{{ page.active_incidents | length }}</span><span class="band__label">panne{% if page.active_incidents | length > 1 %}s{% endif %} en cours</span></li>
+  </ul>
 </section>
 {% endblock %}

@@ -1,25 +1,67 @@
 {% extends "base.html" %}
-{% from "components/status.html" import incident_item %}
+{% from "components/status.html" import incident_item, status_text %}
+{% from "components/icons.html" import icon %}
 
+{# Journal des pannes : en cours et récentes (65 %), résumé et règles (35 %). #}
 {% block content %}
-<h1>{{ page.meta.title }}</h1>
-<p>Pannes signalées par les devs et importées du flux public d'incidents de Flutterwave. {% if viewer.can_write or viewer.site_auth %}<a class="button button--small" href="/pannes/signaler">Signaler une panne</a>{% endif %}</p>
+<header class="ph ph--actions">
+  <div>
+    <nav class="crumbs" aria-label="Fil d'Ariane"><a href="/">Accueil</a><span aria-hidden="true">/</span><span aria-current="page">Pannes</span></nav>
+    <h1>{{ page.meta.title }}</h1>
+    <p class="ph__desc">Pannes signalées par les devs et leurs agents, et importées du flux public d'incidents de Flutterwave.</p>
+  </div>
+  {% if viewer.can_write or viewer.site_auth %}<p class="ph__actions"><a class="button" href="/pannes/signaler">Signaler une panne</a></p>{% endif %}
+</header>
 
-<section aria-labelledby="en-cours">
-  <h2 id="en-cours">En cours</h2>
-  {% if page.active %}
-  <ul class="incidents">{% for i in page.active %}{{ incident_item(i) }}{% endfor %}</ul>
-  {% else %}
-  <p class="empty">Aucune panne en cours sur les services suivis.</p>
-  {% endif %}
-</section>
+<div class="split">
+  <div class="split__main">
+    {% if page.services %}
+    <section class="box" aria-labelledby="par-service">
+      <div class="box__head"><div><h2 id="par-service">État par service</h2><p>Calculé à partir des pannes en cours et des signalements.</p></div></div>
+      <ul class="rows">
+        {% for card in page.services %}
+        <li><a class="row" href="{{ card.url }}"><span class="row__title">{{ card.title }}</span><span class="row__meta">{{ card.kind_label }} · {{ card.country_name }}</span><span class="row__aside">{{ status_text(card.status) }}</span></a></li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+    <section class="box" aria-labelledby="en-cours">
+      <div class="box__head"><h2 id="en-cours">En cours <span class="num">{{ page.active | length }}</span></h2></div>
+      {% if page.active %}
+      <ul class="incidents rows">{% for i in page.active %}{{ incident_item(i) }}{% endfor %}</ul>
+      {% else %}
+      <p class="empty">Aucune panne en cours sur les services suivis.</p>
+      {% endif %}
+    </section>
 
-<section aria-labelledby="recentes">
-  <h2 id="recentes">Récentes</h2>
-  {% if page.recent %}
-  <ul class="incidents">{% for i in page.recent %}{{ incident_item(i) }}{% endfor %}</ul>
-  {% else %}
-  <p class="empty">Aucune panne récente.</p>
-  {% endif %}
-</section>
+    <section class="box" aria-labelledby="recentes">
+      <div class="box__head"><h2 id="recentes">Récentes <span class="num">{{ page.recent | length }}</span></h2></div>
+      {% if page.recent %}
+      <ul class="incidents rows">{% for i in page.recent %}{{ incident_item(i) }}{% endfor %}</ul>
+      {% else %}
+      <p class="empty">Aucune panne récente.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="split__side split__side--sticky" aria-label="Résumé">
+    <section class="box" aria-labelledby="resume-pannes">
+      <div class="box__head"><h2 id="resume-pannes">Résumé</h2></div>
+      <dl class="kv">
+        <div><dt>En cours</dt><dd>{{ page.active | length }}</dd></div>
+        <div><dt>Récentes</dt><dd>{{ page.recent | length }}</dd></div>
+      </dl>
+    </section>
+    <section class="box" aria-labelledby="regles">
+      <div class="box__head"><h2 id="regles">Comment un service change d'état</h2></div>
+      <div class="box__body">
+        <ul class="checks">
+          <li>{{ icon("activity", size=16) }}<span>Un signalement fait passer le service en « dégradé » sur sa fiche.</span></li>
+          <li>{{ icon("bot", size=16) }}<span>Les agents qui interrogent Gotcha préviennent leur développeur.</span></li>
+          <li>{{ icon("clock", size=16) }}<span>Sans confirmation, un signalement cesse de compter au bout de 6 heures.</span></li>
+        </ul>
+      </div>
+    </section>
+  </aside>
+</div>
 {% endblock %}

@@ -14,7 +14,7 @@ from app.security.csrf import verify_csrf
 from app.security.ratelimit import rate_limit
 from app.web.deps import ServicesDep, country_options, fiche_options, flash_from
 from app.web.forms import FIELD_ERRORS, field_errors, form_values
-from app.web.presenters import fiche_url, incident_view, service_names
+from app.web.presenters import fiche_card, fiche_url, incident_view, service_names
 from app.web.session import writer_account
 from app.web.templating import render
 from app.web.viewmodels import FormState, IncidentsPage, PageMeta, ReportOutagePage
@@ -29,7 +29,9 @@ async def incidents(
     request: Request, services: ServicesDep, background: BackgroundTasks
 ) -> Response:
     background.add_task(services.incidents.refresh_if_stale)
-    names = service_names(await services.fiches.list())
+    fiches = await services.fiches.list()
+    names = service_names(fiches)
+    statuses = await services.incidents.statuses_for(fiches)
     now = services.clock.now()
     views = [incident_view(i, names, now) for i in await services.incidents.recent(limit=80)]
     page = IncidentsPage(
@@ -37,6 +39,10 @@ async def incidents(
         active=[v for v in views if v.is_active],
         recent=[v for v in views if not v.is_active][:40],
         flash=flash_from(request),
+        services=[
+            fiche_card(f, statuses[f.slug], names, needs_review=services.fiches.needs_review(f))
+            for f in fiches
+        ],
     )
     return render(request, "pages/incidents.html", page)
 

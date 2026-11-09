@@ -1,138 +1,232 @@
 {% extends "base.html" %}
-{% from "components/status.html" import status_badge, incident_item %}
+{% from "components/status.html" import status_text, incident_item %}
 {% from "components/cards.html" import gotcha_card, source_list with context %}
+{% from "components/icons.html" import icon %}
+
+{# Fiche : en-tête de page, puis contenu (65 %) et résumé collant (35 %) à partir de 64rem. #}
+{% set KIND_LABELS = {"payment": "Paiement mobile", "hosting": "Déploiement cloud"} %}
+{% set can_contribute = viewer.can_write or viewer.site_auth %}
 
 {% block content %}
 <article class="fiche">
-  <header class="fiche__header">
-    <p class="fiche__meta">{{ page.service_name }} · {{ page.country_name }}{% if page.api_version %} · API {{ page.api_version }}{% endif %}</p>
-    <h1>{{ page.title }}</h1>
-    <p>{{ status_badge(page.status) }}</p>
-    {% if page.status.incidents %}
-    <ul class="incidents incidents--compact">
-      {% for incident in page.status.incidents %}{{ incident_item(incident) }}{% endfor %}
-    </ul>
-    {% endif %}
-    {% if page.is_draft %}
-    <p class="notice notice--draft">Brouillon : cette fiche n'est pas encore vérifiée par un relecteur.</p>
-    {% endif %}
-    {% if page.locked %}
-    <p class="notice">Aperçu public. Les étapes et les solutions sont réservées aux membres. Compte gratuit, <a href="{{ page.login_url }}">connexion avec GitHub</a>.</p>
-    {% endif %}
-    {% if page.needs_review %}
-    <p class="notice notice--review">À revérifier : personne n'a confirmé cette fiche depuis plus de 90 jours.</p>
+  <header class="ph ph--actions">
+    <div>
+      <nav class="crumbs" aria-label="Fil d'Ariane">
+        <a href="/">Accueil</a><span aria-hidden="true">/</span><a href="/recherche">Fiches</a><span aria-hidden="true">/</span><span aria-current="page">{{ page.service_name }}</span>
+      </nav>
+      <h1>{{ page.title }}</h1>
+      <p class="ph__desc">{{ page.summary }}</p>
+      <p class="facts-line">{{ status_text(page.status) }}<span>{{ KIND_LABELS.get(page.kind.value, "") }}</span><span>{{ page.country_name }}</span>{% if page.api_version %}<span>API {{ page.api_version }}</span>{% endif %}</p>
+    </div>
+    {% if (page.steps and not page.step_mode) or page.service_docs_url %}
+    <p class="ph__actions">
+      {% if page.service_docs_url %}<a class="button button--secondary" href="{{ page.service_docs_url }}" rel="noopener noreferrer nofollow">Documentation officielle{{ icon("external-link", label="(lien externe)", size=16) }}</a>{% endif %}
+      {% if page.steps and not page.step_mode %}<a class="button" href="{{ page.steps[0].url }}">Suivre pas à pas</a>{% endif %}
+    </p>
     {% endif %}
   </header>
 
   {% if page.step_mode %}
   {% set sm = page.step_mode %}
-  <section class="step-mode" aria-labelledby="etape-titre">
-    <p class="step-mode__progress">Étape {{ sm.index }} sur {{ sm.total }}</p>
-    <h2 id="etape-titre">{{ sm.current.title }}</h2>
-    {{ sm.current.body_html }}
-    <nav class="step-mode__nav" aria-label="Étapes">
-      {% if sm.prev_url %}<a class="button button--secondary" href="{{ sm.prev_url }}">Étape précédente</a>{% endif %}
-      {% if sm.next_url %}<a class="button" href="{{ sm.next_url }}">Étape suivante</a>{% else %}<a class="button" href="{{ sm.exit_url }}#pieges">Voir les pièges</a>{% endif %}
+  <section class="box" aria-labelledby="etape-titre">
+    <div class="box__head">
+      <div>
+        <h2 id="etape-titre">{{ sm.current.title }}</h2>
+        <p>Étape {{ sm.index }} sur {{ sm.total }}</p>
+      </div>
+      <a href="{{ sm.exit_url }}">Quitter le mode pas à pas</a>
+    </div>
+    <div class="box__body">
+      <ol class="stepper" aria-hidden="true">{% for i in range(sm.total) %}<li{% if i < sm.index %} class="is-done"{% endif %}></li>{% endfor %}</ol>
+      <div class="prose-ui">{{ sm.current.body_html }}</div>
+    </div>
+    <nav class="box__foot step-nav" aria-label="Étapes">
+      {% if sm.prev_url %}<a class="button button--secondary" href="{{ sm.prev_url }}">{{ icon("arrow-left", size=16) }}Étape précédente</a>{% else %}<span></span>{% endif %}
+      {% if sm.next_url %}<a class="button" href="{{ sm.next_url }}">Étape suivante{{ icon("arrow-right", size=16) }}</a>{% else %}<a class="button" href="{{ sm.exit_url }}#pieges">Voir les pièges{{ icon("arrow-right", size=16) }}</a>{% endif %}
     </nav>
-    <p><a href="{{ sm.exit_url }}">Quitter le mode pas à pas</a></p>
   </section>
   {% else %}
 
-  <p class="fiche__summary">{{ page.summary }}</p>
-  {% if page.service_docs_url %}<p><a href="{{ page.service_docs_url }}" rel="noopener noreferrer nofollow">Documentation officielle</a></p>{% endif %}
-
-  {% if page.prerequisites %}
-  <section aria-labelledby="prerequis">
-    <h2 id="prerequis">Avant de commencer</h2>
-    <ul>{% for p in page.prerequisites %}<li>{{ p }}</li>{% endfor %}</ul>
-  </section>
-  {% endif %}
-
-  {% if page.steps %}
-  <section aria-labelledby="etapes">
-    <h2 id="etapes">Étapes</h2>
-    <p><a class="button button--secondary" href="{{ page.steps[0].url }}">Suivre pas à pas</a></p>
-    <ol class="steps">
-      {% for step in page.steps %}
-      <li class="step"><h3>{{ step.title }}</h3>{{ step.body_html }}</li>
-      {% endfor %}
-    </ol>
-  </section>
-  {% endif %}
-  {% endif %}
-
-  <section aria-labelledby="pieges" id="pieges-section">
-    <h2 id="pieges">Pièges ({{ page.gotchas | length }})</h2>
-    {% for g in page.gotchas %}
-      {{ gotcha_card(g, page.slug, page.login_url) }}
-    {% else %}
-      <p class="empty">Aucun piège publié pour l'instant.{% if viewer.can_write or viewer.site_auth %} <a href="{{ page.contribute_url }}">Ajoutez le premier</a>.{% endif %}</p>
-    {% endfor %}
-  </section>
-
-  {% if page.differences %}
-  <section aria-labelledby="ecarts">
-    <h2 id="ecarts">Bac à sable et production</h2>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th scope="col">Sujet</th><th scope="col">Bac à sable</th><th scope="col">Production</th></tr></thead>
-        <tbody>
-          {% for d in page.differences %}<tr><th scope="row">{{ d.topic }}</th><td>{{ d.sandbox }}</td><td>{{ d.production }}</td></tr>{% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </section>
-  {% endif %}
-
-  {% if page.error_codes %}
-  <section aria-labelledby="codes-erreur">
-    <h2 id="codes-erreur">Codes d'erreur</h2>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th scope="col">Code</th><th scope="col">Signification</th><th scope="col">Que faire</th></tr></thead>
-        <tbody>
-          {% for e in page.error_codes %}<tr><th scope="row"><code>{{ e.code }}</code></th><td>{{ e.meaning }}</td><td>{{ e.action }}</td></tr>{% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </section>
-  {% endif %}
-
-  {% if page.sources %}
-  <section aria-labelledby="sources">
-    <h2 id="sources">Sources</h2>
-    {{ source_list(page.sources) }}
-  </section>
-  {% endif %}
-
-  {% if viewer.can_write or viewer.site_auth %}
-  <section class="fiche__actions" aria-labelledby="confirmer">
-    <h2 id="confirmer">Cette fiche vous a servi ?</h2>
-    {% if viewer.pseudo %}
-    <form class="form" method="post" action="/fiches/{{ page.slug }}/confirmer">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <input type="hidden" name="target_kind" value="fiche">
-      <input type="hidden" name="target_id" value="{{ page.slug }}">
-      <div class="field">
-        <label for="preuve-fiche">Votre preuve</label>
-        <textarea id="preuve-fiche" name="proof" rows="3" maxlength="4000" required></textarea>
-        <p class="field__help">Versions, configuration sans secret, étapes et résultat obtenu.</p>
+  <div class="split">
+    <div class="split__main">
+      {% if page.is_draft %}<p class="notice notice--draft">{{ icon("file-pen") }}<span>Brouillon : cette fiche n'est pas encore vérifiée par un relecteur.</span></p>{% endif %}
+      {% if page.needs_review %}<p class="notice notice--review">{{ icon("clock") }}<span>À revérifier : personne n'a confirmé cette fiche depuis plus de 90 jours.</span></p>{% endif %}
+      {% if page.locked %}
+      <div class="locked">
+        {{ icon("lock", size=18) }}
+        <p><strong>Aperçu public.</strong> Les étapes, les solutions et leurs preuves sont réservées aux membres. Compte gratuit, connexion avec GitHub, sans permission sur vos dépôts.</p>
+        <a class="button" href="{{ page.login_url }}">{{ icon("github", size=16) }}Se connecter avec GitHub</a>
       </div>
-      <button type="submit" class="button">Ça marche encore</button>
-    </form>
-    {% elif viewer.can_write %}
-    <form class="confirm" method="post" action="/fiches/{{ page.slug }}/confirmer">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <input type="hidden" name="target_kind" value="fiche">
-      <input type="hidden" name="target_id" value="{{ page.slug }}">
-      <button type="submit" class="button">Ça marche encore</button>
-      <span class="confirm__count">{{ page.confirmations }} confirmation{% if page.confirmations > 1 %}s{% endif %}{% if page.confirmations %} · dernière le {{ page.last_confirmed_on | date_fr }}{% endif %}</span>
-    </form>
-    {% else %}
-    <p><a class="button" href="{{ page.login_url }}">Se connecter pour confirmer</a></p>
-    {% endif %}
-    <p><a href="{{ page.contribute_url }}">Ajouter un piège ou corriger cette fiche</a> · <a href="{{ page.report_url }}">Signaler une panne</a></p>
-  </section>
+      {% endif %}
+
+      {% if page.prerequisites %}
+      <section class="box" aria-labelledby="prerequis">
+        <div class="box__head"><h2 id="prerequis">Avant de commencer</h2></div>
+        <div class="box__body">
+          <ul class="checks">{% for p in page.prerequisites %}<li>{{ icon("circle-check", size=16) }}<span>{{ p }}</span></li>{% endfor %}</ul>
+        </div>
+      </section>
+      {% endif %}
+
+      {% if page.steps %}
+      <section class="box" aria-labelledby="etapes">
+        <div class="box__head"><h2 id="etapes">Étapes <span class="num">{{ page.steps | length }}</span></h2></div>
+        <ol class="steps">
+          {% for step in page.steps %}
+          <li class="step"><div class="step__body prose-ui"><h3>{{ step.title }}</h3>{{ step.body_html }}</div></li>
+          {% endfor %}
+        </ol>
+      </section>
+      {% endif %}
+
+      <section aria-labelledby="pieges" id="pieges-section" class="stack">
+        <div class="stack__bar">
+          <h2 id="pieges" class="stack__title">Pièges <span class="num" data-filter-count>{{ page.gotchas | length }}</span></h2>
+          {% if page.gotchas | length > 1 %}
+          {# Filtres : affichés par pages.js seulement, sans JavaScript tous les pièges restent visibles. #}
+          <div class="filters" data-filters hidden>
+            <div class="segmented" role="group" aria-label="Filtrer par sévérité">
+              <button type="button" aria-pressed="true" data-filter="severity" data-value="">Toutes</button>
+              {% for g in page.gotchas | unique(attribute="severity") %}<button type="button" aria-pressed="false" data-filter="severity" data-value="{{ g.severity.value }}">{{ g.severity_label }}</button>{% endfor %}
+            </div>
+            <div class="segmented" role="group" aria-label="Filtrer par environnement">
+              <button type="button" aria-pressed="true" data-filter="env" data-value="">Partout</button>
+              <button type="button" aria-pressed="false" data-filter="env" data-value="Bac à sable">Bac à sable</button>
+              <button type="button" aria-pressed="false" data-filter="env" data-value="Production">Production</button>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+        <p class="box empty" data-filter-empty hidden>Aucun piège pour ces filtres.</p>
+        {% for g in page.gotchas %}
+          {{ gotcha_card(g, page.slug, page.login_url) }}
+        {% else %}
+          <p class="box empty">Aucun piège publié pour l'instant.{% if can_contribute %} <a href="{{ page.contribute_url }}">Ajoutez le premier</a>.{% endif %}</p>
+        {% endfor %}
+      </section>
+
+      {% if page.differences %}
+      <section class="box" aria-labelledby="ecarts">
+        <div class="box__head"><h2 id="ecarts">Bac à sable et production</h2></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th scope="col">Sujet</th><th scope="col">Bac à sable</th><th scope="col">Production</th></tr></thead>
+            <tbody>
+              {% for d in page.differences %}<tr><th scope="row">{{ d.topic }}</th><td>{{ d.sandbox }}</td><td>{{ d.production }}</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      {% endif %}
+
+      {% if page.error_codes %}
+      <section class="box" aria-labelledby="codes-erreur">
+        <div class="box__head"><h2 id="codes-erreur">Codes d'erreur</h2></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th scope="col">Code</th><th scope="col">Signification</th><th scope="col">Que faire</th></tr></thead>
+            <tbody>
+              {% for e in page.error_codes %}<tr><th scope="row"><code>{{ e.code }}</code></th><td>{{ e.meaning }}</td><td>{{ e.action }}</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      {% endif %}
+
+      {% if page.sources %}
+      <section class="box" aria-labelledby="sources">
+        <div class="box__head"><h2 id="sources">Sources</h2></div>
+        <div class="box__body prose-ui">{{ source_list(page.sources) }}</div>
+      </section>
+      {% endif %}
+    </div>
+
+    <aside class="split__side split__side--sticky" aria-label="Résumé de la fiche">
+      <section class="box" aria-labelledby="resume">
+        <div class="box__head"><h2 id="resume">Résumé</h2></div>
+        <dl class="kv">
+          <div><dt>État en direct</dt><dd>{{ status_text(page.status) }}</dd></div>
+          <div><dt>Pièges</dt><dd>{{ page.gotchas | length }}</dd></div>
+          <div><dt>Mise à jour</dt><dd>{{ page.last_confirmed_on | date_fr }}</dd></div>
+          <div><dt>Confirmations</dt><dd>{{ page.confirmations }}</dd></div>
+        </dl>
+      </section>
+
+      {% if page.status.incidents %}
+      <section class="box" aria-labelledby="pannes-fiche">
+        <div class="box__head"><h2 id="pannes-fiche">Pannes en cours</h2></div>
+        <ul class="incidents rows">{% for incident in page.status.incidents %}{{ incident_item(incident) }}{% endfor %}</ul>
+      </section>
+      {% endif %}
+
+      {# Pour l'agent : l'adresse MCP et l'appel qui lit cette fiche (service et pays déduits de l'adresse de la fiche). #}
+      {% set parts = page.slug.rsplit("-", 1) %}
+      {% set has_country = parts | length == 2 and parts[1] | length == 2 %}
+      {% set call = 'get_fiche("' ~ (parts[0] if has_country else page.slug) ~ '"' ~ ((', country="' ~ parts[1] | upper ~ '"') if has_country else '') ~ ')' %}
+      <section class="box" aria-labelledby="mcp-fiche">
+        <div class="box__head"><div><h2 id="mcp-fiche">Dans votre agent</h2><p>Serveur MCP de Gotcha, puis cet appel.</p></div></div>
+        <div class="box__body copy-list">
+          <p class="copy-field"><code id="mcp-adresse">{{ request.base_url }}mcp</code><button type="button" class="icon-button" data-copy-text="{{ request.base_url }}mcp" title="Copier l'adresse" hidden>{{ icon("copy", size=16, label="Copier l'adresse du serveur MCP") }}</button></p>
+          <p class="copy-field"><code>{{ call }}</code><button type="button" class="icon-button" data-copy-text="{{ call }}" title="Copier l'appel" hidden>{{ icon("copy", size=16, label="Copier l'appel get_fiche") }}</button></p>
+        </div>
+      </section>
+
+      <nav class="box" aria-label="Sur cette fiche">
+        <div class="box__head"><h2>Sur cette fiche</h2></div>
+        <ol class="toc-list">
+          {% if page.prerequisites %}<li><a href="#prerequis">Avant de commencer</a></li>{% endif %}
+          {% if page.steps %}<li><a href="#etapes">Étapes <span class="num">{{ page.steps | length }}</span></a></li>{% endif %}
+          <li><a href="#pieges">Pièges <span class="num">{{ page.gotchas | length }}</span></a></li>
+          {% if page.differences %}<li><a href="#ecarts">Bac à sable et production</a></li>{% endif %}
+          {% if page.error_codes %}<li><a href="#codes-erreur">Codes d'erreur</a></li>{% endif %}
+          {% if page.sources %}<li><a href="#sources">Sources</a></li>{% endif %}
+        </ol>
+      </nav>
+
+      {% if can_contribute %}
+      <section class="box" aria-labelledby="confirmer">
+        <div class="box__head">
+          <div>
+            <h2 id="confirmer">Cette fiche vous a servi ?</h2>
+            <p>Confirmez qu'elle marche encore : la date de mise à jour avance.</p>
+          </div>
+        </div>
+        <div class="box__body">
+          {% if viewer.pseudo %}
+          <form class="form" method="post" action="/fiches/{{ page.slug }}/confirmer">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="target_kind" value="fiche">
+            <input type="hidden" name="target_id" value="{{ page.slug }}">
+            <div class="field">
+              <label for="preuve-fiche">Votre preuve</label>
+              <textarea id="preuve-fiche" name="proof" rows="3" maxlength="4000" required></textarea>
+              <p class="field__help">Versions, configuration sans secret, étapes et résultat obtenu.</p>
+            </div>
+            <div class="field">
+              <label for="version-fiche">Version d'API testée <span class="field__optional">(facultatif)</span></label>
+              <input id="version-fiche" name="api_version" type="text" maxlength="40" autocomplete="off">
+            </div>
+            <p class="confirm-actions"><button type="submit" name="still_works" value="1" class="button">Ça marche encore</button><button type="submit" name="still_works" value="0" class="button button--secondary">Ça ne marche plus</button></p>
+          </form>
+          {% elif viewer.can_write %}
+          <form class="confirm" method="post" action="/fiches/{{ page.slug }}/confirmer">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="target_kind" value="fiche">
+            <input type="hidden" name="target_id" value="{{ page.slug }}">
+            <p class="confirm-actions"><button type="submit" name="still_works" value="1" class="button">Ça marche encore</button><button type="submit" name="still_works" value="0" class="button button--secondary">Ça ne marche plus</button></p>
+          </form>
+          {% else %}
+          <p><a class="button button--block" href="{{ page.login_url }}">{{ icon("github", size=16) }}Se connecter pour confirmer</a></p>
+          {% endif %}
+        </div>
+        <ul class="links box__foot-links">
+          <li><a href="{{ page.contribute_url }}">Ajouter un piège ou corriger la fiche{{ icon("arrow-right", size=16) }}</a></li>
+          <li><a href="{{ page.report_url }}">Signaler une panne{{ icon("arrow-right", size=16) }}</a></li>
+        </ul>
+      </section>
+      {% endif %}
+    </aside>
+  </div>
   {% endif %}
 </article>
 {% endblock %}

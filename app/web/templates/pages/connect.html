@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+{% from "components/agents.html" import agent_logo %}
+
+{# Brancher votre agent : l'adresse MCP, la configuration exacte de chaque agent, la première
+   connexion, et ce que l'agent peut faire. Sans JavaScript, toutes les configurations sont
+   affichées l'une sous l'autre ; pages.js les range en onglets. #}
+{% set mcp_url = page.mcp_url %}
+{# Formats relevés dans la documentation officielle de chaque agent (novembre 2026). #}
+{% set agents = [
+  ("claude", "Claude Code", "Dans un terminal, à la racine de votre projet", "claude mcp add --transport http gotcha " ~ mcp_url),
+  ("codex", "Codex", "Fichier ~/.codex/config.toml", '[mcp_servers.gotcha]\nurl = "' ~ mcp_url ~ '"'),
+  ("cursor", "Cursor", "Fichier .cursor/mcp.json du projet, ou ~/.cursor/mcp.json pour tous vos projets", '{\n  "mcpServers": {\n    "gotcha": { "url": "' ~ mcp_url ~ '" }\n  }\n}'),
+  ("copilot", "VS Code et GitHub Copilot", "Fichier .vscode/mcp.json du projet", '{\n  "servers": {\n    "gotcha": { "type": "http", "url": "' ~ mcp_url ~ '" }\n  }\n}'),
+  ("windsurf", "Windsurf", "Fichier ~/.codeium/windsurf/mcp_config.json", '{\n  "mcpServers": {\n    "gotcha": { "serverUrl": "' ~ mcp_url ~ '" }\n  }\n}'),
+  ("antigravity", "Antigravity", "Fichier mcp_config.json d'Antigravity (réglages MCP, « View raw config »)", '{\n  "mcpServers": {\n    "gotcha": { "serverUrl": "' ~ mcp_url ~ '" }\n  }\n}'),
+  ("gemini", "Gemini CLI", "Fichier ~/.gemini/settings.json", '{\n  "mcpServers": {\n    "gotcha": { "httpUrl": "' ~ mcp_url ~ '" }\n  }\n}'),
+  ("cline", "Cline", "Fichier cline_mcp_settings.json (onglet Remote Servers de Cline)", '{\n  "mcpServers": {\n    "gotcha": { "type": "streamableHttp", "url": "' ~ mcp_url ~ '" }\n  }\n}'),
+  ("opencode", "OpenCode", "Fichier opencode.json du projet", '{\n  "mcp": {\n    "gotcha": { "type": "remote", "url": "' ~ mcp_url ~ '" }\n  }\n}'),
+  ("grok", "Grok CLI", "Dans un terminal", "grok mcp add --transport http gotcha " ~ mcp_url),
+  ("hermes", "Hermes Agent", "Fichier ~/.hermes/config.yaml, puis /reload-mcp", 'mcp_servers:\n  gotcha:\n    url: "' ~ mcp_url ~ '"'),
+] %}
+
+{% block content %}
+<header class="ph">
+  <div>
+    <nav class="crumbs" aria-label="Fil d'Ariane"><a href="/">Accueil</a><span aria-hidden="true">/</span><span aria-current="page">Brancher votre agent</span></nav>
+    <h1>{{ page.meta.title }}</h1>
+    <p class="ph__desc">Ajoutez le serveur MCP de Gotcha à votre agent de codage : avant d'écrire une intégration Wave, Orange Money, MTN MoMo, M-Pesa ou Datacloud, il lit les pièges connus et l'état des services.</p>
+  </div>
+</header>
+
+<div class="split">
+  <div class="split__main">
+    <section class="box" aria-labelledby="adresse">
+      <div class="box__head"><div><h2 id="adresse">Adresse du serveur</h2><p>Transport HTTP (streamable), la même pour tous les agents.</p></div></div>
+      <div class="box__body">
+        <p class="copy-field"><code>{{ mcp_url }}</code><button type="button" class="icon-button" data-copy-text="{{ mcp_url }}" title="Copier l'adresse" hidden>{{ icon("copy", size=16, label="Copier l'adresse du serveur MCP") }}</button></p>
+      </div>
+    </section>
+
+    <section class="box" aria-labelledby="config" data-tabs>
+      <div class="box__head">
+        <h2 id="config">Configuration de votre agent</h2>
+        <div class="segmented segmented--scroll" role="tablist" aria-label="Agents" hidden>
+          {% for key, name, where, snippet in agents %}<button type="button" role="tab" id="onglet-{{ key }}" aria-controls="agent-{{ key }}" aria-selected="{{ 'true' if loop.first else 'false' }}" data-tab="{{ key }}">{{ agent_logo(key, 14) or icon("bot", size=14) }}{{ name }}</button>{% endfor %}
+        </div>
+      </div>
+      {% for key, name, where, snippet in agents %}
+      <div class="agent-config" id="agent-{{ key }}" role="tabpanel" aria-labelledby="onglet-{{ key }}" data-panel="{{ key }}">
+        <h3 class="agent-config__name">{{ agent_logo(key, 18) or icon("bot", size=18) }}{{ name }}</h3>
+        <p class="agent-config__where">{{ where }}</p>
+        <pre class="agent-config__code"><code>{{ snippet }}</code><button type="button" class="icon-button" data-copy-text="{{ snippet }}" title="Copier" hidden>{{ icon("copy", size=16, label="Copier la configuration " ~ name) }}</button></pre>
+      </div>
+      {% endfor %}
+      <div class="box__foot"><p>Un autre agent : ajoutez l'adresse ci-dessus comme serveur MCP HTTP (« streamable »), dans le format de sa documentation.</p></div>
+    </section>
+
+    <section class="box" aria-labelledby="premiere">
+      <div class="box__head"><h2 id="premiere">La première fois</h2></div>
+      <ol class="steps">
+        <li class="step"><div class="step__body prose-ui"><h3>Ajoutez l'adresse</h3><p>Avec la configuration de votre agent, puis redémarrez-le si besoin.</p></div></li>
+        {% if page.login_required %}
+        <li class="step"><div class="step__body prose-ui"><h3>Connectez-vous avec GitHub</h3><p>À la première utilisation, l'agent ouvre votre navigateur sur Gotcha. Le compte est gratuit, et aucune permission sur vos dépôts n'est demandée. Aucun jeton à copier.</p></div></li>
+        <li class="step"><div class="step__body prose-ui"><h3>Autorisez l'outil</h3><p>Gotcha affiche le nom de l'outil et l'adresse où il recevra son accès. Acceptez seulement si vous venez de lancer cette connexion vous-même.</p></div></li>
+        {% else %}
+        <li class="step"><div class="step__body prose-ui"><h3>Rien d'autre à faire</h3><p>Sur ce serveur, la lecture est libre : aucune connexion n'est demandée.</p></div></li>
+        {% endif %}
+        <li class="step"><div class="step__body prose-ui"><h3>Posez votre question comme d'habitude</h3><p>Par exemple : « Ajoute le paiement Wave au Sénégal ». L'agent consulte Gotcha avant d'écrire le code et vous signale les pièges et les pannes en cours.</p></div></li>
+      </ol>
+    </section>
+
+    <section class="box" aria-labelledby="outils">
+      <div class="box__head"><div><h2 id="outils">Ce que votre agent peut faire</h2><p>Les outils du serveur MCP.</p></div></div>
+      <ul class="rows">
+        <li class="row"><span class="row__title"><code>list_services</code></span><span class="row__text">Lister les services couverts, une fiche par pays.</span><span class="row__aside">Lecture</span></li>
+        <li class="row"><span class="row__title"><code>get_fiche</code></span><span class="row__text">Lire une fiche : étapes, pièges, bac à sable et production, état.</span><span class="row__aside">Lecture</span></li>
+        <li class="row"><span class="row__title"><code>search_gotchas</code></span><span class="row__text">Chercher un piège par mot-clé, en-tête HTTP, code d'erreur ou symptôme.</span><span class="row__aside">Lecture</span></li>
+        <li class="row"><span class="row__title"><code>get_service_status</code></span><span class="row__text">Connaître l'état d'un service dans un pays, avec ses pannes.</span><span class="row__aside">Lecture</span></li>
+        <li class="row"><span class="row__title"><code>report_outage</code></span><span class="row__text">Signaler une panne observée (paiements en échec ou sans réponse). Nombre limité.</span><span class="row__aside">Signalement</span></li>
+        {% if page.login_required %}
+        <li class="row"><span class="row__title"><code>propose_gotcha</code></span><span class="row__text">Proposer un piège résolu, après votre accord sur le brouillon. Un humain le relit avant publication.</span><span class="row__aside">Connecté</span></li>
+        <li class="row"><span class="row__title"><code>confirm_gotcha</code></span><span class="row__text">Dire si un piège s'applique encore, avec une preuve. Compte une fois par mois.</span><span class="row__aside">Connecté</span></li>
+        {% endif %}
+      </ul>
+    </section>
+  </div>
+
+  <aside class="split__side split__side--sticky" aria-label="En bref">
+    <section class="box" aria-labelledby="en-bref">
+      <div class="box__head"><h2 id="en-bref">En bref</h2></div>
+      <dl class="kv">
+        <div><dt>Protocole</dt><dd>MCP, HTTP</dd></div>
+        <div><dt>Connexion</dt><dd>{{ "GitHub, sans permission" if page.login_required else "Aucune" }}</dd></div>
+        <div><dt>Recherches</dt><dd>Comptées, texte jamais gardé</dd></div>
+        <div><dt>Données</dt><dd><a href="/ou-sont-vos-donnees">Où sont vos données</a></dd></div>
+      </dl>
+    </section>
+    <section class="box" aria-labelledby="jamais">
+      <div class="box__head"><h2 id="jamais">Ce que Gotcha ne demande jamais</h2></div>
+      <div class="box__body">
+        <ul class="checks">
+          <li>{{ icon("lock", size=16) }}<span>Ni votre code privé, ni vos clés d'API, ni les données de vos clients : les outils n'en ont pas besoin.</span></li>
+          <li>{{ icon("shield-check", size=16) }}<span>Une proposition de piège ne part qu'après votre accord, et un relecteur la vérifie.</span></li>
+        </ul>
+      </div>
+    </section>
+  </aside>
+</div>
+{% endblock %}
