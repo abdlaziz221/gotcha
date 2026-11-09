@@ -5,7 +5,7 @@
 {# Brancher votre agent : l'adresse MCP, la configuration exacte de chaque agent, la première
    connexion, et ce que l'agent peut faire. Sans JavaScript, toutes les configurations sont
    affichées l'une sous l'autre ; pages.js les range en onglets. #}
-{% set mcp_url = request.base_url ~ "mcp" %}
+{% set mcp_url = page.mcp_url %}
 {# Formats relevés dans la documentation officielle de chaque agent (novembre 2026). #}
 {% set agents = [
   ("claude", "Claude Code", "Dans un terminal, à la racine de votre projet", "claude mcp add --transport http gotcha " ~ mcp_url),

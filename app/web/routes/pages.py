@@ -95,6 +95,7 @@ async def connect(request: Request, services: ServicesDep) -> Response:
             description="Ajouter le serveur MCP de Gotcha à votre agent de codage.",
         ),
         login_required=services.settings.mcp_auth,
+        mcp_url=f"{services.settings.site_url}/mcp",
     )
     return render(request, "pages/connect.html", page)
 

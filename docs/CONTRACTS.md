@@ -86,7 +86,7 @@ Chaque gabarit de `app/web/templates/pages/` reçoit `page` (une classe de `app/
 | `/pannes/signaler?fiche=` | GET, POST | `report_outage.html` | `ReportOutagePage` | Succès : retour sur la fiche avec `?ok=signalement` |
 | `/relecture` | GET | `review.html` | `ReviewPage` | Relecteurs seulement |
 | `/relecture/{id}` | POST | — | — | `action` = `approve` ou `reject`, `note` |
-| `/brancher` | GET | `connect.html` | `ConnectPage` | Configuration MCP de chaque agent ; `login_required` suit `GOTCHA_MCP_AUTH` |
+| `/brancher` | GET | `connect.html` | `ConnectPage` | Configuration MCP de chaque agent ; `login_required` suit `GOTCHA_MCP_AUTH`, `mcp_url` vaut `GOTCHA_SITE_URL` + `/mcp` |
 | `/glossaire` | GET | `glossary.html` | `GlossaryPage` | Un `id` par terme (ancre) |
 | `/ou-sont-vos-donnees` | GET | `data.html` | `StaticPage` | |
 | `/styleguide` | GET | `styleguide.html` | `StyleguidePage` | Développement seulement |

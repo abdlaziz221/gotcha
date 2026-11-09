@@ -352,6 +352,7 @@ class ConnectPage:
 
     meta: PageMeta
     login_required: bool  # GOTCHA_MCP_AUTH : connexion GitHub à la première utilisation
+    mcp_url: str  # GOTCHA_SITE_URL + "/mcp", l'adresse que le serveur MCP annonce
 
 
 @dataclass(frozen=True, slots=True)

@@ -8,8 +8,8 @@ from starlette.testclient import TestClient
 def test_connect_page_gives_the_mcp_address_and_each_agent(client: TestClient) -> None:
     page = client.get("/brancher").text
     assert "Brancher votre agent" in page
-    assert "http://testserver/mcp" in page
-    assert "claude mcp add --transport http gotcha http://testserver/mcp" in page
+    assert "http://localhost:8000/mcp" in page
+    assert "claude mcp add --transport http gotcha http://localhost:8000/mcp" in page
     for name in (
         "Codex",
         "Cursor",
@@ -23,7 +23,7 @@ def test_connect_page_gives_the_mcp_address_and_each_agent(client: TestClient) -
         "Hermes Agent",
     ):
         assert name in page
-    assert "grok mcp add --transport http gotcha http://testserver/mcp" in page
+    assert "grok mcp add --transport http gotcha http://localhost:8000/mcp" in page
     assert "search_gotchas" in page
 
 
