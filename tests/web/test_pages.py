@@ -87,7 +87,8 @@ def test_production_hides_drafts_and_dev_pages(prod_client: TestClient) -> None:
     home = prod_client.get("/")
     assert home.status_code == 200
     assert "Brouillon" not in home.text
-    assert prod_client.get("/fiches/mtn-momo").status_code == 404
+    assert prod_client.get("/fiches/mtn-momo").status_code == 200
+    assert prod_client.get("/fiches/datacloud-sn").status_code == 404
     assert prod_client.get("/styleguide").status_code == 404
     assert prod_client.get("/relecture").status_code == 404
 
