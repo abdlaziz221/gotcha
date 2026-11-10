@@ -11,8 +11,8 @@ api_version: v1
 publication: published
 last_confirmed_on: 2026-11-10
 prerequisites:
-  - Être marchand Orange Money, inscrit dans une agence Orange de Côte d'Ivoire et conforme aux règles d'identification d'Orange (KYA).
-  - Les documents de l'entreprise demandés par la législation locale, dont le registre du commerce (RCCM).
+  - Être marchand Orange Money enregistré et conforme aux règles d'identification d'Orange (KYA).
+  - Un dossier marchand avec les documents de l'entreprise, dont le registre du commerce (RCCM) et la déclaration fiscale d'existence (DFE).
   - Une application sur developer.orange.com abonnée à Web Payment, qui donne la consumer key, le consumer secret et la merchant key.
 differences:
   - topic: Adresse de l'API
@@ -25,16 +25,17 @@ error_codes: []
 sources:
   - title: "Orange Developer : présentation de Web Payment / M Payment (officiel)"
     url: https://developer.orange.com/apis/om-webpay
-    accessed_on: 2026-11-03
-  - title: "Orange Developer : questions fréquentes sur Web Payment (officiel)"
-    url: https://developer.orange.com/apis/om-webpay/faq
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
+  - title: "Kolonell : intégrer Orange Money Web Payment en Côte d'Ivoire"
+    url: https://kolonell.com/fr/blog/orange-money-web-payment-integration-cote-ivoire-2026
+    published_on: 2026-06-29
+    accessed_on: 2026-11-10
   - title: "SDK PHP Orange Money (Foris-master)"
     url: https://github.com/Foris-master/orange-money-sdk
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
   - title: "Bow Payment : passerelle Orange Money Côte d'Ivoire"
     url: https://github.com/bowphp/payment/tree/main/src/Gateway/IvoryCost/Orange
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
   - title: "Centipid Billing : passerelle Orange Money (documentation d'un intégrateur)"
     url: https://docs.centipidbilling.com/billing/payment-gateways/orange-money
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
