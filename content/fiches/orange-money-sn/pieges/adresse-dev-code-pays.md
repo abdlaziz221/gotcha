@@ -4,22 +4,22 @@ severity: major
 environments: [sandbox, production]
 api_version: v1
 error_codes: []
-publication: draft
-verified_by: null
-last_confirmed_on: 2026-11-03
+publication: published
+verified_by: AliouLoum
+last_confirmed_on: 2026-11-10
 sources:
   - title: "SDK PHP Orange Money (Foris-master) : adresses de l'API"
     url: https://github.com/Foris-master/orange-money-sdk/blob/master/src/Api.php
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
   - title: "Bow Payment : adresse du bac à sable Orange Money"
     url: https://github.com/bowphp/payment/blob/main/src/Gateway/IvoryCost/Orange/OrangePayment.php
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
   - title: "WWmcp : client Orange Money, une adresse par pays"
     url: https://github.com/theYahia/WWmcp/blob/main/servers/orange-money/src/client.ts
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
   - title: "Kolonell : guide technique Orange Money Web Payment (blog, non officiel)"
     url: https://kolonell.com/en/blog/orange-money-api-web-payment-integration-guide-2026
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
 ---
 
 ## Symptôme
