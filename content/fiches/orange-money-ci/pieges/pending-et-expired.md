@@ -1,19 +1,20 @@
 ---
 title: "PENDING n'est pas un échec : relancer le paiement peut débiter deux fois"
 severity: major
+confidence: sourced
 environments: [sandbox, production]
 api_version: v1
 error_codes: []
-publication: draft
-verified_by: null
-last_confirmed_on: 2026-11-03
+publication: published
+verified_by: TechwithXalifa
+last_confirmed_on: 2026-11-10
 sources:
   - title: "SDK PHP Orange Money (Foris-master) : signification des statuts"
     url: https://github.com/Foris-master/orange-money-sdk
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
   - title: "Centipid Billing : passerelle Orange Money, dépannage (documentation d'un intégrateur)"
     url: https://docs.centipidbilling.com/billing/payment-gateways/orange-money
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
 ---
 
 ## Symptôme

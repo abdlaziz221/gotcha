@@ -8,8 +8,8 @@ country: CI
 title: Orange Money Côte d'Ivoire
 summary: Encaisser un paiement Orange Money en Côte d'Ivoire avec l'API Web Payment d'Orange, du bac à sable à la production.
 api_version: v1
-publication: draft
-last_confirmed_on: 2026-11-03
+publication: published
+last_confirmed_on: 2026-11-10
 prerequisites:
   - Être marchand Orange Money, inscrit dans une agence Orange de Côte d'Ivoire et conforme aux règles d'identification d'Orange (KYA).
   - Les documents de l'entreprise demandés par la législation locale, dont le registre du commerce (RCCM).
