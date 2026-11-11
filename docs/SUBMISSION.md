@@ -19,8 +19,8 @@ Un seul point manquant rend le projet irrecevable. Une déclaration inexacte est
 | Clé de répartition du prix déclarée | 4 | Les trois | Décision de l'équipe : ……… |
 | Pays de représentation : **Sénégal**, pays de nationalité ou de résidence du représentant. Choix définitif | 4 | Le représentant | Détermine le groupe national du vote des pairs |
 | Aucun membre n'est collaborateur de Systalink ou de son groupe, membre du jury ou proche d'un juré | 4 | Les trois | À vérifier dès la publication du jury (au plus tard le 20 novembre) |
-| Projet **déployé et accessible en ligne** | 6 | Abdoul Aziz (A2, A8) | `https://<domaine>/healthz?db=1` répond `"database":"ok"` |
-| Au moins un produit Datacloud acheté avec la remise CADEV de 40 % | 6, 8 | Abdoul Aziz (A2) | Produit : ……… · facture conservée. L'article 6 renvoie par erreur à l'article 9 : la remise est à l'article 8 |
+| Projet **déployé et accessible en ligne** | 6 | Abdoul Aziz (A2, A8) | [x] <https://gotcha-80c95631.platform-systalink.com/healthz?db=1> répond `"database":"ok"` (vérifié le 11 novembre) |
+| Au moins un produit Datacloud acheté avec la remise CADEV de 40 % | 6, 8 | Abdoul Aziz (A2) | Choix de l'équipe : offre Serverless **Free**, sans achat. L'article 6 renvoie par erreur à l'article 9 : la remise est à l'article 8 |
 | Création originale, faite pendant le concours, libre de droits de tiers | 6 | Les trois | Voir la section 4 |
 | Déclaration de titularité de chaque membre | 6 | Les trois | Voir la section 5 |
 | Liste de tous les composants et de leurs licences | 6 | Abdoul Aziz | Voir la section 3 |
@@ -58,19 +58,21 @@ grep -l "publication: published" content/fiches/*/pieges/*.md | wc -l
 > - Lu et enrichi par les agents IA (MCP), sans jeton à copier.
 > - Pensé pour la 3G : pages de moins de 200 Ko, utilisables sans JavaScript.
 > - Glossaire et mode pas à pas pour les débutants.
-> - Données hébergées à Dakar, sur Datacloud.
+> - Application hébergée à Dakar, sur Datacloud.
+> - Complémentaire du serveur MCP de Systalink : le leur agit sur l'infrastructure, Gotcha apporte ce que les devs ont appris en l'utilisant.
 
 **Liens :**
 
 | Quoi | Lien |
 | --- | --- |
-| Site en ligne | `https://<domaine>` (A8) |
-| Page la plus parlante, ouverte sans compte (D27) | `https://<domaine>/fiches/wave-sn` |
-| Serveur MCP | `https://<domaine>/mcp` (connexion GitHub) |
-| Autre fiche ouverte, sans compte | `https://<domaine>/fiches/datacloud-sn` |
-| Accès du jury | `https://<domaine>/connexion`, avec le code `GOTCHA_JURY_CODE` (à donner dans le formulaire, jamais dans le dépôt) |
+| Site en ligne | <https://gotcha-80c95631.platform-systalink.com> |
+| Page la plus parlante, ouverte sans compte (D27) | <https://gotcha-80c95631.platform-systalink.com/fiches/wave-sn> |
+| Serveur MCP | `https://gotcha-80c95631.platform-systalink.com/mcp` (connexion GitHub au premier appel) |
+| Autre fiche ouverte, sans compte | <https://gotcha-80c95631.platform-systalink.com/fiches/datacloud-sn> |
+| Accès du jury | <https://gotcha-80c95631.platform-systalink.com/connexion>, avec le code `GOTCHA_JURY_CODE` (à donner dans le formulaire, jamais dans le dépôt) |
 | Code source | <https://github.com/abdlaziz221/gotcha> |
 | Vidéo de démo | Lien de la vidéo de secours (K11) |
+| Site de secours (même base, même code) | <https://gotcha-uchy.onrender.com>, à citer seulement si Datacloud ne répond pas le jour du vote |
 
 **Rôles :** ce tableau donne les responsabilités prévues. Il est réécrit le 13 novembre d'après le travail réellement fait (D28) : on ne garde que ce qui est vrai, et on ne réécrit jamais l'historique Git.
 
@@ -95,11 +97,12 @@ Le règlement n'admet que des composants sous licence permissive et demande de l
 | --- | --- | --- | --- |
 | Python 3.12 (image officielle `python:3.12-slim`) | Interpréteur | PSF-2.0 | Oui, dans l'image |
 | Système Debian de cette image | Système du conteneur | Licence propre à chaque paquet, dont la GPL pour certains outils système | Environnement d'exécution : le code de Gotcha ne l'intègre ni ne le modifie, comme le système de n'importe quel hébergeur |
-| PostgreSQL | Base de données managée de Datacloud | PostgreSQL License (permissive) | Non : service de Datacloud |
+| PostgreSQL | Base de données, hébergée chez Render (Francfort) : l'offre Datacloud Free n'en a pas | PostgreSQL License (permissive) | Non : service de Render |
+| Render | Base PostgreSQL, et site de secours avec la même image | Service en ligne | Non |
 | `postgres:17-alpine` | Base jetable des tests en CI | PostgreSQL License | Non : CI seulement |
 | pip-audit | Recherche de failles connues, en CI | Apache-2.0 ; dépend de certifi (MPL-2.0) | Non : installé dans un environnement isolé de la CI, jamais dans l'image (D14) |
 | CircleCI, GitHub | Intégration continue, hébergement du code | Services en ligne | Non |
-| Connexion GitHub (OAuth) | Identifie les comptes, sans aucune permission ; seuls l'identifiant et le pseudo sont gardés à Dakar | Service en ligne | Non |
+| Connexion GitHub (OAuth) | Identifie les comptes, sans aucune permission ; seuls l'identifiant et le pseudo sont gardés, dans notre base | Service en ligne | Non |
 | Logo, favicon, feuille de style, JavaScript | Interface | Créés pour ce projet, sans composant tiers | Oui |
 | Polices | Texte | Polices du système du visiteur | Aucune police livrée |
 
@@ -150,9 +153,9 @@ La qualité technique compte pour 30 % de la note, et la maîtrise par l'équipe
 | --- | --- | --- |
 | Architecture : couches, ports, deux stockages, tests de contrat | Abdoul Aziz | D1, D4, D17 ; [ARCHITECTURE.md](ARCHITECTURE.md) |
 | PostgreSQL : schéma, migrations, préparation au démarrage | Abdoul Aziz | D6, D18 ; `migrations/`, `scripts/release.py` |
-| Sécurité : CSP, CSRF, quotas derrière le proxy, relecteurs | Abdoul Aziz | D19 ; [app/security/README.md](../app/security/README.md) |
+| Sécurité : CSP, CSRF, quotas derrière le proxy (vérifiés en ligne le 11 novembre), relecteurs | Abdoul Aziz | D19 ; [app/security/README.md](../app/security/README.md) |
 | Connexion : comptes, jetons opaques, aperçu public | Abdoul Aziz | D20, D23 ; `app/services/oauth.py`, `app/web/session.py` |
-| Déploiement : Datacloud, Serverless ou VPS, variables | Abdoul Aziz | [deploy/README.md](../deploy/README.md) |
+| Déploiement : Datacloud Serverless Free, base externe, panne du 10 novembre, site de secours | Abdoul Aziz | [deploy/README.md](../deploy/README.md), fiche `datacloud-sn` |
 | Licences : pourquoi ni requests, ni httpx, ni psycopg | Abdoul Aziz | D2, D3, D14 ; [LICENCES.md](LICENCES.md) |
 | Interface : 3G, sans JavaScript indispensable, accessibilité | Loum | D1 ; budget de 200 Ko par page |
 | Serveur MCP : outils, réponses, signalement des pannes, propositions des agents | Khalifa | D8, D24 ; [DEMO.md](DEMO.md) |
@@ -179,7 +182,8 @@ Pour s'entraîner, chacun présente aux deux autres une partie qu'il n'a pas éc
 6. **Déclarations :** titularité de chaque membre (section 5) et usage des outils d'IA (section 6).
 7. **Après l'envoi :** faire une capture de la confirmation et cocher la section 1.
 8. **Jusqu'aux résultats (23 novembre) :**
-   - garder le site en ligne et le produit Datacloud payé ;
+   - garder le site en ligne sur Datacloud, et le site de secours sur Render ;
+   - la base Render Free expire 30 jours après sa création : la garder active jusqu'aux résultats ;
    - ne déployer que des corrections ;
    - surveiller `/healthz`.
 
