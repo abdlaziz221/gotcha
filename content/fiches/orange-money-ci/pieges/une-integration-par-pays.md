@@ -15,6 +15,15 @@ sources:
   - title: "SDK PHP Orange Money (Foris-master) : un code pays par déploiement"
     url: https://github.com/Foris-master/orange-money-sdk
     accessed_on: 2026-11-10
+  - title: "Bow Payment : passerelle Orange Money Sénégal, « endpoints and authentication methods are the same »"
+    url: https://github.com/bowphp/payment/blob/main/src/Gateway/Senegal/Orange/OrangeGateway.php
+    accessed_on: 2026-11-11
+  - title: "Intégration open source en Côte d'Ivoire (moncaisson) : adresse de production en /ci/v1"
+    url: https://github.com/ouattaraibd/moncaisson/blob/master/location/payments/orange_money_ci.py
+    accessed_on: 2026-11-11
+  - title: "Intégration open source en Côte d'Ivoire (kolo01) : statut de transaction en /ci/v1"
+    url: https://github.com/kolo01/testPhillipe/blob/main/app/Http/Traits/Orange/check_status.php
+    accessed_on: 2026-11-11
 ---
 
 ## Symptôme
