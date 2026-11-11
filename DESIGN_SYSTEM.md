@@ -69,7 +69,7 @@ Fond clair teinté, texte foncé de la même famille. Les teintes vert d'eau et 
 | Jeton | Texte | Fond | Usage | Contraste |
 | :--- | :--- | :--- | :--- | :--- |
 | `success` | `#047857` | `#E3F3E4` | Service sans panne signalée, confirmé en production, contribution publiée | 4,75 |
-| `warning` | `#B45309` | `#FFF4E0` | **Réservé** : service dégradé, sévérité « Important », en attente de relecture, saisie non enregistrée | 4,61 |
+| `warning` | `#A94E08` | `#FFF4E0` | **Réservé** : service dégradé, sévérité « Important », en attente de relecture, saisie non enregistrée | 5,10 (4,97 sur `#F4F2EE`) |
 | `danger` | `#B91C1C` | `#F3E3E4` | Service en panne, sévérité « Bloquant », erreur de formulaire | 5,21 |
 | `info` | `#1D4ED8` | `#E8EEFB` | Niveau « Reproduit », « À revérifier » | 5,76 |
 | `neutral` | `#374151` | `#EEEEEE` | État inconnu, « Sourcé », « Mineur », brouillon | 8,88 |
@@ -427,6 +427,8 @@ Cible : WCAG 2.2 niveau AA.
 - Un seul `<h1>` par page, titres dans l'ordre.
 - Chaque audio a sa transcription.
 - La page reste utilisable à 200 % de zoom, sans défilement horizontal.
+
+**Audit du 9 novembre 2026 (L10)** : 10 pages en largeur ordinateur et mobile, contraste calculé pour chaque texte sur son fond réel, nom accessible de chaque lien et bouton, libellé de chaque champ, ordre des titres, identifiants en double, focus de chaque élément atteignable au clavier. Corrigé : gris secondaire des pages intérieures `#5F6673` (5,3 sur `#F5F5F4`), liens et texte orange en `--color-primary-hover` (DS-07), `warning` plus foncé (`#A94E08`), logos en double sur `/brancher`. Les sections illustrées de l'accueil (dégradés) se vérifient à l'œil. Garde-fous automatiques : `tests/web/test_audit_pages.py` (poids sous 200 Ko, `lang`, un seul `<h1>`, libellés des champs sur 12 pages).
 
 ---
 
