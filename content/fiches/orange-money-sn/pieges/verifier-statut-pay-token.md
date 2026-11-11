@@ -4,22 +4,22 @@ severity: blocking
 environments: [sandbox, production]
 api_version: v1
 error_codes: []
-publication: draft
-verified_by: null
-last_confirmed_on: 2026-11-03
+publication: published
+verified_by: AliouLoum
+last_confirmed_on: 2026-11-10
 sources:
   - title: "SDK PHP Orange Money (Foris-master) : vérification du statut"
     url: https://github.com/Foris-master/orange-money-sdk
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
   - title: "Bow Payment : vérification d'une transaction Orange Money"
     url: https://github.com/bowphp/payment/blob/main/src/Gateway/IvoryCost/Orange/OrangeGateway.php
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
   - title: "Centipid Billing : passerelle Orange Money (documentation d'un intégrateur)"
     url: https://docs.centipidbilling.com/billing/payment-gateways/orange-money
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
   - title: "Kolonell : guide technique Orange Money Web Payment (blog, non officiel)"
     url: https://kolonell.com/en/blog/orange-money-api-web-payment-integration-guide-2026
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
 ---
 
 ## Symptôme
@@ -40,7 +40,7 @@ Cette lecture (`…/v1/transactionstatus`) demande **trois** valeurs : l'`order_
    ```python
    statut = post(
        f"{base}/transactionstatus",
-       headers=auth,
+       headers={"Authorization": f"Bearer {jeton}"},
        json={
            "order_id": tentative.order_id,
            "amount": tentative.montant,
