@@ -8,9 +8,9 @@ country: SN
 title: Wave Sénégal
 summary: Encaisser un paiement Wave au Sénégal avec l'API Wave Business.
 api_version: null
-publication: draft
+publication: published
 open_access: true           # lisible entière sans compte pendant la compétition (D27)
-last_confirmed_on: 2026-10-28
+last_confirmed_on: 2026-11-10
 prerequisites:
   - Un compte Wave Business.
   - Un accès administrateur au compte, pour créer la clé d'API.
@@ -22,4 +22,10 @@ error_codes: []
 sources:
   - title: "Documentation officielle de l'API Wave Business"
     url: https://docs.wave.com/business
-    accessed_on: 2026-10-28
+    accessed_on: 2026-11-11
+  - title: "Documentation officielle de l'API Wave Checkout"
+    url: https://docs.wave.com/checkout
+    accessed_on: 2026-11-11
+  - title: "Documentation officielle des webhooks Wave"
+    url: https://docs.wave.com/webhook
+    accessed_on: 2026-11-11
