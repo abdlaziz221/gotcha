@@ -29,7 +29,7 @@
   /* États */
   --color-success: #047857;
   --color-success-bg: #e3f3e4;
-  --color-warning: #b45309;
+  --color-warning: #a94e08;
   --color-warning-bg: #fff4e0;
   --color-danger: #b91c1c;
   --color-danger-bg: #f3e3e4;
@@ -104,9 +104,9 @@ p, ul, ol, dl { margin: 0 0 var(--space-4); max-width: var(--measure); }
 
 li + li { margin-top: var(--space-1); }
 
-a { color: var(--color-primary); text-decoration: underline; text-underline-offset: 0.15em; }
+a { color: var(--color-primary-hover); text-decoration: underline; text-underline-offset: 0.15em; }
 
-a:hover { color: var(--color-primary-hover); }
+a:hover { color: var(--color-primary-active); }
 
 strong { font-weight: 500; }
 
@@ -344,7 +344,7 @@ section { margin-top: var(--space-10); }
 /* Toute la carte est cliquable via le lien du titre. */
 .card__title a::after { content: ""; position: absolute; inset: 0; border-radius: var(--radius-lg); }
 
-.card__title a:hover { color: var(--color-primary-hover); }
+.card__title a:hover { color: var(--color-primary-active); }
 
 .card__meta,
 .card__footer { color: var(--color-text-secondary); font-size: var(--text-small); }
