@@ -22,10 +22,10 @@ error_codes: []
 sources:
   - title: "Documentation officielle de l'API Wave Business"
     url: https://docs.wave.com/business
-    accessed_on: 2026-11-10
+    accessed_on: 2026-11-11
   - title: "Documentation officielle de l'API Wave Checkout"
     url: https://docs.wave.com/checkout
-    accessed_on: 2026-11-10
+    accessed_on: 2026-11-11
   - title: "Documentation officielle des webhooks Wave"
     url: https://docs.wave.com/webhook
-    accessed_on: 2026-11-10
+    accessed_on: 2026-11-11

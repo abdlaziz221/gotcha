@@ -14,4 +14,11 @@ La réponse contient `wave_launch_url` : laissez le navigateur du client ouvrir 
 
 ## Recevoir le résultat
 
-Enregistrez un [[webhook]] dans le portail Wave Business. Wave y envoie `checkout.session.completed` quand le paiement réussit, et `checkout.session.payment_failed` quand il échoue. Ne livrez que sur cet événement ou sur une lecture de la session (`GET /v1/checkout/sessions/:id`) dont `payment_status` vaut `succeeded`.
+Enregistrez un [[webhook]] dans le portail Wave Business, en choisissant la sécurité « Signing Secret », recommandée en production. Wave y envoie `checkout.session.completed` quand le paiement réussit, et `checkout.session.payment_failed` quand il échoue.
+
+Ne livrez jamais sur une notification non vérifiée : n'importe qui peut appeler votre adresse. Faites l'une de ces deux vérifications, ou les deux :
+
+- **Vérifier la signature.** L'en-tête `Wave-Signature` vaut `t=<horodatage>,v1=<signature>`. Recalculez un HMAC-SHA256 de l'horodatage suivi du corps brut de la requête, avec le secret du webhook, et comparez-le à `v1`. Rejetez la requête si la signature diffère ou si l'horodatage a plus de 5 minutes.
+- **Relire la session.** Appelez `GET /v1/checkout/sessions/:id` avec votre clé d'API, et ne livrez que si `payment_status` vaut `succeeded`.
+
+Répondez tout de suite par un code 2xx, puis traitez l'événement : sinon, Wave le renvoie pendant 3 jours. Un même événement peut arriver plusieurs fois, ou pas du tout : gardez son `id` pour ne livrer qu'une fois ([[idempotence]]), et relisez la session au retour du client sur `success_url`.
