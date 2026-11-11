@@ -289,3 +289,18 @@ def test_production_settings_are_safe() -> None:
         )
     with pytest.raises(ValueError, match="DATABASE_URL"):
         Settings.from_env({"GOTCHA_STORE": "postgres"})
+
+
+def test_form_target_keeps_only_safe_sources() -> None:
+    from app.security.headers import csp_allowing_forms_to, form_target
+
+    assert form_target("http://localhost:39215/callback?x=1") == "http://localhost:39215"
+    assert form_target("https://GitHub.com/login/oauth/authorize") == "https://github.com"
+    assert form_target("cursor://anysphere.cursor-mcp/oauth/callback") == "cursor:"
+    assert form_target("http://localhost:1/x;script-src *") == "http://localhost:1"
+    assert form_target("https://a@b.example/") is None
+    assert form_target("ev'il://x") is None
+    assert form_target("/relatif") is None
+    policy = csp_allowing_forms_to("https://a@b.example/", "http://127.0.0.1:5/cb")
+    assert policy.endswith("form-action 'self' http://127.0.0.1:5")
+    assert "script-src 'self'" in policy

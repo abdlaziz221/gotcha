@@ -17,6 +17,8 @@ from starlette.responses import RedirectResponse, Response
 
 from app.domain.errors import InvalidInputError
 from app.security.csrf import verify_csrf
+from app.security.github import AUTHORIZE_URL as GITHUB_AUTHORIZE_URL
+from app.security.headers import csp_allowing_forms_to
 from app.security.ratelimit import rate_limit
 from app.services.oauth import SESSION_TTL, safe_next_url
 from app.web.deps import ServicesDep
@@ -115,7 +117,12 @@ async def tool_consent(request: Request, services: ServicesDep, demande: str = "
         redirect_uri=login.redirect_uri,
         request_id=demande,
     )
-    return render(request, "pages/tool_consent.html", page)
+    response = render(request, "pages/tool_consent.html", page)
+    # « Autoriser » mène à GitHub puis à l'outil, « Refuser » directement à l'outil.
+    response.headers["Content-Security-Policy"] = csp_allowing_forms_to(
+        GITHUB_AUTHORIZE_URL, login.redirect_uri
+    )
+    return response
 
 
 @router.post(
