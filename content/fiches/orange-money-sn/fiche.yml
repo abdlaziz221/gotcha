@@ -8,8 +8,8 @@ country: SN
 title: Orange Money Sénégal
 summary: Encaisser un paiement Orange Money au Sénégal avec l'API Web Payment d'Orange, du bac à sable à la production.
 api_version: v1
-publication: draft
-last_confirmed_on: 2026-11-03
+publication: published
+last_confirmed_on: 2026-11-10
 prerequisites:
   - Être marchand Orange Money, inscrit dans une agence Orange du pays et conforme aux règles d'identification d'Orange (KYA). Une startup qui intègre pour un client doit être marchande, ou agir pour le compte d'un marchand.
   - Les documents de l'entreprise demandés par la législation locale, dont le registre du commerce (RCCM) ; le NINEA est cité par un guide non officiel, à confirmer.
@@ -25,22 +25,22 @@ error_codes: []
 sources:
   - title: "Orange Developer : présentation de Web Payment / M Payment (officiel)"
     url: https://developer.orange.com/apis/om-webpay
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
   - title: "Orange Developer : questions fréquentes sur Web Payment (officiel)"
     url: https://developer.orange.com/apis/om-webpay/faq
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
   - title: "SDK PHP Orange Money (Foris-master)"
     url: https://github.com/Foris-master/orange-money-sdk
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
   - title: "Bow Payment : passerelle Orange Money"
     url: https://github.com/bowphp/payment/tree/main/src/Gateway/IvoryCost/Orange
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
   - title: "Centipid Billing : passerelle Orange Money (documentation d'un intégrateur)"
     url: https://docs.centipidbilling.com/billing/payment-gateways/orange-money
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
   - title: "Kolonell : intégration Orange Money Sénégal pas à pas (blog, non officiel)"
     url: https://kolonell.com/fr/blog/orange-money-senegal-api-integration-pas-a-pas-2026
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
   - title: "Kolonell : bac à sable Wave et Orange Money (blog, non officiel)"
     url: https://kolonell.com/fr/blog/sandbox-paiement-wave-orange-money-dev-2026
     published_on: 2026-06-02
