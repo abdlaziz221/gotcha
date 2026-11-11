@@ -6,10 +6,26 @@ Inscrivez-vous sur platform.systalink.com.
 
 [[serverless|Serverless]] : vous connectez votre dépôt Git et la plateforme déploie à chaque modification. [[vps|VPS]] : un serveur que vous administrez vous-même, à Dakar.
 
-## Créer la base PostgreSQL et configurer l'application
+Nous avons déployé Gotcha sur l'offre Serverless Free, à Dakar, construite par le `Dockerfile` du dépôt, branche `main`. Elle n'a ni base de données ni disque : si votre application garde des données, prévoyez une base ailleurs (voir le piège sur les redémarrages).
 
-Créez une base PostgreSQL managée, puis donnez son adresse à l'application par une [[variable-environnement]] (par exemple `DATABASE_URL`).
+## Configurer l'application
+
+Donnez à l'application tout ce qui change d'un environnement à l'autre par des [[variable-environnement|variables d'environnement]], jamais dans le dépôt : l'adresse publique du site, la liste des noms d'hôte acceptés, l'adresse de la base, les secrets.
+
+Le nom d'hôte public a la forme `<service>-<suffixe>.platform-systalink.com`. Si votre application vérifie l'en-tête `Host` (c'est le cas du SDK Python de [[mcp|MCP]]), ajoutez ce nom à sa liste d'hôtes acceptés.
+
+## Brancher une base PostgreSQL
+
+Créez une base PostgreSQL managée, puis donnez son adresse à l'application, par exemple dans `DATABASE_URL`. Une base hébergée ailleurs fonctionne aussi : nous avons branché notre service Free sur une base PostgreSQL externe. Prenez son adresse **externe** (l'adresse interne ne marche que chez son hébergeur) et ajoutez `?sslmode=require` à la fin pour exiger le chiffrement.
+
+## Connexion GitHub
+
+Si votre site propose la connexion GitHub, l'adresse de retour (`https://<domaine>/github/callback` chez nous) doit être déclarée dans l'application GitHub. Une même application accepte plusieurs adresses de retour : ajoutez celle de Datacloud à côté des autres, sans cocher la correspondance par joker. Avec un joker, GitHub accepterait aussi n'importe quel autre site en `*.platform-systalink.com`.
+
+## Derrière le proxy
+
+Le service est derrière un proxy, qui ajoute l'adresse du visiteur à la fin de l'en-tête `X-Forwarded-For`. Pour les quotas par adresse, lisez la dernière valeur de cet en-tête, jamais la première : celle-là, le visiteur peut l'inventer. Nous l'avons vérifié le 11 novembre : douze requêtes portant chacune une fausse adresse différente ont été comptées comme un seul visiteur, et bloquées dès la onzième.
 
 ## Vérifier le déploiement
 
-Ouvrez l'adresse de l'application et vérifiez qu'elle répond et qu'elle joint la base. Étapes détaillées à compléter à partir de notre propre déploiement (tâche A10).
+Depuis un autre réseau que le vôtre, ouvrez une adresse de santé de l'application (`/healthz?db=1` chez nous) : elle doit répondre et dire qu'elle joint la base. Le statut LIVE de la console ne suffit pas (voir le piège sur l'adresse publique).

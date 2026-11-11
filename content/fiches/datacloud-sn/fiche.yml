@@ -10,12 +10,16 @@ summary: Déployer une application sur Datacloud, la plateforme cloud de Systali
 api_version: null
 publication: draft
 open_access: true           # lisible entière sans compte (D23)
-last_confirmed_on: 2026-10-28
+last_confirmed_on: 2026-11-11
 prerequisites:
   - Un compte sur platform.systalink.com.
   - Un dépôt Git (Serverless) ou une image Docker.
+  - Une base PostgreSQL si l'application garde des données (l'offre Free n'en a pas).
 differences: []
-error_codes: []
+error_codes:
+  - code: "421"
+    meaning: "Invalid Host header : le serveur MCP refuse le nom public du service"
+    action: Ajouter le nom en platform-systalink.com aux hôtes acceptés, puis redéployer
 sources:
   - title: Systalink Serverless
     url: https://systalink.com/en/serverless
@@ -23,3 +27,6 @@ sources:
   - title: Systalink Database
     url: https://systalink.com/en/database
     accessed_on: 2026-10-28
+  - title: Retour de terrain, déploiement de Gotcha sur Datacloud Serverless Free
+    author: abdlaziz221
+    accessed_on: 2026-11-11
