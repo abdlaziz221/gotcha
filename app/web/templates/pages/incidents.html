@@ -30,7 +30,7 @@
       {% if page.active %}
       <ul class="incidents rows">{% for i in page.active %}{{ incident_item(i) }}{% endfor %}</ul>
       {% else %}
-      <p class="empty">Aucune panne en cours sur les services suivis.</p>
+      <p class="empty">Aucune panne en cours sur les services suivis.{% if viewer.can_write or viewer.site_auth %} Un problème de votre côté ? <a href="/pannes/signaler">Signalez-le</a>.{% endif %}</p>
       {% endif %}
     </section>
 
@@ -39,7 +39,7 @@
       {% if page.recent %}
       <ul class="incidents rows">{% for i in page.recent %}{{ incident_item(i) }}{% endfor %}</ul>
       {% else %}
-      <p class="empty">Aucune panne récente.</p>
+      <p class="empty">Aucune panne récente. <a href="/recherche">Parcourir les fiches</a></p>
       {% endif %}
     </section>
   </div>
