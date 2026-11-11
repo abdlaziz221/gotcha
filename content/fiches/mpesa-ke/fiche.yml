@@ -8,8 +8,8 @@ country: KE
 title: M-Pesa Kenya (Daraja)
 summary: Encaisser un paiement M-Pesa avec l'API Daraja de Safaricom (STK Push), du bac à sable à la production.
 api_version: null
-publication: draft
-last_confirmed_on: 2026-10-28
+publication: published
+last_confirmed_on: 2026-11-09
 prerequisites:
   - Un compte sur le portail Daraja de Safaricom (ouvert à tous, sans entreprise enregistrée).
   - Une application Daraja, qui donne une consumer key et un consumer secret.
