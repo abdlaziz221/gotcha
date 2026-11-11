@@ -13,7 +13,7 @@
 | 1:00 | **Avec Gotcha** : connexion GitHub en un clic, l'agent appelle `get_fiche`, prévient qu'aucun bac à sable n'est documenté, simule l'appel en local et cite sa source et son niveau de confiance | Le savoir sourcé, avec son niveau de confiance, lisible par les agents |
 | 1:30 | L'agent résout un problème absent de Gotcha, montre un brouillon à son développeur et le propose. Un relecteur le publie | Les solutions ne se perdent plus |
 | 2:10 | Une panne d'Orange Money Sénégal est signalée : la fiche passe en « dégradé », et l'agent prévient avant d'écrire le code | Les pannes en direct |
-| 2:40 | Sur mobile, un étudiant ouvre la même fiche en mode pas à pas et écoute une dizaine de secondes d'explication en wolof, avec sa transcription (si l'audio est livré, D26) ; le pied de page rappelle « Hébergé à Dakar » | Accessible aux débutants, souverain |
+| 2:40 | Sur mobile, un étudiant ouvre la même fiche en mode pas à pas et écoute une dizaine de secondes d'explication en wolof, avec sa transcription (si l'audio est livré, D26) ; le pied de page rappelle « Application hébergée à Dakar » | Accessible aux débutants, application hébergée à Dakar |
 
 **À trancher avant de figer ce scénario :** l'absence de bac à sable Wave n'est qu'au niveau « sourcé », et notre propre fiche Orange Money cite un article intitulé « bac à sable Wave et Orange Money » (Kolonell). Si un environnement de test Wave existe, un juré pourrait montrer que l'agent sans Gotcha avait raison. Il faut lire cette source, puis vérifier avec un vrai compte Wave Business (voir la préparation). Si un bac à sable existe, on change de piège pour la démo (M-Pesa, ci-dessous).
 

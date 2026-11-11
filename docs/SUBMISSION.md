@@ -153,7 +153,7 @@ La qualité technique compte pour 30 % de la note, et la maîtrise par l'équipe
 | --- | --- | --- |
 | Architecture : couches, ports, deux stockages, tests de contrat | Abdoul Aziz | D1, D4, D17 ; [ARCHITECTURE.md](ARCHITECTURE.md) |
 | PostgreSQL : schéma, migrations, préparation au démarrage | Abdoul Aziz | D6, D18 ; `migrations/`, `scripts/release.py` |
-| Sécurité : CSP, CSRF, quotas derrière le proxy (vérifiés en ligne le 11 novembre), relecteurs | Abdoul Aziz | D19 ; [app/security/README.md](../app/security/README.md) |
+| Sécurité : CSP, CSRF, quotas derrière le proxy (une fausse adresse ne les contourne pas, vérifié en ligne le 11 novembre ; quotas séparés par réseau à vérifier), relecteurs | Abdoul Aziz | D19 ; [app/security/README.md](../app/security/README.md) |
 | Connexion : comptes, jetons opaques, aperçu public | Abdoul Aziz | D20, D23 ; `app/services/oauth.py`, `app/web/session.py` |
 | Déploiement : Datacloud Serverless Free, base externe, panne du 10 novembre, site de secours | Abdoul Aziz | [deploy/README.md](../deploy/README.md), fiche `datacloud-sn` |
 | Licences : pourquoi ni requests, ni httpx, ni psycopg | Abdoul Aziz | D2, D3, D14 ; [LICENCES.md](LICENCES.md) |
@@ -183,7 +183,7 @@ Pour s'entraîner, chacun présente aux deux autres une partie qu'il n'a pas éc
 7. **Après l'envoi :** faire une capture de la confirmation et cocher la section 1.
 8. **Jusqu'aux résultats (23 novembre) :**
    - garder le site en ligne sur Datacloud, et le site de secours sur Render ;
-   - la base Render Free expire 30 jours après sa création : la garder active jusqu'aux résultats ;
+   - la base Render Free, créée le 10 novembre, expire 30 jours après (vers le 10 décembre), donc après les résultats : vérifier la date exacte dans le tableau de bord Render ;
    - ne déployer que des corrections ;
    - surveiller `/healthz`.
 
