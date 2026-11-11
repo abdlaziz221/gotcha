@@ -20,7 +20,7 @@ STATIC_DIR = WEB_DIR / "static"
 SITE = {
     "name": "Gotcha",
     "tagline": "Ce que les devs ont déjà résolu sur le paiement et le déploiement en Afrique",
-    "hosting": "Hébergé à Dakar sur Datacloud",
+    "hosting": "Application hébergée à Dakar sur Datacloud",
     "license": "Contributions publiées sous licence CC BY 4.0",
 }
 
