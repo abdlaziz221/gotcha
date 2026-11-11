@@ -116,4 +116,4 @@ def test_page_does_not_claim_a_confirmation_nobody_made(client: TestClient) -> N
 
 
 def test_page_shows_when_a_source_was_published(client: TestClient) -> None:
-    assert "publié le 24 juil. 2024" in client.get("/fiches/mtn-momo").text
+    assert "publié le 2 août 2023" in client.get("/fiches/mtn-momo").text
