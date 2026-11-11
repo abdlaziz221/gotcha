@@ -1,20 +1,20 @@
 ---
 title: "Le même callback peut arriver plusieurs fois"
 severity: major
+confidence: sourced
 environments: [sandbox, production]
 api_version: null
 error_codes: []
-publication: draft
-verified_by: null
-last_confirmed_on: 2026-10-28
+publication: published
+verified_by: TechwithXalifa
+last_confirmed_on: 2026-11-09
 sources:
-  - title: "Les pièges de l'API Daraja (M-Pesa)"
-    url: https://ml.co.ke/posts/mpesa-daraja-api-pitfalls/
-    published_on: 2026-09-03
-    accessed_on: 2026-10-28
-  - title: "Les erreurs courantes de l'API M-Pesa"
-    url: https://sellio.co.ke/blog/common-mpesa-api-errors-and-solutions
-    accessed_on: 2026-10-28
+  - title: "McTaba : paiements échoués et en double avec M-Pesa"
+    url: https://mctaba.com/learn/mpesa/failed-and-duplicate-payments
+    accessed_on: 2026-11-09
+  - title: "django-mpesa (Mainfinity) : callbacks"
+    url: https://mainfinity-django-mpesa.readthedocs.io/en/latest/callbacks/
+    accessed_on: 2026-11-09
 ---
 
 ## Symptôme
@@ -23,8 +23,8 @@ Une commande est livrée deux fois, ou un solde est crédité deux fois pour un 
 
 ## Cause
 
-Le [[callback]] peut être renvoyé, par exemple quand votre serveur a répondu trop lentement.
+Si votre serveur répond trop lentement au [[callback]], ou plante avant de répondre, Safaricom considère l'envoi comme raté et le renvoie.
 
 ## Solution
 
-Rendez le traitement [[idempotence|idempotent]] : enregistrez l'identifiant de la transaction (CheckoutRequestID) avec une contrainte d'unicité, et ignorez un callback déjà traité.
+Répondez tout de suite avec un statut HTTP 200, puis faites le traitement long (SMS, mise à jour du solde) ensuite. Rendez ce traitement [[idempotence|idempotent]] : enregistrez le `CheckoutRequestID` avec une contrainte d'unicité en base, et ignorez un callback déjà traité.

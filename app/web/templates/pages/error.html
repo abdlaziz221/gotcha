@@ -2,13 +2,36 @@
 {% from "components/forms.html" import search_form %}
 {% from "components/icons.html" import icon %}
 
-{# Erreur : le code, une phrase claire, et un chemin pour repartir (recherche sur 404). #}
+{# Erreur : le code, une phrase claire, et toujours une suite proposée selon le code (L9).
+   404 : recherche ; 429 : patienter, la lecture reste libre ; 500 : réessayer ;
+   401 (relecture, identifiant du navigateur) : réessayer ; 403 : chercher ; 400 : revenir. #}
+{% set code = page.status_code %}
+{% set here = request.url.path ~ ("?" ~ request.url.query if request.url.query else "") %}
+{% set HEADINGS = {400: "Demande invalide", 401: "Identification requise", 403: "Accès refusé", 404: "Page introuvable", 429: "Trop de demandes", 500: "Erreur du serveur"} %}
+{% set ICONS = {404: "search", 429: "clock", 401: "lock", 403: "lock"} %}
+
 {% block content %}
 <section class="auth auth--wide" aria-labelledby="erreur-titre">
-  <p class="auth__code">Erreur {{ page.status_code }}</p>
-  <h1 id="erreur-titre">{{ page.meta.title }}</h1>
+  <span class="auth__mark">{{ icon(ICONS.get(code, "triangle-alert"), size=20) }}</span>
+  <p class="auth__code">Erreur {{ code }}</p>
+  <h1 id="erreur-titre">{{ HEADINGS.get(code, page.meta.title) }}</h1>
   <p class="auth__desc">{{ page.message }}</p>
-  {% if page.status_code == 404 %}{{ search_form() }}{% endif %}
+
+  {% if code == 404 %}
+  {{ search_form() }}
+  {% elif code == 429 %}
+  <p class="notice">{{ icon("info") }}<span>Cette limite protège les formulaires et les connexions. Lire les fiches et chercher un piège restent possibles tout de suite.</span></p>
+  <p class="auth__actions"><a class="button" href="/recherche">Rechercher un piège</a><a class="button button--secondary" href="/">Retour à l'accueil</a></p>
+  {% elif code == 500 %}
+  <p class="auth__actions"><a class="button" href="{{ here }}">Réessayer</a><a class="button button--secondary" href="/">Retour à l'accueil</a></p>
+  {% elif code == 401 %}
+  <p class="auth__actions"><a class="button" href="{{ here }}">Réessayer avec un identifiant</a><a class="button button--secondary" href="/">Retour à l'accueil</a></p>
+  {% elif code == 403 %}
+  <p class="auth__actions"><a class="button" href="/recherche">Rechercher un piège</a><a class="button button--secondary" href="/">Retour à l'accueil</a></p>
+  {% else %}
+  <p class="auth__actions"><a class="button" href="{{ request.url.path }}">Revenir à la page</a><a class="button button--secondary" href="/">Retour à l'accueil</a></p>
+  {% endif %}
+
   <p class="auth__links"><a href="/">Accueil</a><a href="/recherche">Rechercher</a><a href="/pannes">Pannes en direct</a><a href="/glossaire">Glossaire</a></p>
 </section>
 {% endblock %}

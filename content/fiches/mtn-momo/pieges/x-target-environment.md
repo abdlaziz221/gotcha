@@ -1,33 +1,37 @@
 ---
 title: "L'en-tête X-Target-Environment est obligatoire, même dans le bac à sable"
 severity: blocking
+confidence: sourced
 environments: [sandbox, production]
 api_version: v1_0
-error_codes: ["400", "500"]
-publication: draft
-verified_by: null
-last_confirmed_on: 2026-10-28
+error_codes: []
+publication: published
+verified_by: TechwithXalifa
+last_confirmed_on: 2026-11-10
 sources:
-  - title: "Forum MTN MoMo : X-Target-Environment et erreur 400"
-    url: https://momodevelopercommunity.mtn.com/momo-api-sand-box-q-a-6/x-target-environment-251
-    published_on: 2024-07-24
-    accessed_on: 2026-10-28
-  - title: "Forum MTN MoMo : clés, bac à sable et production"
-    url: https://momodevelopercommunity.mtn.com/how-to-59/understanding-momo-open-api-keys-sandbox-and-production-455
-    published_on: 2026-01-07
-    accessed_on: 2026-10-28
+  - title: "Tester l'API Collection de MTN MoMo dans le bac à sable avec Postman (gist)"
+    url: https://gist.github.com/chaiwa-berian/5294fdf1360247cf4561c95c8fa740d4
+    accessed_on: 2026-11-10
+  - title: "Bedigit : guide du module de paiement MTN MoMo"
+    url: https://bedigit.com/support/larapen/add-on-guides/larapen-momo-add-on-guide
+    accessed_on: 2026-11-10
+  - title: "Forum MTN MoMo : configuration de production"
+    url: https://momodevelopercommunity.mtn.com/how-to-59/momo-api-production-configuration-101
+    published_on: 2023-08-02
+    accessed_on: 2026-11-10
 ---
 
 ## Symptôme
 
-L'appel `requesttopay` échoue sans message clair : erreur 400 ou 500 selon les témoignages.
+L'appel `requesttopay` n'aboutit pas, alors que le jeton et la clé d'abonnement sont bons.
 
 ## Cause
 
-L'[[en-tete-http|en-tête]] `X-Target-Environment` manque ou n'a pas la bonne valeur. Il est obligatoire sur les appels de l'API Collections.
+L'[[en-tete-http|en-tête]] `X-Target-Environment` manque ou n'a pas la bonne valeur. Il fait partie des en-têtes à envoyer sur les appels de l'API Collections, et sa valeur change avec l'environnement.
 
 ## Solution
 
-Envoyez `X-Target-Environment: sandbox` dans le [[bac-a-sable]]. En production, utilisez la valeur propre à votre pays, fournie par MTN.
+Lisez la valeur dans une [[variable-environnement]] :
 
-> À vérifier (tâche K3) : le code d'erreur exact renvoyé quand l'en-tête manque.
+- dans le [[bac-a-sable]] : `sandbox` ;
+- en production : la valeur du pays, par exemple `mtnivorycoast` (Côte d'Ivoire), `mtnghana`, `mtnuganda`, `mtncameroon` ou `mtnbenin`.
