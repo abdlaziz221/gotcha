@@ -709,3 +709,20 @@ def test_pages_never_read_bearer_tokens(auth_client: TestClient, store: MemorySt
     headers = {"Authorization": "Bearer jeton-quelconque"}  # secret-scan: ignore (faux jeton)
     assert auth_client.get("/", headers=headers).status_code == 200
     assert auth_client.get("/static/css/app.css", headers=headers).status_code == 200
+
+
+def test_consent_page_lets_the_form_reach_github_and_the_tool(auth_client: TestClient) -> None:
+    """Sans cela, le navigateur bloque la redirection qui suit « Autoriser » (form-action)."""
+    page = auth_client.get(ask_login(auth_client, register(auth_client)))
+    assert page.status_code == 200
+    policy = page.headers["content-security-policy"]
+    action = next(d for d in policy.split("; ") if d.startswith("form-action"))
+    callback = urlparse(CALLBACK)
+    assert action.split() == [
+        "form-action",
+        "'self'",
+        "https://github.com",
+        f"{callback.scheme}://{callback.netloc}",
+    ]
+    # Les autres pages gardent la politique stricte.
+    assert "form-action 'self';" in auth_client.get("/").headers["content-security-policy"] + ";"
