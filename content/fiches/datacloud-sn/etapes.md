@@ -20,11 +20,11 @@ Créez une base PostgreSQL managée, puis donnez son adresse à l'application, p
 
 ## Connexion GitHub
 
-Si votre site propose la connexion GitHub, l'adresse de retour (`https://<domaine>/github/callback` chez nous) doit être déclarée dans l'application GitHub. Une même application accepte plusieurs adresses de retour : ajoutez celle de Datacloud à côté des autres, sans cocher la correspondance par joker. Avec un joker, GitHub accepterait aussi n'importe quel autre site en `*.platform-systalink.com`.
+Si votre site propose la connexion GitHub, l'adresse de retour (`https://<domaine>/github/callback` chez nous) doit être déclarée dans l'application GitHub. Une même application accepte plusieurs adresses de retour : ajoutez celle de Datacloud à côté des autres, sans cocher la correspondance par joker. Avec un joker, GitHub accepterait aussi tout sous-domaine et tout sous-dossier de cette adresse : un code d'autorisation pourrait partir ailleurs que sur votre page de retour. Une application qui n'avait qu'une adresse de retour avant le 3 août 2026 a le joker activé d'office pour celle-ci : vérifiez dans ses réglages qu'il est désactivé.
 
 ## Derrière le proxy
 
-Le service est derrière un proxy, qui ajoute l'adresse du visiteur à la fin de l'en-tête `X-Forwarded-For`. Pour les quotas par adresse, lisez la dernière valeur de cet en-tête, jamais la première : celle-là, le visiteur peut l'inventer. Nous l'avons vérifié le 11 novembre : douze requêtes portant chacune une fausse adresse différente ont été comptées comme un seul visiteur, et bloquées dès la onzième.
+Le service est derrière un proxy, qui complète l'en-tête `X-Forwarded-For`. Pour les quotas par adresse, lisez la dernière valeur de cet en-tête, jamais la première : celle-là, le visiteur peut l'inventer. Le 11 novembre, douze requêtes portant chacune une fausse adresse différente ont été comptées ensemble et bloquées dès la onzième : la fausse adresse ne contourne pas le quota. Vérifiez aussi que deux réseaux différents ont bien des quotas séparés, sinon la dernière valeur est celle d'un proxy interne et tous vos visiteurs partagent le même quota.
 
 ## Vérifier le déploiement
 

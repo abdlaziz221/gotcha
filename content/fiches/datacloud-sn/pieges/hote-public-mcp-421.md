@@ -20,7 +20,7 @@ Le site s'affiche, mais chaque appel au serveur [[mcp|MCP]] (`POST /mcp`) répon
 
 ## Cause
 
-Le SDK Python de MCP protège le serveur contre le *DNS rebinding* : il refuse toute requête dont l'en-tête `Host` n'est pas dans sa liste d'hôtes acceptés. Derrière le proxy de Datacloud, l'application reçoit le nom public `<service>-<suffixe>.platform-systalink.com`, absent d'une liste qui ne contient que `localhost`.
+Le SDK Python de MCP protège le serveur contre le *DNS rebinding* : il refuse toute requête dont l'en-tête `Host` n'est pas dans sa liste d'hôtes acceptés. Derrière le proxy de Datacloud, l'application reçoit le nom public `<service>-<suffixe>.platform-systalink.com`, absent d'une liste qui ne contient que des noms locaux (`localhost`, `127.0.0.1`).
 
 ## Solution
 

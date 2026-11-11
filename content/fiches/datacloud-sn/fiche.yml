@@ -30,3 +30,6 @@ sources:
   - title: Retour de terrain, déploiement de Gotcha sur Datacloud Serverless Free
     author: abdlaziz221
     accessed_on: 2026-11-11
+  - title: "GitHub Docs : About the user authorization callback URL"
+    url: https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/about-the-user-authorization-callback-url
+    accessed_on: 2026-11-11
