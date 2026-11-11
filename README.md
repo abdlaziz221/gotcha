@@ -148,7 +148,7 @@ Branches, commits, relectures et définition de « terminé » : [CONTRIBUTING.m
 - **Aucun secret dans le dépôt** : ni clé, ni jeton, ni fichier `.env`.
 - **Aucun piège inventé, aucune publication sans relecture humaine.** Chaque piège vient d'une source citée ou d'un problème réellement rencontré, et affiche son niveau de confiance. Un agent peut préparer un brouillon, mais son développeur l'approuve et un relecteur le vérifie.
 - **Rien de « bientôt disponible »** : ce qui n'est pas fini est retiré de l'interface.
-- **Données hébergées à Dakar**, sur Datacloud.
+- **Application hébergée à Dakar**, sur Datacloud ; base PostgreSQL chez Render (Francfort), l'offre Datacloud Free n'en ayant pas.
 
 ---
 

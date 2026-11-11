@@ -32,7 +32,7 @@ MAX_PAGE_BYTES = 200 * 1024  # exigence : pages de moins de 200 Ko
 def test_page_answers_and_shows_hosting(client: TestClient, path: str) -> None:
     response = client.get(path)
     assert response.status_code == 200
-    assert "Hébergé à Dakar sur Datacloud" in response.text
+    assert "Application hébergée à Dakar sur Datacloud" in response.text
 
 
 def test_no_dead_internal_link(client: TestClient) -> None:
