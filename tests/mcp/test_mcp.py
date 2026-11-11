@@ -44,7 +44,9 @@ def test_get_fiche_gives_gotchas_and_status(client: TestClient) -> None:
     assert gotcha["confidence"] == "sourced"
     assert gotcha["url"].endswith("/fiches/mtn-momo#piege-x-target-environment")
     assert fiche["status"]["status"] in {"normal", "degraded", "down"}
-    assert fiche["warning"]  # brouillons : l'agent est prévenu
+    assert fiche["warning"] is None  # tous les pièges sont vérifiés
+    draft = tool(client, "get_fiche", service="datacloud", country="SN")["structuredContent"]
+    assert draft["warning"]  # brouillons : l'agent est prévenu
 
 
 def test_search_gotchas(client: TestClient) -> None:
