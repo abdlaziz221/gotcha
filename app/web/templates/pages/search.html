@@ -54,7 +54,7 @@
         {% endfor %}
       </ol>
       {% else %}
-      <p class="empty">Aucun résultat. {% if viewer.can_write or viewer.site_auth %}Vous connaissez ce piège ? <a href="/contribuer">Ajoutez-le</a>.{% endif %}</p>
+      <p class="empty">Aucun résultat. Essayez un mot plus court, ou un code d'erreur seul.{% if viewer.can_write or viewer.site_auth %} Vous connaissez ce piège ? <a href="/contribuer">Ajoutez-le</a>.{% endif %}</p>
       {% endif %}
     </section>
     {% else %}

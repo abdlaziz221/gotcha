@@ -97,7 +97,7 @@
           </div>
           {% endif %}
         </div>
-        <p class="box empty" data-filter-empty hidden>Aucun piège pour ces filtres.</p>
+        <p class="box empty" data-filter-empty hidden>Aucun piège pour ces filtres : choisissez « Toutes » et « Partout » pour tout revoir.</p>
         {% for g in page.gotchas %}
           {{ gotcha_card(g, page.slug, page.login_url) }}
         {% else %}

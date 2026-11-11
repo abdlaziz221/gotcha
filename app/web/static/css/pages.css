@@ -12,9 +12,9 @@
   --ui-border: rgba(17, 24, 39, 0.08);
   --ui-border-strong: rgba(17, 24, 39, 0.16);
   --ui-text: #111827;
-  --ui-muted: #6b7280;
-  --ui-primary: var(--color-primary);
-  --ui-primary-hover: var(--color-primary-hover);
+  --ui-muted: #5f6673;
+  --ui-primary: var(--color-primary-hover);
+  --ui-primary-hover: var(--color-primary-active);
   --ui-primary-soft: #fff1e8;
   --ui-focus: rgba(204, 71, 12, 0.22);
   --ui-shadow: 0 16px 40px -20px rgba(17, 24, 39, 0.08);
