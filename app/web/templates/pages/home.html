@@ -6,7 +6,7 @@
 
 {% block title %}{{ site.name }} · {{ site.tagline }}{% endblock %}
 
-{% block styles %}<link rel="stylesheet" href="/static/css/accueil.css?v=27">{% endblock %}
+{% block styles %}<link rel="stylesheet" href="/static/css/accueil.css?v=28">{% endblock %}
 {% block scripts %}{% endblock %}
 
 {% block content %}
@@ -136,7 +136,7 @@
                 <div class="flow">
                   <span class="node">{{ icon("bot") }}Agent IA</span>
                   <span class="flow__path" aria-hidden="true"><svg class="sbeam" viewBox="0 0 100 10" preserveAspectRatio="none"><path class="sbeam__track" d="M0 5H100"/><path class="sbeam__ray" d="M0 5H100" pathLength="100"/></svg></span>
-                  <span class="node node--gotcha"><span class="node__ping" aria-hidden="true"></span><img src="/static/img/logo.svg" alt="" width="22" height="22">Gotcha MCP</span>
+                  <span class="node node--gotcha"><span class="node__ping" aria-hidden="true"></span><img src="/static/img/logo.svg?v=28" alt="" width="22" height="22">Gotcha MCP</span>
                 </div>
                 <code class="flow__call" data-type>search_gotchas("wave bac à sable", country="SN")</code>
                 <p class="scene-pills" aria-hidden="true"><span>Lecture seule</span><span>Aucun secret transmis</span><span>{{ page.cards | length }} fiches</span></p>
@@ -149,7 +149,7 @@
           <p class="scene__step"><span>4</span> Gotcha trouve le piège sourcé</p>
           <div class="scene__art">
             <div class="flow flow--back" aria-hidden="true">
-              <span class="node node--gotcha"><img src="/static/img/logo.svg" alt="" width="22" height="22">Gotcha MCP</span>
+              <span class="node node--gotcha"><img src="/static/img/logo.svg?v=28" alt="" width="22" height="22">Gotcha MCP</span>
               <span class="flow__path" aria-hidden="true"><svg class="sbeam" viewBox="0 0 100 10" preserveAspectRatio="none"><path class="sbeam__track" d="M0 5H100"/><path class="sbeam__ray" d="M0 5H100" pathLength="100"/></svg></span>
               <span class="node">{{ icon("bot") }}Agent IA</span>
             </div>
@@ -234,7 +234,7 @@
                 <div class="flow flow--confirm" aria-hidden="true">
                   <span class="node">{{ icon("user") }}Dev</span>
                   <span class="flow__path" aria-hidden="true"><svg class="sbeam" viewBox="0 0 100 10" preserveAspectRatio="none"><path class="sbeam__track" d="M0 5H100"/><path class="sbeam__ray" d="M0 5H100" pathLength="100"/></svg></span>
-                  <span class="node node--gotcha"><img src="/static/img/logo.svg" alt="" width="22" height="22">Fiche Wave</span>
+                  <span class="node node--gotcha"><img src="/static/img/logo.svg?v=28" alt="" width="22" height="22">Fiche Wave</span>
                 </div>
                 <p class="done">{{ icon("circle-check") }}<span>Ça marche encore : <strong class="done__count">+1 confirmation (<span class="roll" aria-hidden="true"><span>0</span><span>1</span></span><span class="visually-hidden">1</span> au total)</strong></span></p>
                 <span class="answer__by">Le prochain dev, et son agent IA, retrouveront ce piège avec sa preuve.</span>
