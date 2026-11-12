@@ -1,22 +1,23 @@
 ---
 title: "Le bac à sable attend la devise fictive OUV, pas le XOF"
 severity: major
+confidence: sourced
 environments: [sandbox, production]
 api_version: v1
 error_codes: []
-publication: draft
-verified_by: null
-last_confirmed_on: 2026-11-03
+publication: published
+verified_by: TechwithXalifa
+last_confirmed_on: 2026-11-10
 sources:
   - title: "SDK PHP Orange Money (Foris-master) : exemple de paiement"
     url: https://github.com/Foris-master/orange-money-sdk
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
   - title: "Bow Payment : passerelle Orange Money Côte d'Ivoire, devise par défaut"
     url: https://github.com/bowphp/payment/blob/main/src/Gateway/IvoryCost/Orange/OrangePayment.php
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
   - title: "Intégration open source en Côte d'Ivoire : paiement en XOF"
     url: https://github.com/ouattaraibd/moncaisson/blob/master/location/payments/orange_money_ci.py
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
 ---
 
 ## Symptôme

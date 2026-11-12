@@ -9,12 +9,12 @@
   {% if page.meta.noindex %}
   <meta name="robots" content="noindex">
   {% endif %}
-  <link rel="icon" href="/static/img/favicon.svg?v=27" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/css/app.css?v=27">
+  <link rel="icon" href="/static/img/favicon.svg?v=28" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/css/app.css?v=28">
   {# Styles propres : accueil.css pour l'accueil, pages.css pour les autres pages (poids, D1). #}
-  {% block styles %}<link rel="stylesheet" href="/static/css/pages.css?v=27">{% endblock %}
-  <script src="/static/js/app.js?v=27" defer></script>
-  {% block scripts %}<script src="/static/js/pages.js?v=27" defer></script>{% endblock %}
+  {% block styles %}<link rel="stylesheet" href="/static/css/pages.css?v=28">{% endblock %}
+  <script src="/static/js/app.js?v=28" defer></script>
+  {% block scripts %}<script src="/static/js/pages.js?v=28" defer></script>{% endblock %}
 </head>
 <body>
   <a class="skip-link" href="#contenu">Aller au contenu</a>
@@ -28,7 +28,7 @@
   <header class="site-header">
     <div class="container site-header__inner">
       <a class="brand" href="/">
-        <img class="brand__mark" src="/static/img/logo.svg" alt="" width="32" height="32">
+        <img class="brand__mark" src="/static/img/logo.svg?v=28" alt="" width="32" height="32">
         <span>{{ site.name }}</span>
       </a>
 
@@ -131,7 +131,7 @@
   <footer class="site-footer">
     <div class="container site-footer__inner">
       <div class="site-footer__about">
-        <a class="brand" href="/"><img src="/static/img/logo.svg" alt="" width="32" height="32">{{ site.name }}</a>
+        <a class="brand" href="/"><img src="/static/img/logo.svg?v=28" alt="" width="32" height="32">{{ site.name }}</a>
         <p>Le carnet de terrain des intégrations de paiement mobile et du déploiement cloud : ce que la documentation ne dit pas.</p>
         <p class="site-footer__hosting">{{ icon("shield-check", size=16) }}<span><strong>{{ site.hosting }}</strong> · <a href="/ou-sont-vos-donnees">Où sont vos données</a></span></p>
       </div>
