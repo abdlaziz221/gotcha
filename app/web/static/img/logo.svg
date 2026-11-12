@@ -1,15 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Gotcha">
-  <!-- Fond orange signature -->
-  <rect width="64" height="64" rx="16" fill="#FF6819"/>
-  <!-- Cadrage de viseur optique aux quatre coins (cible verrouillee : Got you) -->
-  <g stroke="#450D05" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.6">
-    <path d="M7.5 16.5 V12 A4.5 4.5 0 0 1 12 7.5 H16.5"/>
-    <path d="M47.5 7.5 H52 A4.5 4.5 0 0 1 56.5 12 V16.5"/>
-    <path d="M7.5 47.5 V52 A4.5 4.5 0 0 0 12 56.5 H16.5"/>
-    <path d="M47.5 56.5 H52 A4.5 4.5 0 0 0 56.5 52 V47.5"/>
-  </g>
-  <!-- Monogramme G continu dont le bras rentrant dessine une coche de capture (I got you) -->
-  <path d="M45.8 18.2 A19.5 19.5 0 1 0 51.5 32.5 H39.2 L32.6 39.1 L26.4 32.9" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- Point d anomalie / cible interceptee au foyer du G -->
-  <circle cx="32.6" cy="23.4" r="4.5" fill="#450D05"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="4 4 112 112" width="112" height="112" role="img" aria-label="Gotcha"><title>Gotcha</title><path d="M88.28 31.72A40 40 0 1 0 100 60H74" fill="none" stroke="#0A0A0A" stroke-width="16"/><circle cx="60" cy="60" r="10" fill="#EA580C"/></svg>
