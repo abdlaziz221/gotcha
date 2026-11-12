@@ -61,8 +61,10 @@ async def report_form(request: Request, services: ServicesDep, fiche: str = "") 
 @router.post(
     "/pannes/signaler",
     dependencies=[
-        Depends(verify_csrf),
+        # Le quota d'abord : verify_csrf lit tout le formulaire, et un envoi refusé
+        # pour son jeton ne consommait alors aucun essai.
         Depends(rate_limit("signaler", limit=5, window_seconds=3600)),
+        Depends(verify_csrf),
     ],
 )
 async def report_submit(

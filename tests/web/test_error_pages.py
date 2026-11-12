@@ -38,3 +38,11 @@ def test_500_offers_to_retry(client: TestClient) -> None:
     assert "Erreur du serveur" in response.text
     assert 'href="/test-erreur-500?x=1">Réessayer' in response.text
     assert "panne simulée" not in response.text
+
+
+def test_rejected_forms_still_count_against_the_quota(client: TestClient) -> None:
+    # Le quota passe avant le contrôle du jeton : sans jeton valide, le sixième envoi de
+    # l'heure est refusé par le quota, et le formulaire n'est même pas lu.
+    data = {"csrf_token": "faux", "fiche_slug": "mtn-momo", "description": "Paiements bloqués"}
+    codes = [client.post("/pannes/signaler", data=data).status_code for _ in range(6)]
+    assert codes == [403] * 5 + [429]
