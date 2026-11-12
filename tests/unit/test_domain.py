@@ -187,6 +187,14 @@ def test_one_person_or_anonymous_reports_cannot_make_the_service_down(
     assert compute_status("wave", "SN", reports, NOW).status is Status.DEGRADED
 
 
+def test_one_account_on_the_site_and_through_its_agent_counts_once() -> None:
+    # Le site et le serveur MCP enregistrent tous deux l'identifiant du compte.
+    reports = [_report("github:42", age=timedelta(minutes=i)) for i in range(CONFIRMING_REPORTERS)]
+    assert compute_status("wave", "SN", reports, NOW).status is Status.DEGRADED
+    others = [_report(f"github:{n}") for n in range(CONFIRMING_REPORTERS)]
+    assert compute_status("wave", "SN", others, NOW).status is Status.DOWN
+
+
 def test_anonymous_reports_count_as_one_person() -> None:
     reports = [
         _report(None),

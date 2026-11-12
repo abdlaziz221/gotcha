@@ -263,7 +263,9 @@ async def test_outage_is_reported_under_the_account(site: TestClient, store: Mem
         follow_redirects=False,
     )
     assert response.status_code == 303, response.text
-    assert (await store.list_incidents(service_slug="wave"))[0].reported_by == "aminata"
+    # L'identifiant stable du compte, comme par le serveur MCP : ni le pseudo saisi, ni le
+    # pseudo GitHub, qui change si le compte est renommé.
+    assert (await store.list_incidents(service_slug="wave"))[0].reported_by == "github:42"
 
 
 def test_jury_code(site: TestClient) -> None:
