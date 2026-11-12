@@ -6,7 +6,7 @@ Inscrivez-vous sur platform.systalink.com.
 
 [[serverless|Serverless]] : vous connectez votre dépôt Git et la plateforme déploie à chaque modification. [[vps|VPS]] : un serveur que vous administrez vous-même, à Dakar.
 
-Nous avons déployé Gotcha sur l'offre Serverless Free, à Dakar, construite par le `Dockerfile` du dépôt, branche `main`. Elle n'a ni base de données ni disque : si votre application garde des données, prévoyez une base ailleurs (voir le piège sur les redémarrages).
+Nous avons déployé Gotcha sur l'offre Serverless Free, à Dakar, construite par le `Dockerfile` du dépôt, branche `main`. Elle n'a ni base de données ni disque : si votre application garde des données, prévoyez une base ailleurs (voir le piège sur la mise en veille).
 
 ## Configurer l'application
 
@@ -24,7 +24,7 @@ Si votre site propose la connexion GitHub, l'adresse de retour (`https://<domain
 
 ## Derrière le proxy
 
-Le service est derrière un proxy, qui complète l'en-tête `X-Forwarded-For`. Pour les quotas par adresse, lisez la dernière valeur de cet en-tête, jamais la première : celle-là, le visiteur peut l'inventer. Le 11 novembre, douze requêtes portant chacune une fausse adresse différente ont été comptées ensemble et bloquées dès la onzième : la fausse adresse ne contourne pas le quota. Vérifiez aussi que deux réseaux différents ont bien des quotas séparés, sinon la dernière valeur est celle d'un proxy interne et tous vos visiteurs partagent le même quota.
+Le service est derrière un proxy, qui renseigne l'en-tête `X-Forwarded-For`. Pour les quotas par adresse, lisez la dernière valeur de cet en-tête, jamais la première : celle-là, le visiteur peut l'inventer. Le 11 novembre, douze requêtes portant chacune une fausse adresse différente ont été comptées ensemble et bloquées dès la onzième : la fausse adresse ne contourne pas le quota. Vérifiez aussi que deux réseaux différents ont bien des quotas séparés, sinon la dernière valeur est celle d'un proxy interne et tous vos visiteurs partagent le même quota.
 
 ## Vérifier le déploiement
 
