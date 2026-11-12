@@ -20,7 +20,7 @@ Un seul point manquant rend le projet irrecevable. Une déclaration inexacte est
 | Pays de représentation : **Sénégal**, pays de nationalité ou de résidence du représentant. Choix définitif | 4 | Le représentant | Détermine le groupe national du vote des pairs |
 | Aucun membre n'est collaborateur de Systalink ou de son groupe, membre du jury ou proche d'un juré | 4 | Les trois | À vérifier dès la publication du jury (au plus tard le 20 novembre) |
 | Projet **déployé et accessible en ligne** | 6 | Abdoul Aziz (A2, A8) | [x] <https://gotcha-80c95631.platform-systalink.com/healthz?db=1> répond `"database":"ok"` (vérifié le 11 novembre) |
-| Au moins un produit Datacloud acheté avec la remise CADEV de 40 % | 6, 8 | Abdoul Aziz (A2) | Choix de l'équipe : offre Serverless **Free**, sans achat. L'article 6 renvoie par erreur à l'article 9 : la remise est à l'article 8 |
+| Au moins un produit Datacloud acheté avec la remise CADEV de 40 % | 6, 8 | Abdoul Aziz (A2) | [x] Produit acheté : **messagerie professionnelle (mail pro) Datacloud** · facture à conserver, remise CADEV à vérifier dessus. Le site tourne sur l'offre Serverless Free. L'article 6 renvoie par erreur à l'article 9 : la remise est à l'article 8 |
 | Création originale, faite pendant le concours, libre de droits de tiers | 6 | Les trois | Voir la section 4 |
 | Déclaration de titularité de chaque membre | 6 | Les trois | Voir la section 5 |
 | Liste de tous les composants et de leurs licences | 6 | Abdoul Aziz | Voir la section 3 |
@@ -185,6 +185,7 @@ Pour s'entraîner, chacun présente aux deux autres une partie qu'il n'a pas éc
 7. **Après l'envoi :** faire une capture de la confirmation et cocher la section 1.
 8. **Jusqu'aux résultats (23 novembre) :**
    - garder le site en ligne sur Datacloud, et le site de secours sur Render ;
+   - garder la messagerie professionnelle Datacloud payée, et sa facture ;
    - la base Render Free, créée le 10 novembre, expire 30 jours après (vers le 10 décembre), donc après les résultats : vérifier la date exacte dans le tableau de bord Render ;
    - ne déployer que des corrections ;
    - surveiller `/healthz`.
