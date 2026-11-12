@@ -113,7 +113,7 @@ async def list_services(services: Services) -> list[ServiceOut]:
 
 
 async def get_fiche(services: Services, service: str, country: str | None = None) -> FicheOut:
-    await services.incidents.refresh_if_stale()
+    services.incidents.refresh_in_background()
     fiche = await services.fiches.find(service, country)
     status = await services.incidents.status_of(fiche.service, country or fiche.country)
     unverified = [g for g in fiche.gotchas if g.publication is not Publication.PUBLISHED]
@@ -168,7 +168,7 @@ async def search_gotchas(
 async def get_service_status(
     services: Services, service: str, country: str | None = None
 ) -> StatusOut:
-    await services.incidents.refresh_if_stale()
+    services.incidents.refresh_in_background()
     fiche = await services.fiches.find(service, country)
     return _status_out(await services.incidents.status_of(fiche.service, country or fiche.country))
 
