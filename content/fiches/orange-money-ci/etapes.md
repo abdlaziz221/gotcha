@@ -1,6 +1,6 @@
 ## Devenir marchand Orange Money
 
-Web Payment est réservé aux marchands Orange Money. Inscrivez l'entreprise dans une agence Orange de Côte d'Ivoire, avec ses documents officiels (registre du commerce notamment). Un compte marchand d'un autre pays ne suffit pas.
+Web Payment est réservé aux marchands Orange Money enregistrés et conformes aux règles d'identification d'Orange (KYA). Préparez le dossier marchand de l'entreprise, avec notamment le registre du commerce (RCCM) et la déclaration fiscale d'existence (DFE) ; comptez une à trois semaines selon la qualité du dossier. Chaque pays a ses propres identifiants marchands : prévoyez un compte ivoirien.
 
 ## Créer l'application sur le portail développeur
 

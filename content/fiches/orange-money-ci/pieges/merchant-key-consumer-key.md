@@ -1,22 +1,23 @@
 ---
 title: "Trois clés différentes : la merchant key n'est pas la consumer key"
 severity: major
+confidence: sourced
 environments: [sandbox, production]
 api_version: v1
 error_codes: []
-publication: draft
-verified_by: null
-last_confirmed_on: 2026-11-03
+publication: published
+verified_by: TechwithXalifa
+last_confirmed_on: 2026-11-10
 sources:
   - title: "Centipid Billing : passerelle Orange Money, identifiants (documentation d'un intégrateur)"
     url: https://docs.centipidbilling.com/billing/payment-gateways/orange-money
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
   - title: "SDK PHP Orange Money (Foris-master) : configuration"
     url: https://github.com/Foris-master/orange-money-sdk
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
   - title: "Kolonell : intégration Orange Money Sénégal pas à pas (blog, non officiel)"
     url: https://kolonell.com/fr/blog/orange-money-senegal-api-integration-pas-a-pas-2026
-    accessed_on: 2026-11-03
+    accessed_on: 2026-11-10
 ---
 
 ## Symptôme
