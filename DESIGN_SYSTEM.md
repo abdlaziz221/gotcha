@@ -17,14 +17,11 @@ Gotcha est un carnet de terrain technique avec une identité chaleureuse : fond 
 - **Mise en page** : asymétrique. Une colonne principale de lecture et un volet secondaire, plutôt que des grilles de cartes identiques.
 - **Mouvement** : presque aucun. Un retour visuel au clic et au survol, rien d'autre.
 
-### Logo (« Got you »)
+### Logo
 
-Le fichier `app/web/static/img/logo.svg` (et `favicon.svg`) réunit quatre références au double sens de *Gotcha* (*« Got you »* : le piège qui vous attrape, et le pair qui vous couvre) dans une grille de `64 × 64` :
+Le symbole `app/web/static/img/logo.svg` est un `G` ouvert, tracé d'un seul trait noir (`#0A0A0A`, épaisseur 16 sur une grille de 112), avec un point orange (`#EA580C`) en son centre : le piège repéré au cœur du code. Il s'affiche seul à côté du nom « Gotcha » dans l'en-tête, le pied de page et la page de connexion, toujours sur fond clair.
 
-1. **Le monogramme `G`** : un arc circulaire blanc (`#FFFFFF`, trait de `6px` à terminaisons arrondies) sur médaillon orange signature (`#FF6819`, rayon `16px`).
-2. **Le viseur optique (« Got you! »)** : quatre équerres de cadrage en bordeaux profond (`#450D05`) dans les angles, qui symbolisent la détection et le verrouillage d'une anomalie non documentée.
-3. **La coche et les bras ouverts (« I got you »)** : le bras rentrant du `G` plonge vers le centre et remonte en coche de confirmation (`✓`), dessinant deux bras ouverts qui rattrapent le développeur.
-4. **Le piège neutralisé** : le disque bordeaux (`#450D05`) au foyer du `G`, simultanément point d'alerte intercepté au centre du viseur et silhouette humaine soutenue par la coche.
+- `favicon.svg` : le même symbole, un peu plus épais pour les petites tailles ; le trait passe en blanc quand le système est en mode sombre (règle `prefers-color-scheme` dans le fichier, avec le noir en valeur par défaut, car la CSP du site bloque le style quand le fichier est ouvert seul).
 
 ---
 

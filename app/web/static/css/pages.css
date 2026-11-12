@@ -532,7 +532,7 @@ pre.example { margin: 0; font-size: 0.8125rem; line-height: 1.55; white-space: p
 
 .auth__mark--ok { color: var(--color-success); }
 
-.auth img.auth__logo { display: block; border-radius: 10px; }
+.auth img.auth__logo { display: block; }
 
 .auth__code { margin: var(--space-5) 0 0; color: var(--ui-muted); font-family: var(--font-mono); font-size: 0.8125rem; }
 
