@@ -103,7 +103,9 @@ Le règlement n'admet que des composants sous licence permissive et demande de l
 | pip-audit | Recherche de failles connues, en CI | Apache-2.0 ; dépend de certifi (MPL-2.0) | Non : installé dans un environnement isolé de la CI, jamais dans l'image (D14) |
 | CircleCI, GitHub | Intégration continue, hébergement du code | Services en ligne | Non |
 | Connexion GitHub (OAuth) | Identifie les comptes, sans aucune permission ; seuls l'identifiant et le pseudo sont gardés, dans notre base | Service en ligne | Non |
-| Logo, favicon, feuille de style, JavaScript | Interface | Créés pour ce projet, sans composant tiers | Oui |
+| Logo, favicon, feuille de style, JavaScript | Interface | Créés pour ce projet | Oui |
+| Icônes Lucide | Icônes de l'interface, copiées en SVG dans `components/icons.html` | ISC (`components/LUCIDE-LICENSE.txt`) | Oui |
+| Lobe Icons | Logos des agents compatibles MCP, copiés en SVG dans `components/agents.html` ; les marques appartiennent à leurs propriétaires | MIT (`components/LOBE-ICONS-LICENSE`) | Oui |
 | Polices | Texte | Polices du système du visiteur | Aucune police livrée |
 
 ## 4. Originalité et droits des tiers
@@ -111,7 +113,7 @@ Le règlement n'admet que des composants sous licence permissive et demande de l
 - **Code :** le dépôt a été créé le 2 novembre 2026 (premier commit `e2e0c97`), après l'ouverture du concours le 29 septembre. Cette date ne prouve pas à elle seule que tout a été créé pendant le concours : chaque membre vérifie qu'aucun élément ne vient d'un prototype ou d'un projet antérieur, et le déclare ici avant la soumission si c'est le cas (article 6). [ ] Abdoul Aziz · [ ] Loum · [ ] Khalifa
 - **Contenu :** les fiches et les pièges partent de sources citées sur chaque page. Rien n'est copié, et rien n'est publié sans relecture humaine (D10).
 - **Contributions des visiteurs :** publiées sous licence CC BY 4.0 (D12), avec le pseudo de leur auteur.
-- **Données de nos utilisateurs :** avec un compte, on garde l'identifiant et le pseudo GitHub. Sans connexion, seul le plan de secours demande un pseudo et un e-mail, jamais affiché. L'article 11 ne couvre que les traitements faits par Systalink : nos propres obligations viennent de la loi 2008-12, d'où la page « Où sont vos données » et la formalité à vérifier auprès de la CDP.
+- **Données de nos utilisateurs :** avec un compte, on garde l'identifiant et le pseudo GitHub. En production, aucun formulaire n'est accepté sans compte : le pseudo et l'e-mail ne sont demandés qu'en développement local. Ces données sont dans notre base PostgreSQL, hébergée chez Render à Francfort. L'article 11 ne couvre que les traitements faits par Systalink : nos propres obligations viennent de la loi 2008-12, d'où la page « Où sont vos données » et la formalité à vérifier auprès de la CDP, y compris pour ce transfert hors du Sénégal.
 - **Droits du lauréat :** l'article 9 ne couvre que les non-lauréats. L'article 6 parle d'exploitation exclusive à propos des licences des composants, ce qui ne prouve pas une cession de nos droits. On demande une confirmation écrite à Systalink avant la soumission (A1).
 - **Pannes :** le flux public d'incidents de Flutterwave est lu en direct. Chaque incident garde le lien vers sa page d'origine quand le flux le fournit.
 - **Licence du code :** droits réservés à l'équipe (D13), sans fichier de licence. Le dépôt est public, mais le code n'est pas réutilisable sans accord.
