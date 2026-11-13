@@ -87,10 +87,11 @@ async def report_submit(
                     service_slug=fiche.service.slug,
                     country=fiche.country or values["country"] or None,
                     description=values["description"],
+                    # Identifiant du compte (« github:<id> »), comme le serveur MCP : avec le
+                    # pseudo, une même personne comptait deux fois (site et agent), ou trois
+                    # en renommant son compte GitHub, et passait seule un service en panne.
                     reported_by=(
-                        account.pseudo[:40]
-                        if account is not None
-                        else values["pseudo"][:40] or None
+                        account.id if account is not None else values["pseudo"][:40] or None
                     ),
                 )
             )

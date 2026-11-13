@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 
 import pytest
@@ -21,6 +22,7 @@ from app.domain.models import (
 )
 from app.domain.ports import IncidentFeed
 from app.services.clock import FixedClock
+from app.services.incidents import RETRY_AFTER_FAILURE
 from app.stores.content_files import load_fiches, load_glossary
 from app.stores.memory.store import MemoryStore
 from tests.conftest import NOW, TEST_CONTENT_DIR
@@ -244,3 +246,46 @@ async def test_failed_feed_does_not_stop_the_next_one() -> None:
     services = await _services_with_store(store, [FakeFeed(fail=True), working])
     assert await services.incidents.refresh_if_stale() == 1
     assert working.calls == 1
+
+
+class SlowFailingFeed(FakeFeed):
+    """Un flux qui met du temps à échouer, comme un serveur qui ne répond plus."""
+
+    async def fetch(self) -> list[Incident]:
+        self.calls += 1
+        await asyncio.sleep(0.05)
+        raise ConnectionError("flux injoignable")
+
+
+async def test_a_failed_feed_is_not_read_again_at_every_call() -> None:
+    clock = FixedClock(NOW)
+    feed = SlowFailingFeed()
+    services = await _services(feed, clock)
+    # Six appels en même temps : un seul lit le flux, les autres répondent tout de suite.
+    await asyncio.gather(*[services.incidents.refresh_if_stale() for _ in range(6)])
+    assert feed.calls == 1
+    # Juste après l'échec : pas de nouvel essai.
+    await services.incidents.refresh_if_stale()
+    assert feed.calls == 1
+    # Une fois le délai passé, le flux est relu.
+    clock.at = NOW + RETRY_AFTER_FAILURE + timedelta(seconds=1)
+    await services.incidents.refresh_if_stale()
+    assert feed.calls == 2
+
+
+async def test_agent_tools_do_not_wait_for_the_feed() -> None:
+    from app.mcp import tools
+
+    class HangingFeed(FakeFeed):
+        async def fetch(self) -> list[Incident]:
+            self.calls += 1
+            await asyncio.sleep(2)  # plus long que le délai accordé aux deux outils
+            return []
+
+    feed = HangingFeed()
+    services = await _services(feed)
+    fiche = await asyncio.wait_for(tools.get_fiche(services, "demo-pay", "SN"), timeout=1)
+    status = await asyncio.wait_for(tools.get_service_status(services, "demo-pay", "SN"), timeout=1)
+    assert fiche.status.status == status.status
+    await asyncio.sleep(0)
+    assert feed.calls == 1  # la lecture est lancée à côté, une seule fois
