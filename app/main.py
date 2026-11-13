@@ -54,6 +54,9 @@ def create_app(
         if not settings.ingest_live:
             # Extrait enregistré : lecture instantanée, l'état des services est prêt d'emblée.
             await services.incidents.refresh_if_stale()
+        else:
+            # Flux en direct : lu à côté, pour que le démarrage n'attende pas un flux lent.
+            services.incidents.refresh_in_background()
         try:
             async with mcp.session_manager.run():
                 yield
