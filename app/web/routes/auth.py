@@ -128,8 +128,10 @@ async def tool_consent(request: Request, services: ServicesDep, demande: str = "
 @router.post(
     CONSENT_PATH,
     dependencies=[
-        Depends(verify_csrf),
+        # Le quota d'abord : verify_csrf lit tout le formulaire, et un envoi refusé
+        # pour son jeton ne consommait alors aucun essai.
         Depends(rate_limit("connexion", limit=60, window_seconds=3600)),
+        Depends(verify_csrf),
     ],
 )
 async def tool_consent_answer(request: Request, services: ServicesDep) -> Response:
@@ -148,8 +150,10 @@ async def tool_consent_answer(request: Request, services: ServicesDep) -> Respon
 @router.post(
     "/connexion/jury",
     dependencies=[
-        Depends(verify_csrf),
+        # Le quota d'abord : verify_csrf lit tout le formulaire, et un envoi refusé
+        # pour son jeton ne consommait alors aucun essai.
         Depends(rate_limit("connexion-jury", limit=10, window_seconds=3600)),
+        Depends(verify_csrf),
     ],
 )
 async def login_with_code(request: Request, services: ServicesDep) -> Response:
@@ -201,5 +205,13 @@ async def github_callback(
     response = RedirectResponse(result.redirect_url, status_code=302)
     if result.session_token:
         set_session_cookie(response, settings, result.session_token, SESSION_MAX_AGE)
-    response.delete_cookie(_cookie_name(request), path="/")  # la demande est consommée
+    # La demande est consommée. Mêmes attributs qu'à la pose : sans Secure, le navigateur
+    # refuse d'effacer un cookie __Host-.
+    response.delete_cookie(
+        _cookie_name(request),
+        path="/",
+        secure=settings.is_prod,
+        httponly=True,
+        samesite="lax",
+    )
     return response

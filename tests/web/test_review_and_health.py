@@ -98,3 +98,17 @@ def test_changing_pseudo_at_each_attempt_does_not_avoid_the_block(clock: FixedCl
         assert codes[MAX_FAILURES:] == [429] * (12 - MAX_FAILURES)
         # Le vrai relecteur garde son propre compteur.
         assert client.get("/relecture", auth=("aziz", PASSWORD)).status_code == 200
+
+
+def test_healthz_db_check_is_rate_limited(client: TestClient) -> None:
+    from app.web.routes.health import DB_CHECK_LIMIT
+
+    codes = [client.get("/healthz?db=1").status_code for _ in range(DB_CHECK_LIMIT + 1)]
+    assert codes[:-1] == [200] * DB_CHECK_LIMIT
+    assert codes[-1] == 429
+    # Le contrôle simple, appelé par l'hébergeur, reste toujours libre.
+    assert client.get("/healthz").status_code == 200
+
+
+def test_healthz_does_not_tell_the_environment(client: TestClient) -> None:
+    assert client.get("/healthz").json() == {"status": "ok"}

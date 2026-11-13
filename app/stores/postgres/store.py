@@ -68,7 +68,13 @@ class PostgresStore:
     @classmethod
     async def connect(cls, database_url: str) -> PostgresStore:
         pool = await asyncpg.create_pool(
-            database_url, min_size=1, max_size=5, init=_init_connection
+            # Une requête bloquée (verrou, base saturée) échoue au bout de 10 s au lieu de
+            # garder une connexion du pool indéfiniment.
+            database_url,
+            min_size=1,
+            max_size=5,
+            init=_init_connection,
+            command_timeout=10,
         )
         return cls(pool)
 

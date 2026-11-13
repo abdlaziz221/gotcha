@@ -154,8 +154,10 @@ async def fiche_detail(
 @router.post(
     "/fiches/{slug}/confirmer",
     dependencies=[
-        Depends(verify_csrf),
+        # Le quota d'abord : verify_csrf lit tout le formulaire, et un envoi refusé
+        # pour son jeton ne consommait alors aucun essai.
         Depends(rate_limit("confirmer", limit=30, window_seconds=3600)),
+        Depends(verify_csrf),
     ],
 )
 async def confirm(
