@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from app.domain.errors import InvalidInputError
 from app.domain.models import (
@@ -22,6 +22,10 @@ from app.services.fiches import FicheService
 from app.services.status import compute_status
 
 log = logging.getLogger(__name__)
+
+# Après un échec, un flux n'est pas relu avant ce délai : sans lui, chaque visite ou appel
+# d'agent relisait un flux en panne, avec jusqu'à 5 secondes d'attente à chaque fois.
+RETRY_AFTER_FAILURE = timedelta(minutes=2)
 
 
 class IncidentService:
@@ -40,6 +44,9 @@ class IncidentService:
         self._feeds = feeds
         self._min_interval = min_interval
         self._lock = asyncio.Lock()
+        self._retry_after: dict[int, datetime] = {}  # par flux (id de l'objet)
+        # Tâches lancées par refresh_in_background : sans référence, Python peut les arrêter.
+        self._background: set[asyncio.Task[int]] = set()
 
     async def status_for(self, fiche: Fiche) -> ServiceStatus:
         return (await self.statuses_for([fiche]))[fiche.slug]
@@ -108,14 +115,27 @@ class IncidentService:
         Ne lève jamais d'exception : un flux ou une base en échec est journalisé et réessayé
         plus tard, et n'empêche pas de lire les autres flux.
         """
+        if self._lock.locked():
+            # Une lecture est déjà en cours : attendre derrière elle ne servirait à rien.
+            return 0
         received = 0
         async with self._lock:
             for feed in self._feeds:
+                retry_after = self._retry_after.get(id(feed))
+                if retry_after is not None and self._clock.now() < retry_after:
+                    continue
                 try:
                     received += await self._refresh_feed(feed)
                 except Exception:
+                    self._retry_after[id(feed)] = self._clock.now() + RETRY_AFTER_FAILURE
                     log.warning("lecture du flux %s impossible", feed.source.value, exc_info=True)
         return received
+
+    def refresh_in_background(self) -> None:
+        """Lance refresh_if_stale sans l'attendre : la réponse part avec l'état déjà connu."""
+        task = asyncio.create_task(self.refresh_if_stale())
+        self._background.add(task)
+        task.add_done_callback(self._background.discard)
 
     async def _refresh_feed(self, feed: IncidentFeed) -> int:
         now = self._clock.now()
