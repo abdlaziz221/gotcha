@@ -5,8 +5,8 @@ environments: [production]
 api_version: null
 error_codes: []
 confidence: production
-publication: draft
-verified_by: null
+publication: published
+verified_by: TechwithXalifa
 last_confirmed_on: 2026-11-11
 sources:
   - title: Retour de terrain, déploiement de Gotcha sur Datacloud Serverless Free

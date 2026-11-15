@@ -6,16 +6,16 @@ api_version: null
 error_codes: []
 publication: draft
 verified_by: null
-last_confirmed_on: 2026-10-28
+last_confirmed_on: 2026-11-15
 sources:
   - title: "Règlement officiel du concours CADEV 2026, article 8"
     url: https://platform.systalink.com/
-    accessed_on: 2026-11-02
+    accessed_on: 2026-11-15
 ---
 
 ## Symptôme
 
-Le code promotionnel CADEV ne s'applique pas au moment de payer un VPS.
+Le code promotionnel CADEV ne s'applique pas au moment de payer un VPS situé hors de Dakar.
 
 ## Cause
 
