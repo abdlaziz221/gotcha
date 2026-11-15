@@ -5,8 +5,8 @@ environments: [production]
 api_version: null
 error_codes: []
 confidence: production
-publication: published
-verified_by: TechwithXalifa
+publication: draft
+verified_by: null
 last_confirmed_on: 2026-11-11
 sources:
   - title: Console Datacloud, page du service (offre Free)

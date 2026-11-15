@@ -4,13 +4,13 @@ severity: minor
 environments: [production]
 api_version: null
 error_codes: []
-publication: published
-verified_by: TechwithXalifa
-last_confirmed_on: 2026-10-28
+publication: draft
+verified_by: null
+last_confirmed_on: 2026-11-15
 sources:
   - title: "Règlement officiel du concours CADEV 2026, article 8"
     url: https://platform.systalink.com/
-    accessed_on: 2026-11-02
+    accessed_on: 2026-11-15
 ---
 
 ## Symptôme
