@@ -88,7 +88,9 @@ def test_production_hides_drafts_and_dev_pages(prod_client: TestClient) -> None:
     assert home.status_code == 200
     assert "Brouillon" not in home.text
     assert prod_client.get("/fiches/mtn-momo").status_code == 200
-    assert prod_client.get("/fiches/datacloud-sn").status_code == 404
+    fiche = prod_client.get("/fiches/orange-money-sn")
+    assert fiche.status_code == 200
+    assert "validation manuelle" not in fiche.text  # le piège encore en brouillon
     assert prod_client.get("/styleguide").status_code == 404
     assert prod_client.get("/relecture").status_code == 404
 

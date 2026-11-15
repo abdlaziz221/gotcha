@@ -45,8 +45,9 @@ def test_get_fiche_gives_gotchas_and_status(client: TestClient) -> None:
     assert gotcha["url"].endswith("/fiches/mtn-momo#piege-x-target-environment")
     assert fiche["status"]["status"] in {"normal", "degraded", "down"}
     assert fiche["warning"] is None  # tous les pièges sont vérifiés
-    draft = tool(client, "get_fiche", service="datacloud", country="SN")["structuredContent"]
-    assert draft["warning"]  # brouillons : l'agent est prévenu
+    # Fiche publiée qui garde un piège en brouillon : l'agent est prévenu.
+    draft = tool(client, "get_fiche", service="orange-money", country="SN")["structuredContent"]
+    assert draft["warning"]
 
 
 def test_search_gotchas(client: TestClient) -> None:

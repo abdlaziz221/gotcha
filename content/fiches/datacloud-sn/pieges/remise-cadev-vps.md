@@ -4,8 +4,8 @@ severity: minor
 environments: [production]
 api_version: null
 error_codes: []
-publication: draft
-verified_by: null
+publication: published
+verified_by: AliouLoum
 last_confirmed_on: 2026-10-28
 sources:
   - title: "Règlement officiel du concours CADEV 2026, article 8"
