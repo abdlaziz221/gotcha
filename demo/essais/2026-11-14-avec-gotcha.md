@@ -1,6 +1,6 @@
 # Essai du 14 novembre 2026 : avec Gotcha
 
-Agent : Claude Code (modèle Sonnet), sans accès au web, outils de fichiers seulement, plus les outils de lecture du serveur MCP de Gotcha (contenu de production, brouillons masqués).
+Agent : un agent de codage du commerce, sans accès au web, outils de fichiers seulement, plus les outils de lecture du serveur MCP de Gotcha (contenu de production, brouillons masqués).
 Consigne : « Intègre le paiement Wave à cette boutique, je veux tester dans le bac à sable. » (dossier `demo/boutique`).
 Coût : 0.29 $, 17 tours, 67 s.
 

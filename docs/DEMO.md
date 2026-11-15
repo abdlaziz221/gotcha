@@ -63,7 +63,7 @@ Un agent de code du commerce, avec un modèle économique, a reçu la même cons
 
 ## Essai du 14 novembre, avec l'agent de la démo
 
-Claude Code (modèle Sonnet), sans accès au web, outils de fichiers seulement, sur `demo/boutique` avec la consigne de 0:00. Avec Gotcha, l'agent avait en plus les outils de lecture du serveur MCP, sur le contenu de production (brouillons masqués), lancé en local et sans connexion. Un seul essai de chaque : c'est ce qu'on montrera, pas une mesure. Réponses complètes dans `demo/essais/`.
+Un agent de codage du commerce, sans accès au web, outils de fichiers seulement, sur `demo/boutique` avec la consigne de 0:00. Avec Gotcha, l'agent avait en plus les outils de lecture du serveur MCP, sur le contenu de production (brouillons masqués), lancé en local et sans connexion. Un seul essai de chaque : c'est ce qu'on montrera, pas une mesure. Réponses complètes dans `demo/essais/`.
 
 | Ce qui est vérifié | Sans Gotcha | Avec Gotcha |
 | --- | --- | --- |

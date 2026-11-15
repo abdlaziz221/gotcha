@@ -1,6 +1,6 @@
 # Essai du 14 novembre 2026 : sans Gotcha
 
-Agent : Claude Code (modèle Sonnet), sans accès au web, outils de fichiers seulement.
+Agent : un agent de codage du commerce, sans accès au web, outils de fichiers seulement.
 Consigne : « Intègre le paiement Wave à cette boutique, je veux tester dans le bac à sable. » (dossier `demo/boutique`).
 Coût : 0.26 $, 12 tours, 39 s.
 
