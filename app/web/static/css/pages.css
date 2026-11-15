@@ -105,11 +105,12 @@ textarea:focus-visible { border-color: var(--ui-primary); outline: none; box-sha
 
 .ph__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; }
 
-/* Mise en page : zone principale (65 %) et panneau latéral (35 %) à partir de 64rem. */
+/* Mise en page : zone principale (65 %) et panneau latéral (35 %) à partir de 64rem.
+   Colonnes en minmax(0, 1fr) : un long bloc de code défile au lieu d'élargir la page. */
 .split { display: grid; gap: var(--space-5); align-items: start; }
 
 .split__main,
-.split__side { display: grid; gap: var(--space-5); min-width: 0; }
+.split__side { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-5); min-width: 0; }
 
 /* Boîte : panneau blanc à filet fin, avec un en-tête facultatif. */
 .split section,
@@ -368,7 +369,7 @@ pre.example { margin: 0; font-size: 0.8125rem; line-height: 1.55; white-space: p
 .confirm-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; }
 
 /* Pile de cartes avec un titre de section discret (pièges d'une fiche). */
-.stack { display: grid; gap: var(--space-3); }
+.stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
 
 .stack__title { display: flex; align-items: baseline; gap: var(--space-2); margin: var(--space-3) 0 0; font-size: 1.0625rem; font-weight: 600; }
 
@@ -455,7 +456,7 @@ pre.example { margin: 0; font-size: 0.8125rem; line-height: 1.55; white-space: p
 
 .gotcha__meta > * + *::before { content: none; }
 
-.gotcha__body { display: grid; gap: var(--space-4); padding: var(--space-5); }
+.gotcha__body { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); padding: var(--space-5); }
 
 .gotcha__part h4 { margin: 0 0 var(--space-1); color: var(--ui-muted); font-size: 0.8125rem; font-weight: 500; }
 
