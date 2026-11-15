@@ -5,7 +5,7 @@ environments: [production]
 api_version: null
 error_codes: []
 publication: published
-verified_by: AliouLoum
+verified_by: TechwithXalifa
 last_confirmed_on: 2026-10-28
 sources:
   - title: "Règlement officiel du concours CADEV 2026, article 8"
