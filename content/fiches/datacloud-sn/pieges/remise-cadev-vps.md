@@ -15,7 +15,7 @@ sources:
 
 ## Symptôme
 
-Le code promotionnel CADEV ne s'applique pas au moment de payer un VPS.
+Le code promotionnel CADEV ne s'applique pas au moment de payer un VPS situé hors de Dakar.
 
 ## Cause
 
