@@ -8,24 +8,44 @@ Gotcha est la mémoire opérationnelle du paiement mobile (**Wave, Orange Money,
 
 **Les développeurs partagent. Les agents retrouvent. L'expérience reste.**
 
-Projet de l'équipe pour le concours **CADEV 2026** (Systalink). Gel des fonctions le **10 novembre**, soumission le **14 novembre**, date limite le **15 novembre à 17 h GMT**.
+Projet de l'équipe pour le concours **CADEV 2026** (Systalink), soumis le 15 novembre 2026. Jusqu'aux résultats du 23 novembre, seules des corrections sont déployées.
 
 ---
 
-## Priorités jusqu'à la soumission
+## Tester Gotcha
 
-Le positionnement et l'architecture ne changent plus ([D29](docs/DECISIONS.md)). Ce qui compte maintenant, c'est la qualité de la livraison.
+**Site en ligne, hébergé sur Datacloud à Dakar :** <https://gotcha-80c95631.platform-systalink.com>
 
-| Ordre | Priorité | Ce qu'il faut faire | Niveau |
-| --- | --- | --- | --- |
-| 1 | Relectures et fusion des PR | Dans l'ordre : 43, 45, 47, 49 à 54, puis 44, 46 et 48 | Bloquant |
-| 2 | Recevabilité | Droits, origine du code, licences, comptes Datacloud, inscription de l'équipe | Bloquant |
-| 3 | Déploiement | HTTPS, PostgreSQL, persistance, accès public | Bloquant |
-| 4 | Contenu | Au moins 15 pièges relus et publiés, avec leur vrai niveau de confiance | Important |
-| 5 | Démonstration | Wave sans puis avec Gotcha, panne en direct, courte séquence en wolof | Important |
-| 6 | Audio en wolof | 3 à 5 explications audio, seulement si le socle est en ligne le 8 novembre | Conditionnel |
+Site de secours, même code et même base : <https://gotcha-uchy.onrender.com>. À utiliser seulement si le premier ne répond pas.
 
-Le détail est dans [docs/PLAN.md](docs/PLAN.md).
+### Sans compte
+
+| À essayer | Lien |
+| --- | --- |
+| Fiche Wave Sénégal, en entier : étapes, pièges, sources, niveau de confiance | [/fiches/wave-sn](https://gotcha-80c95631.platform-systalink.com/fiches/wave-sn) |
+| Fiche Datacloud, écrite à partir de notre propre déploiement | [/fiches/datacloud-sn](https://gotcha-80c95631.platform-systalink.com/fiches/datacloud-sn) |
+| Mode pas à pas, pensé pour le mobile | [/fiches/wave-sn?mode=pas-a-pas&etape=1](https://gotcha-80c95631.platform-systalink.com/fiches/wave-sn?mode=pas-a-pas&etape=1) |
+| Recherche | [/recherche?q=bac à sable](https://gotcha-80c95631.platform-systalink.com/recherche?q=bac%20%C3%A0%20sable) |
+| Journal des pannes : flux public de Flutterwave et signalements des devs | [/pannes](https://gotcha-80c95631.platform-systalink.com/pannes) |
+| Glossaire | [/glossaire](https://gotcha-80c95631.platform-systalink.com/glossaire) |
+| Santé du service et de sa base PostgreSQL | [/healthz?db=1](https://gotcha-80c95631.platform-systalink.com/healthz?db=1) |
+
+Les autres fiches (Orange Money, MTN MoMo, M-Pesa) montrent un aperçu sans compte.
+
+### Accès complet
+
+- **Jury :** ouvrir [/connexion](https://gotcha-80c95631.platform-systalink.com/connexion) et saisir le code d'accès indiqué dans le formulaire de soumission. Il n'est pas publié ici.
+- **Tout le monde :** se connecter avec GitHub, en un clic. Le compte donne toutes les fiches, et permet de proposer un piège, d'en confirmer un ou de signaler une panne.
+
+### Avec un agent de code, par le serveur MCP
+
+1. Copier [demo/mcp-gotcha.json](demo/mcp-gotcha.json) dans le projet de l'agent, sous le nom `.mcp.json`. Il pointe vers `https://gotcha-80c95631.platform-systalink.com/mcp`.
+2. Au premier appel, l'agent ouvre la connexion GitHub : cliquer sur « Autoriser ».
+3. Lui demander par exemple : « Intègre le paiement Wave à cette boutique, je veux tester dans le bac à sable. » Une boutique d'essai est dans [demo/boutique](demo/boutique).
+
+Outils exposés : `list_services`, `get_fiche`, `search_gotchas`, `get_service_status`, `report_outage`, `propose_gotcha` et `confirm_gotcha`. Rien de ce qu'un agent propose n'est publié sans l'accord du développeur et une relecture humaine.
+
+Le scénario complet, avec les résultats d'un essai sans puis avec Gotcha, est dans [docs/DEMO.md](docs/DEMO.md).
 
 ## Comment le projet est jugé
 
