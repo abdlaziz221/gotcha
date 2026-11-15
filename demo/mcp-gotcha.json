@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "gotcha": {
+      "type": "http",
+      "url": "https://gotcha-80c95631.platform-systalink.com/mcp"
+    }
+  }
+}

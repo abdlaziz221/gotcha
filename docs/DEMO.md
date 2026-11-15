@@ -9,13 +9,13 @@
 | Temps | Ce qu'on montre | Ce qu'on dit |
 | --- | --- | --- |
 | 0:00 | Un agent de code reçoit la consigne : « Intègre le paiement Wave à cette boutique, je veux tester dans le bac à sable » | Le problème : ce savoir est difficile à trouver |
-| 0:30 | **Sans Gotcha** : l'agent prépare une configuration pour un bac à sable que la documentation de Wave ne mentionne pas. On montre son vrai résultat | Ce que vivent les devs, et leurs agents |
+| 0:30 | **Sans Gotcha** : l'agent suppose un environnement de test que Wave n'a pas (« clé de test du portail Wave Business », « votre compte de test ») et ne vérifie pas le paiement avant de livrer. On montre son vrai résultat | Ce que vivent les devs, et leurs agents |
 | 1:00 | **Avec Gotcha** : connexion GitHub en un clic, l'agent appelle `get_fiche`, prévient qu'aucun bac à sable n'est documenté, simule l'appel en local et cite sa source et son niveau de confiance | Le savoir sourcé, avec son niveau de confiance, lisible par les agents |
 | 1:30 | L'agent résout un problème absent de Gotcha, montre un brouillon à son développeur et le propose. Un relecteur le publie | Les solutions ne se perdent plus |
 | 2:10 | Une panne d'Orange Money Sénégal est signalée : la fiche passe en « dégradé », et l'agent prévient avant d'écrire le code | Les pannes en direct |
 | 2:40 | Sur mobile, un étudiant ouvre la même fiche en mode pas à pas et écoute une dizaine de secondes d'explication en wolof, avec sa transcription (si l'audio est livré, D26) ; le pied de page rappelle « Application hébergée à Dakar » | Accessible aux débutants, application hébergée à Dakar |
 
-**À trancher avant de figer ce scénario :** l'absence de bac à sable Wave n'est qu'au niveau « sourcé », et notre propre fiche Orange Money cite un article intitulé « bac à sable Wave et Orange Money » (Kolonell). Si un environnement de test Wave existe, un juré pourrait montrer que l'agent sans Gotcha avait raison. Il faut lire cette source, puis vérifier avec un vrai compte Wave Business (voir la préparation). Si un bac à sable existe, on change de piège pour la démo (M-Pesa, ci-dessous).
+**Tranché le 11 novembre :** l'article Kolonell « sandbox-paiement-wave-orange-money-dev-2026 » affirme qu'un bac à sable Wave existe sur `developer.wave.com`, avec des clés `wave_sandbox_sk_…`. Ce domaine n'existe pas (il ne se résout pas), les pages Business et Checkout de docs.wave.com ne contiennent jamais le mot « sandbox », et leurs seuls exemples de clé sont `wave_sn_prod_…` (relecture de #65). Si un juré cite cet article, c'est la réponse. Le piège reste au niveau « sourcé » : aucun compte Wave Business ne l'a confirmé.
 
 **Le cœur de la démo reste Wave sans puis avec Gotcha, et la panne en direct.** Le wolof la complète sans la remplacer : un jury panafricain ne le comprendra pas forcément, d'où une séquence courte et sa transcription.
 
@@ -61,20 +61,37 @@ Un agent de code du commerce, avec un modèle économique, a reçu la même cons
 - La consigne Wave demande un bac à sable, ce qui pousse l'agent à en supposer un.
 - L'agent avait déjà Gotcha installé, sans connexion, et le serveur lui demandait de le consulter. Il l'a fait dans tous les essais.
 
+## Essai du 14 novembre, avec l'agent de la démo
+
+Un agent de codage du commerce, sans accès au web, outils de fichiers seulement, sur `demo/boutique` avec la consigne de 0:00. Avec Gotcha, l'agent avait en plus les outils de lecture du serveur MCP, sur le contenu de production (brouillons masqués), lancé en local et sans connexion. Un seul essai de chaque : c'est ce qu'on montrera, pas une mesure. Réponses complètes dans `demo/essais/`.
+
+| Ce qui est vérifié | Sans Gotcha | Avec Gotcha |
+| --- | --- | --- |
+| Dit qu'aucun bac à sable n'est documenté | Non : parle d'une « clé de test du portail Wave Business » et d'un « compte de test » | Oui, en précisant que c'est « sourcé » et pas testé |
+| Permet de tester sans compte Wave | Non | Oui : simulateur local (`WAVE_MODE=fake`), fausse page de paiement |
+| Vérifie la signature du webhook (`Wave-Signature`) | Non | Oui, avec rejet au-delà de 5 minutes |
+| Relit la session avant de livrer | Non, le signale comme à faire plus tard | Oui, `payment_status == succeeded` |
+| Cite `test.test_event` pour tester le webhook sans payer | Non | Oui |
+| Coût et durée | 0,26 $, 39 s | 0,29 $, 67 s |
+
+**Ce qu'on peut dire :** sans Gotcha, l'agent n'invente pas d'adresse de bac à sable, mais il laisse croire qu'un environnement de test existe et livre sur la simple redirection. Avec Gotcha, il prévient, simule, et applique la vérification que la documentation de Wave demande.
+
+**Ce que ce test ne couvre pas :** l'étape de 1:30 (proposer un piège) demande la connexion GitHub, et l'agent n'a pas lancé son propre code (aucune commande autorisée).
+
 ## Préparation
 
-- [ ] Configuration du client MCP de l'agent pointant vers `https://<domaine>/mcp`
-- [ ] Projet « boutique » minimal prêt, dans deux états (sans et avec Gotcha)
-- [ ] Comptes Wave Business et bac à sable Daraja, pour vérifier ce que la démo affirme ; lire l'article Kolonell cité plus haut et **trancher l'existence d'un bac à sable Wave** avant de figer le scénario
-- [ ] **Relire et publier les pièges Wave et M-Pesa de la démo** (`publication: published`, `verified_by` d'un humain qui n'en est pas l'auteur) : en production, les brouillons sont invisibles et `get_fiche` ne les trouverait pas. Le 5 sur 5 a été obtenu avec le brouillon visible. Responsables : Loum (Wave, L11) et Khalifa (M-Pesa, K10), au plus tard le **lun. 9** ; Aziz vérifie sur le site en ligne
+- [x] Configuration du client MCP de l'agent : `demo/mcp-gotcha.json`, vers le serveur en ligne
+- [x] Projet « boutique » minimal prêt, dans deux états (sans et avec Gotcha) : `demo/boutique`, mode d'emploi dans `demo/README.md`
+- [x] Article Kolonell lu, existence d'un bac à sable Wave tranchée (voir plus haut). Pas de compte Wave Business ni Daraja : les pièges restent « sourcés »
+- [x] **Relire et publier les pièges Wave et M-Pesa de la démo** (#65, #67) (`publication: published`, `verified_by` d'un humain qui n'en est pas l'auteur) : en production, les brouillons sont invisibles et `get_fiche` ne les trouverait pas. Le 5 sur 5 a été obtenu avec le brouillon visible. Responsables : Loum (Wave, L11) et Khalifa (M-Pesa, K10), au plus tard le **lun. 9** ; Aziz vérifie sur le site en ligne
 - [x] Test de l'agent sans puis avec Gotcha, résultats notés ici
-- [ ] Refaire ce test avec l'agent qui servira à la démo, avant de figer le scénario
-- [ ] Test automatisé reproductible du scénario (ne dépend pas de l'humeur de l'agent)
+- [x] Refaire ce test avec l'agent qui servira à la démo : essai du 14 novembre, ci-dessous
+- [x] Test automatisé reproductible du scénario : `tests/mcp/test_demo_scenario.py`, passé 3 fois de suite le 14 novembre. Avant de monter sur scène : `python demo/check_live.py`
 - [ ] Vidéo de secours enregistrée (K11)
 - [ ] Démo répétée **10 fois** avant le 14 novembre
 
 ## Si quelque chose casse en direct
 
 1. Basculer sur la vidéo de secours, sans s'excuser longuement.
-2. Montrer le test automatisé qui rejoue le scénario.
+2. Montrer le test automatisé qui rejoue le scénario : `python -m pytest tests/mcp/test_demo_scenario.py -v`.
 3. Montrer la fiche dans le navigateur : le piège, ses sources, ses confirmations.
